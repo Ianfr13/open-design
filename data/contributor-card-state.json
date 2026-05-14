@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-14T12:33:16.907Z",
+  "generatedAt": "2026-05-14T12:37:38.230Z",
   "contributors": {
     "huyhoangnhh98": {
       "lastAnnouncedTier": "spark",
@@ -100,10 +100,11 @@
       "lastAnnouncedAt": "2026-05-12T08:50:05.236Z"
     },
     "nagendhra-web": {
-      "lastAnnouncedTier": "node",
-      "lastKnownScore": 428,
-      "lastCheckedAt": "2026-05-14T07:56:07.767Z",
-      "lastAnnouncedAt": "2026-05-12T08:51:30.894Z"
+      "lastAnnouncedTier": "beacon",
+      "lastKnownScore": 840,
+      "lastCheckedAt": "2026-05-14T12:37:38.230Z",
+      "scoreVersion": "weighted-v1",
+      "lastAnnouncedAt": "2026-05-14T12:37:38.230Z"
     },
     "jinmeihong0201-gif": {
       "lastAnnouncedTier": "signal",
