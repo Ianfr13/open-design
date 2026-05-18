@@ -407,7 +407,7 @@ describe('ProjectView daemon cleanup', () => {
     }
   });
 
-  it('audits design-system workspace output after first auto-send and auto-sends one repair prompt', async () => {
+  it('audits design-system workspace output after first auto-send and auto-sends bounded repair prompts', async () => {
     listConversations.mockResolvedValue([{ id: 'conv-1', title: 'Conversation' }]);
     listMessages.mockResolvedValue([]);
     fetchPreviewComments.mockResolvedValue([]);
@@ -476,13 +476,14 @@ describe('ProjectView daemon cleanup', () => {
     );
 
     await waitFor(() => expect(fetchProjectDesignSystemPackageAudit).toHaveBeenCalledWith('project-ds'));
-    await waitFor(() => expect(streamViaDaemon).toHaveBeenCalledTimes(2));
-    expect(saveMessage.mock.calls.some((call) =>
+    await waitFor(() => expect(streamViaDaemon).toHaveBeenCalledTimes(3));
+    const repairMessages = saveMessage.mock.calls.filter((call) =>
       call[2]?.role === 'user'
       && typeof call[2]?.content === 'string'
       && call[2].content.includes('Fix the design-system package audit findings below.')
       && call[2].content.includes('ui_kit_index_missing_runtime_bootstrap'),
-    )).toBe(true);
+    );
+    expect(repairMessages).toHaveLength(2);
     expect(window.sessionStorage.getItem('od:design-system-audit-auto-repair:project-ds')).toBeNull();
     await waitFor(() => {
       const repairSeed = chatPaneSpy.mock.calls.find(
@@ -500,6 +501,74 @@ describe('ProjectView daemon cleanup', () => {
         && event.detail?.includes('Package audit found 1 error'),
       ),
     )).toBe(true);
+  });
+
+  it('clears design-system auto-repair budget when the first audit passes', async () => {
+    listConversations.mockResolvedValue([{ id: 'conv-1', title: 'Conversation' }]);
+    listMessages.mockResolvedValue([]);
+    fetchPreviewComments.mockResolvedValue([]);
+    loadTabs.mockResolvedValue({ tabs: [], activeTabId: null });
+    fetchProjectFiles.mockResolvedValue([]);
+    fetchLiveArtifacts.mockResolvedValue([]);
+    fetchSkill.mockResolvedValue(null);
+    fetchDesignSystem.mockResolvedValue(null);
+    getTemplate.mockResolvedValue(null);
+    listActiveChatRuns.mockResolvedValue([]);
+    fetchProjectDesignSystemPackageAudit.mockResolvedValue({
+      ok: true,
+      projectPath: '/tmp/ds',
+      filesInspected: 24,
+      errors: [],
+      warnings: [],
+    });
+    streamViaDaemon.mockImplementation(async (options: {
+      handlers: { onDone: () => void };
+      onRunCreated?: (runId: string) => void;
+    }) => {
+      options.onRunCreated?.('run-ds-pass');
+      options.handlers.onDone();
+    });
+
+    chatPaneSpy.mockClear();
+    window.sessionStorage.setItem('od:auto-send-first:project-ds-pass', '1');
+
+    render(
+      <ProjectView
+        project={{
+          id: 'project-ds-pass',
+          name: 'Passing Design System',
+          skillId: null,
+          designSystemId: 'user:passing-ds',
+          pendingPrompt: 'Create this project as a design system.',
+          metadata: {
+            importedFrom: 'design-system',
+            entryFile: 'DESIGN.md',
+            sourceFileName: 'user:passing-ds',
+          },
+        } as never}
+        routeFileName={null}
+        config={{ mode: 'daemon', agentId: 'agent-1', notifications: undefined, agentModels: {} } as never}
+        agents={[{ id: 'agent-1', name: 'OpenCode', models: [] } as never]}
+        skills={[]}
+        designTemplates={[]}
+        designSystems={[]}
+        daemonLive
+        onModeChange={() => {}}
+        onAgentChange={() => {}}
+        onAgentModelChange={() => {}}
+        onRefreshAgents={() => {}}
+        onOpenSettings={() => {}}
+        onBack={() => {}}
+        onClearPendingPrompt={() => {}}
+        onTouchProject={() => {}}
+        onProjectChange={() => {}}
+        onProjectsRefresh={() => {}}
+      />,
+    );
+
+    await waitFor(() => expect(fetchProjectDesignSystemPackageAudit).toHaveBeenCalledWith('project-ds-pass'));
+    expect(streamViaDaemon).toHaveBeenCalledTimes(1);
+    expect(window.sessionStorage.getItem('od:design-system-audit-auto-repair:project-ds-pass')).toBeNull();
   });
 
   // Sister check: without the auto-send flag, the composer should still

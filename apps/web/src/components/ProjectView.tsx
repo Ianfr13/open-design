@@ -190,6 +190,7 @@ const MAX_CHAT_PANEL_WIDTH = 720;
 const MIN_WORKSPACE_PANEL_WIDTH = 400;
 const SPLIT_RESIZE_HANDLE_WIDTH = 8;
 const CHAT_PANEL_KEYBOARD_STEP = 16;
+const DESIGN_SYSTEM_AUDIT_AUTO_REPAIR_ATTEMPTS = 2;
 const MIN_NORMAL_SPLIT_WIDTH =
   MIN_CHAT_PANEL_WIDTH + SPLIT_RESIZE_HANDLE_WIDTH + MIN_WORKSPACE_PANEL_WIDTH;
 type DesignSystemReviewEntry = NonNullable<ProjectMetadata['designSystemReview']>[string];
@@ -320,7 +321,10 @@ function clearAutoSendSession(projectId: string): void {
 function markDesignSystemAuditAutoRepairEligible(projectId: string): void {
   if (typeof window === 'undefined') return;
   try {
-    window.sessionStorage.setItem(designSystemAuditAutoRepairKey(projectId), '1');
+    window.sessionStorage.setItem(
+      designSystemAuditAutoRepairKey(projectId),
+      String(DESIGN_SYSTEM_AUDIT_AUTO_REPAIR_ATTEMPTS),
+    );
   } catch {
     /* ignore */
   }
@@ -330,11 +334,30 @@ function consumeDesignSystemAuditAutoRepair(projectId: string): boolean {
   if (typeof window === 'undefined') return false;
   try {
     const key = designSystemAuditAutoRepairKey(projectId);
-    const eligible = Boolean(window.sessionStorage.getItem(key));
-    window.sessionStorage.removeItem(key);
-    return eligible;
+    const raw = window.sessionStorage.getItem(key);
+    const attemptsRemaining = raw ? Number.parseInt(raw, 10) : 0;
+    if (!Number.isFinite(attemptsRemaining) || attemptsRemaining <= 0) {
+      window.sessionStorage.removeItem(key);
+      return false;
+    }
+    const nextAttemptsRemaining = attemptsRemaining - 1;
+    if (nextAttemptsRemaining > 0) {
+      window.sessionStorage.setItem(key, String(nextAttemptsRemaining));
+    } else {
+      window.sessionStorage.removeItem(key);
+    }
+    return true;
   } catch {
     return false;
+  }
+}
+
+function clearDesignSystemAuditAutoRepair(projectId: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.removeItem(designSystemAuditAutoRepairKey(projectId));
+  } catch {
+    /* ignore */
   }
 }
 
@@ -1324,6 +1347,8 @@ export function ProjectView({
           if (consumeDesignSystemAuditAutoRepair(project.id)) {
             setAutoAuditRepairSeed(seed);
           }
+        } else {
+          clearDesignSystemAuditAutoRepair(project.id);
         }
       } catch (err) {
         const detail = err instanceof Error ? err.message : String(err);
