@@ -28,6 +28,7 @@ interface ParsedOptions {
   outputPath?: string;
   maxFiles?: number;
   requireConnector?: boolean;
+  referencePackage?: boolean;
   useCase?: 'personal_daily_digest';
   format: 'compact' | 'json';
   help: boolean;
@@ -38,7 +39,7 @@ const CONNECTORS_USAGE = `Usage:
   od tools connectors execute --connector <id> --tool <name> --input input.json
   od tools connectors github-design-context --repo owner/repo [--ref main] [--output context/github/owner-repo.md] [--max-files 48] [--require-connector]
   od tools connectors local-design-context --path /path/to/project [--output context/local-code/project.md] [--max-files 48]
-  od tools connectors design-system-package-audit --path /path/to/project
+  od tools connectors design-system-package-audit --path /path/to/project [--reference-package]
 
 Environment:
   OD_NODE_BIN     Node-compatible runtime for agent wrapper invocations
@@ -211,6 +212,8 @@ function parseOptions(args: string[]): ParsedOptions | { error: string } {
       );
     } else if (arg === '--require-connector') {
       options.requireConnector = true;
+    } else if (arg === '--reference-package') {
+      options.referencePackage = true;
     } else if (arg === '--format') {
       const value = rest[++index];
       if (value !== 'compact' && value !== 'json') return { error: '--format must be compact or json' };
@@ -1435,12 +1438,15 @@ async function runLocalDesignContext(options: ParsedOptions): Promise<ToolCliRes
 
 async function runDesignSystemPackageAudit(options: ParsedOptions): Promise<ToolCliResult> {
   const projectPath = path.resolve(options.localPath ?? '.');
-  const audit = await auditDesignSystemPackage(projectPath);
+  const audit = await auditDesignSystemPackage(projectPath, { referencePackage: options.referencePackage === true });
   writeJson(audit);
   return { exitCode: audit.ok ? 0 : 1 };
 }
 
-async function auditDesignSystemPackage(projectPath: string): Promise<DesignSystemPackageAudit> {
+async function auditDesignSystemPackage(
+  projectPath: string,
+  options: { referencePackage?: boolean } = {},
+): Promise<DesignSystemPackageAudit> {
   const projectStat = await stat(projectPath);
   if (!projectStat.isDirectory()) {
     throw new Error(`design-system-package-audit requires --path to be a directory: ${projectPath}`);
@@ -1460,7 +1466,13 @@ async function auditDesignSystemPackage(projectPath: string): Promise<DesignSyst
     if (!fileSet.has(filePath)) addIssue('error', 'missing_required_file', message, filePath);
   };
 
-  requireFile('DESIGN.md', 'Claude Design-style packages need DESIGN.md as the canonical system rules.');
+  if (options.referencePackage === true) {
+    if (!fileSet.has('DESIGN.md')) {
+      addIssue('warning', 'missing_open_design_rules', 'Reference packages may omit DESIGN.md, but generated Open Design packages must include it as the canonical rules file.', 'DESIGN.md');
+    }
+  } else {
+    requireFile('DESIGN.md', 'Claude Design-style packages need DESIGN.md as the canonical system rules.');
+  }
   requireFile('README.md', 'Claude Design-style packages need README.md so the system is reusable outside the current run.');
   requireFile('SKILL.md', 'Claude Design-style packages need SKILL.md with agent-facing usage instructions.');
   requireFile('colors_and_type.css', 'Claude Design-style packages need colors_and_type.css for reusable color, type, spacing, radius, and state tokens.');

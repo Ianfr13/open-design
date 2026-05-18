@@ -325,6 +325,54 @@ describe('connectors tool CLI', () => {
     await rm(tmpDir, { recursive: true, force: true });
   });
 
+  it('can audit an external Claude Design reference package without DESIGN.md', async () => {
+    const tmpDir = await mkdtemp(path.join(os.tmpdir(), 'od-package-audit-reference-'));
+    process.chdir(tmpDir);
+    await mkdir(path.join(tmpDir, 'preview'), { recursive: true });
+    await mkdir(path.join(tmpDir, 'ui_kits/app'), { recursive: true });
+    await mkdir(path.join(tmpDir, 'assets'), { recursive: true });
+    await mkdir(path.join(tmpDir, 'fonts/ubuntu'), { recursive: true });
+    await writeFile(path.join(tmpDir, 'README.md'), '# Cherry Studio Design System\n');
+    await writeFile(path.join(tmpDir, 'SKILL.md'), '# Cherry Studio Design System\n');
+    await writeFile(path.join(tmpDir, 'colors_and_type.css'), ':root { --color-primary: #00b96b; }\n');
+    for (const fileName of [
+      'colors-primary.html',
+      'colors-theme-light.html',
+      'colors-theme-dark.html',
+      'typography-specimens.html',
+      'spacing-tokens.html',
+      'spacing-radius.html',
+      'components-buttons.html',
+      'components-inputs.html',
+      'brand-assets.html',
+    ]) {
+      await writeFile(path.join(tmpDir, 'preview', fileName), '<!doctype html><title>Preview</title>');
+    }
+    await writeFile(path.join(tmpDir, 'ui_kits/app/index.html'), '<!doctype html><title>UI kit</title>');
+    await writeFile(path.join(tmpDir, 'ui_kits/app/README.md'), '# UI kit\n');
+    await writeFile(path.join(tmpDir, 'assets/logo.png'), Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+    await writeFile(path.join(tmpDir, 'fonts/ubuntu/Ubuntu-Regular.ttf'), Buffer.from('font-data'));
+
+    const strict = await runConnectorsToolCli(['design-system-package-audit', '--path', tmpDir]);
+    expect(strict.exitCode).toBe(1);
+    expect(JSON.parse(stdoutOutput.join('')).errors).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: 'missing_required_file', path: 'DESIGN.md' }),
+    ]));
+
+    stdoutOutput = [];
+    const reference = await runConnectorsToolCli(['design-system-package-audit', '--path', tmpDir, '--reference-package']);
+    expect(reference.exitCode).toBe(0);
+    expect(JSON.parse(stdoutOutput.join(''))).toMatchObject({
+      ok: true,
+      errors: [],
+      warnings: expect.arrayContaining([
+        expect.objectContaining({ code: 'missing_open_design_rules', path: 'DESIGN.md' }),
+      ]),
+    });
+
+    await rm(tmpDir, { recursive: true, force: true });
+  });
+
   it('falls back to bounded connector directory browsing when the repository tree is too large', async () => {
     const tmpDir = await mkdtemp(path.join(os.tmpdir(), 'od-connectors-cli-'));
     process.chdir(tmpDir);
