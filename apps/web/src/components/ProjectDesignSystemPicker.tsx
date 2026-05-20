@@ -12,9 +12,16 @@
 // room — surfacing the swatches + summary suffices to identify the
 // system at a glance.
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { DesignSystemSummary } from '@open-design/contracts';
 import { Icon } from './Icon';
+
+interface PopoverAnchor {
+  top: number;
+  left: number;
+  width: number;
+}
 
 interface Props {
   designSystems: DesignSystemSummary[];
@@ -31,7 +38,10 @@ export function ProjectDesignSystemPicker({
 }: Props) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
+  const [anchor, setAnchor] = useState<PopoverAnchor | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const popoverRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const selected = useMemo(
@@ -42,7 +52,9 @@ export function ProjectDesignSystemPicker({
   useEffect(() => {
     if (!open) return;
     function onPointer(e: MouseEvent) {
-      if (wrapRef.current?.contains(e.target as Node)) return;
+      const target = e.target as Node;
+      if (wrapRef.current?.contains(target)) return;
+      if (popoverRef.current?.contains(target)) return;
       setOpen(false);
     }
     function onKey(e: KeyboardEvent) {
@@ -53,6 +65,26 @@ export function ProjectDesignSystemPicker({
     return () => {
       document.removeEventListener('mousedown', onPointer);
       document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  useLayoutEffect(() => {
+    if (!open || !triggerRef.current) return undefined;
+    function updateAnchor() {
+      const trigger = triggerRef.current;
+      if (!trigger) return;
+      const rect = trigger.getBoundingClientRect();
+      const popoverWidth = Math.min(360, Math.max(220, window.innerWidth * 0.86));
+      const viewport = window.innerWidth;
+      const left = Math.max(8, Math.min(viewport - popoverWidth - 8, rect.left));
+      setAnchor({ top: rect.bottom + 6, left, width: popoverWidth });
+    }
+    updateAnchor();
+    window.addEventListener('resize', updateAnchor);
+    window.addEventListener('scroll', updateAnchor, true);
+    return () => {
+      window.removeEventListener('resize', updateAnchor);
+      window.removeEventListener('scroll', updateAnchor, true);
     };
   }, [open]);
 
@@ -80,6 +112,7 @@ export function ProjectDesignSystemPicker({
       data-testid="project-ds-picker"
     >
       <button
+        ref={triggerRef}
         type="button"
         className={`project-ds-picker-trigger${selected ? ' picked' : ''}`}
         data-testid="project-ds-picker-trigger"
@@ -107,11 +140,14 @@ export function ProjectDesignSystemPicker({
         </span>
         <Icon name="chevron-down" size={11} />
       </button>
-      {open ? (
+      {open && anchor && typeof document !== 'undefined'
+        ? createPortal(
         <div
+          ref={popoverRef}
           className="project-ds-picker-popover"
           data-testid="project-ds-picker-popover"
           role="listbox"
+          style={{ top: anchor.top, left: anchor.left, width: anchor.width }}
         >
           <div className="project-ds-picker-search">
             <Icon name="search" size={12} />
@@ -179,8 +215,10 @@ export function ProjectDesignSystemPicker({
               <div className="project-ds-picker-empty">没有匹配的设计系统</div>
             ) : null}
           </div>
-        </div>
-      ) : null}
+        </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }

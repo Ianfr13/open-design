@@ -18,6 +18,7 @@
 // 预览设计系统".
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { DesignSystemSummary } from '@open-design/contracts';
 import {
   fetchDesignSystemPreview,

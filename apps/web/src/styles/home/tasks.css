@@ -58,17 +58,17 @@
 .automations-hero__actions {
   display: flex;
   align-items: stretch;
-  gap: 10px;
-  height: 56px;
+  gap: 8px;
+  height: 34px;
 }
 
 .automations-metrics {
   display: grid;
-  grid-template-columns: repeat(3, minmax(72px, auto));
+  grid-template-columns: repeat(3, minmax(58px, auto));
   gap: 1px;
   overflow: hidden;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--border);
   box-shadow: var(--shadow-xs);
   height: 100%;
@@ -76,29 +76,29 @@
 
 .automations-metric {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 4px;
-  min-width: 78px;
-  padding: 0 16px;
+  align-items: center;
+  gap: 5px;
+  min-width: 58px;
+  padding: 0 10px;
   background: var(--bg-panel);
+  line-height: 1;
 }
 
 .automations-metric__value {
   color: var(--text-strong);
-  font-size: 22px;
+  font-size: 13px;
   font-weight: 720;
   line-height: 1;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
 }
 
 .automations-metric__label {
   color: var(--text-muted);
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 700;
   line-height: 1;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
@@ -106,14 +106,14 @@
   appearance: none;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  height: 56px;
-  padding: 0 20px;
+  gap: 6px;
+  height: 34px;
+  padding: 0 13px;
   border: 1px solid color-mix(in srgb, var(--accent, #79a8ff) 48%, var(--border));
-  border-radius: 10px;
+  border-radius: 8px;
   background: color-mix(in srgb, var(--accent, #79a8ff) 16%, var(--bg-panel));
   color: var(--text-strong);
-  font-size: 13.5px;
+  font-size: 12.5px;
   font-weight: 680;
   letter-spacing: -0.005em;
   cursor: pointer;
