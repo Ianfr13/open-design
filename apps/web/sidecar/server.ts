@@ -29,6 +29,8 @@ import {
   type SidecarRuntimeContext,
 } from "@open-design/sidecar";
 
+import { prepareWebSidecarDevRuntime } from "./dev-runtime.js";
+
 const HOST = process.env.OD_HOST || "127.0.0.1";
 if (process.env.OD_HOST != null && !/^[a-zA-Z0-9._\-:[\]@]+$/.test(process.env.OD_HOST)) {
   throw new Error(`OD_HOST contains invalid characters: ${process.env.OD_HOST}`);
@@ -820,6 +822,7 @@ async function startRegularNextSidecar(
   runtime: SidecarRuntimeContext<SidecarStamp>,
   webRoot: string,
 ): Promise<WebSidecarHandle> {
+  await prepareWebSidecarDevRuntime({ webRoot });
   const app = createNextApp({ dev: process.env.OD_WEB_PROD !== "1" && runtime.mode === "dev", dir: webRoot });
   await prepareNextApp(app, webRoot);
 

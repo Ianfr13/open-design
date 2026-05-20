@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { lstat, mkdir, open, readdir, rm, symlink, writeFile, type FileHandle } from "node:fs/promises";
+import { lstat, mkdir, open, readdir, type FileHandle } from "node:fs/promises";
 import path from "node:path";
 
 import {
@@ -214,8 +214,6 @@ export async function spawnWebRuntime(config: ToolDevConfig, options: CliOptions
 
   try {
     const webImplementation = await resolveWebImplementation(config);
-    await ensureWebModules(config);
-    await writeWebDevTsconfig(config);
     await logHandle.write(`\n[tools-dev] launching web at ${new Date().toISOString()}\n`);
     await logHandle.write(`[tools-dev] web implementation: ${formatWebSource(webImplementation.source)}\n`);
     await logHandle.write(`[tools-dev] proxying web API requests to daemon port ${daemonPort}\n`);
@@ -296,38 +294,6 @@ async function ensureDaemonCliBuild(config: ToolDevConfig, logHandle: FileHandle
     logFd: logHandle.fd,
     windowsVerbatimArguments: invocation.windowsVerbatimArguments,
   });
-}
-
-async function ensureWebModules(config: ToolDevConfig): Promise<void> {
-  const webRuntimeRoot = path.dirname(config.apps.web.nextDistDir);
-  const runtimeNodeModules = path.join(webRuntimeRoot, "node_modules");
-  const webNodeModules = path.join(config.workspaceRoot, "apps/web/node_modules");
-
-  await mkdir(webRuntimeRoot, { recursive: true });
-  const current = await lstat(runtimeNodeModules).catch(() => null);
-  if (current?.isSymbolicLink()) return;
-  if (current != null) await rm(runtimeNodeModules, { force: true, recursive: true });
-  await symlink(webNodeModules, runtimeNodeModules, "junction");
-}
-
-async function writeWebDevTsconfig(config: ToolDevConfig): Promise<void> {
-  const webRoot = path.join(config.workspaceRoot, "apps/web");
-  const tsconfigPath = config.apps.web.nextTsconfigPath;
-  const tsconfigDir = path.dirname(tsconfigPath);
-  const sourceTsconfig = path.join(webRoot, "tsconfig.json");
-  const relativeSourceTsconfig = (path.relative(tsconfigDir, sourceTsconfig) || "./tsconfig.json").replaceAll("\\", "/");
-
-  await mkdir(tsconfigDir, { recursive: true });
-  await writeFile(
-    tsconfigPath,
-    `${JSON.stringify({
-      extends: relativeSourceTsconfig,
-      compilerOptions: {
-        plugins: [{ name: "next" }],
-      },
-    }, null, 2)}\n`,
-    "utf8",
-  );
 }
 
 export async function spawnDesktopRuntime(config: ToolDevConfig, options: CliOptions): Promise<{ pid: number }> {
