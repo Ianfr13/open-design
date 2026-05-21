@@ -12,6 +12,7 @@ import PreciseLazyload from '../../_components/precise-lazyload.astro';
 import Topbar from '../../_components/topbar.astro';
 import { getCatalogCounts } from '../../_lib/catalog';
 import { getGithubRepoMeta } from '../../_lib/github';
+import { localizeContentTag } from '../../content-i18n';
 import {
   LANDING_LOCALES,
   alternateLinksForPath,
@@ -86,7 +87,7 @@ const factRows = [
   [ui.plugins.facts.pluginId, plugin.id],
   [ui.plugins.facts.version, plugin.version],
   [ui.plugins.facts.registry, plugin.registryName],
-  [ui.plugins.facts.mode, plugin.mode ?? plugin.surface ?? plugin.visualKind],
+  [ui.plugins.facts.mode, localizeContentTag(plugin.mode ?? plugin.surface ?? plugin.visualKind, locale) ?? plugin.mode ?? plugin.surface ?? plugin.visualKind],
   [ui.plugins.facts.license, plugin.license ?? ui.plugins.facts.notSpecified],
   plugin.publisher ? [ui.plugins.facts.publisher, plugin.publisher] : undefined,
 ].filter((item): item is [string, string] => Boolean(item));
@@ -279,10 +280,10 @@ const breadcrumbJsonLd = {
               <span class='label'>{ui.plugins.capabilities}</span>
               <h2>{ui.plugins.workflowSurface}</h2>
               <div class='plugin-tags plugin-tags--large'>
-                {plugin.tags.map((tag) => <span>{tag}</span>)}
-                {plugin.capabilities.map((capability) => <span>{capability}</span>)}
-                {plugin.mode && <span>{plugin.mode}</span>}
-                {plugin.taskKind && <span>{plugin.taskKind}</span>}
+                {plugin.tags.slice(0, 8).map((tag) => <span>{localizeContentTag(tag, locale) ?? tag}</span>)}
+                {plugin.capabilities.slice(0, 4).map((capability) => <span>{localizeContentTag(capability, locale) ?? capability}</span>)}
+                {plugin.mode && <span>{localizeContentTag(plugin.mode, locale) ?? plugin.mode}</span>}
+                {plugin.taskKind && <span>{localizeContentTag(plugin.taskKind, locale) ?? plugin.taskKind}</span>}
               </div>
               <div class='plugin-detail__commands compact'>
                 <div>

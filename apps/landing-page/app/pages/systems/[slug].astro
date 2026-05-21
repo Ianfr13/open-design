@@ -25,8 +25,8 @@ const system = all.find((item) => item.slug === routeSystem.slug) ?? routeSystem
 
 const title = ui.catalog.systems.detailTitle(system.name);
 const description = system.tagline
-  ? `${system.name} (${system.category}) — ${system.tagline}`
-  : ui.catalog.systems.detailFallbackDescription(system.name, system.category);
+  ? `${system.name} (${system.categoryLabel}) — ${system.tagline}`
+  : ui.catalog.systems.detailFallbackDescription(system.name, system.categoryLabel);
 
 const related = all
   .filter((s) => s.slug !== system.slug && s.category === system.category)
@@ -49,7 +49,7 @@ const jsonLd = [
     description,
     url: new URL(`/systems/${system.slug}/`, Astro.site).toString(),
     license: 'https://www.apache.org/licenses/LICENSE-2.0',
-    genre: system.category,
+    genre: system.categoryLabel,
   },
 ];
 ---
@@ -67,7 +67,7 @@ const jsonLd = [
     <header class="detail-head">
       <span class="label">
         {ui.catalog.systems.detailLabel}
-        <span class="ix">· {system.category}</span>
+        <span class="ix">· {system.categoryLabel}</span>
       </span>
       <h1 class="display">{system.name}<span class="dot">.</span></h1>
       {system.tagline && <p class="lead">{system.tagline}</p>}
@@ -104,7 +104,7 @@ const jsonLd = [
 
     {related.length > 0 && (
       <section class="detail-block">
-        <h2>{ui.catalog.systems.related(system.category)}</h2>
+        <h2>{ui.catalog.systems.related(system.categoryLabel)}</h2>
         <ul class="related-grid">
           {related.map((r) => (
             <li>

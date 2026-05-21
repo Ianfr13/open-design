@@ -2,6 +2,11 @@ import sitemap, { type SitemapItem } from '@astrojs/sitemap';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { defineConfig } from 'astro/config';
+import {
+  DEFAULT_LOCALE,
+  LANDING_LOCALES,
+  stripLocaleFromPath,
+} from './app/i18n';
 
 // Production canonical origin. Used by Astro for `Astro.site`, by
 // `@astrojs/sitemap` for every URL it emits, and by `index.astro` to
@@ -12,6 +17,9 @@ import { defineConfig } from 'astro/config';
 // builds (Cloudflare Pages preview deployments, local previews on a
 // different host) can stamp their own URL without forking the config.
 const site = process.env.OD_LANDING_SITE ?? 'https://open-design.ai';
+const sitemapLocales = Object.fromEntries(
+  LANDING_LOCALES.map((locale) => [locale.code, locale.htmlLang]),
+);
 const changefreq = {
   daily: 'daily' as SitemapItem['changefreq'],
   weekly: 'weekly' as SitemapItem['changefreq'],
@@ -39,13 +47,20 @@ export default defineConfig({
   trailingSlash: 'always',
   integrations: [
     sitemap({
+      i18n: {
+        defaultLocale: DEFAULT_LOCALE,
+        locales: sitemapLocales,
+      },
+      namespaces: {
+        xhtml: true,
+      },
       // `/og/` is a screenshot surface for the 1200x630 Open Graph
       // image — it already carries `<meta name="robots" content="noindex">`
       // and is `Disallow`-ed from `public/robots.txt`. Filtering it
       // out of the sitemap keeps the index strictly canonical pages.
       filter: (page) => !page.includes('/og/'),
       serialize(item: SitemapItem) {
-        const path = new URL(item.url).pathname;
+        const path = stripLocaleFromPath(new URL(item.url).pathname).pathname;
         if (path === '/') {
           item.priority = 1.0;
           item.changefreq = changefreq.daily;
@@ -74,7 +89,9 @@ export default defineConfig({
         } else if (
           path === '/skills/' ||
           path === '/systems/' ||
-          path === '/craft/'
+          path === '/templates/' ||
+          path === '/craft/' ||
+          path === '/plugins/'
         ) {
           item.priority = 0.7;
           item.changefreq = changefreq.weekly;

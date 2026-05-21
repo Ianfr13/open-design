@@ -12,6 +12,7 @@ import PreciseLazyload from '../../_components/precise-lazyload.astro';
 import Topbar from '../../_components/topbar.astro';
 import { getCatalogCounts } from '../../_lib/catalog';
 import { getGithubRepoMeta } from '../../_lib/github';
+import { localizeContentTag } from '../../content-i18n';
 import {
   LANDING_LOCALES,
   alternateLinksForPath,
@@ -91,7 +92,10 @@ const breadcrumbJsonLd = {
 };
 
 const displayKind = (plugin: (typeof plugins)[number]) =>
-  plugin.mode ?? plugin.surface ?? plugin.visualKind;
+  localizeContentTag(plugin.mode ?? plugin.surface ?? plugin.visualKind, locale) ??
+  plugin.mode ??
+  plugin.surface ??
+  plugin.visualKind;
 
 const primaryMeta = (plugin: (typeof plugins)[number]) =>
   [displayKind(plugin), plugin.preview?.label]

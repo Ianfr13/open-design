@@ -114,25 +114,25 @@ const jsonLd = [
       {skill.mode && (
         <Fragment>
           <dt>{ui.catalog.skills.mode}</dt>
-          <dd>{skill.mode}</dd>
+          <dd>{skill.modeLabel ?? skill.mode}</dd>
         </Fragment>
       )}
       {skill.scenario && (
         <Fragment>
           <dt>{ui.catalog.skills.scenario}</dt>
-          <dd>{skill.scenario}</dd>
+          <dd>{skill.scenarioLabel ?? skill.scenario}</dd>
         </Fragment>
       )}
       {skill.platform && (
         <Fragment>
           <dt>{ui.catalog.skills.platform}</dt>
-          <dd>{skill.platform}</dd>
+          <dd>{skill.platformLabel ?? skill.platform}</dd>
         </Fragment>
       )}
       {skill.category && (
         <Fragment>
           <dt>{ui.catalog.systems.category}</dt>
-          <dd>{skill.category}</dd>
+          <dd>{skill.categoryLabel ?? skill.category}</dd>
         </Fragment>
       )}
     </dl>
@@ -166,8 +166,8 @@ const jsonLd = [
                 <span class="related-name">{r.name}</span>
                 <span class="related-desc">{r.description}</span>
                 <span class="related-meta">
-                  {r.mode && <span class="meta-tag">{r.mode}</span>}
-                  {r.scenario && <span class="meta-tag muted">{r.scenario}</span>}
+                  {r.modeLabel && <span class="meta-tag">{r.modeLabel}</span>}
+                  {r.scenarioLabel && <span class="meta-tag muted">{r.scenarioLabel}</span>}
                 </span>
               </a>
             </li>

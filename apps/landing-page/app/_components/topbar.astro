@@ -30,7 +30,7 @@ const currentCode = locale.toUpperCase();
 <div class='topbar' data-od-id='topbar'>
   <div class='container topbar-inner'>
     <span>
-      <b>OD / 2026</b>{NBSP}·{NBSP}Vol. 01 / Issue Nº 26
+      <b>OD / 2026</b>{NBSP}·{NBSP}{copy.issue ?? 'Vol. 01 / Issue Nº 26'}
     </span>
     <span class='mid'>
       <span>
@@ -45,7 +45,9 @@ const currentCode = locale.toUpperCase();
       </a>
       <details class='locale-switch' data-locale-switch>
         <summary class='locale-trigger' aria-label={copy.languageSwitcherLabel}>
-          <span class='locale-trigger-prefix' aria-hidden='true'>Lang</span>
+          <span class='locale-trigger-prefix' aria-hidden='true'>
+            {copy.languageSwitcherPrefix ?? 'Lang'}
+          </span>
           <span class='locale-trigger-sep' aria-hidden='true'>·</span>
           <span class='locale-trigger-code'>{currentCode}</span>
           <svg

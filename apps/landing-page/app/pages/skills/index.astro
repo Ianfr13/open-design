@@ -22,10 +22,10 @@ const ui = getLandingUiCopy(locale);
 const href = (path: string) => localizedHref(path, locale);
 const skills = await getSkillRecords(locale);
 
-const modeTags = await getSkillModeIndex();
-const scenarioTags = await getSkillScenarioIndex();
+const modeTags = await getSkillModeIndex(locale);
+const scenarioTags = await getSkillScenarioIndex(locale);
 const platformTally = tally(
-  skills.map((s) => s.platform).filter((p): p is string => Boolean(p)),
+  skills.map((s) => s.platformLabel).filter((p): p is string => Boolean(p)),
 );
 
 const featured = skills.filter((s) => typeof s.featured === 'number').slice(0, 6);
@@ -117,7 +117,7 @@ const jsonLd = {
               <span class="featured-num">Nº {String(s.featured).padStart(2, '0')}</span>
               <span class="featured-name">{s.name}</span>
               <p>{s.description}</p>
-              {s.mode && <span class="meta-tag">{s.mode}</span>}
+              {s.modeLabel && <span class="meta-tag">{s.modeLabel}</span>}
             </a>
           </li>
         ))}

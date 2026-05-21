@@ -12,7 +12,7 @@ const ui = getLandingUiCopy(locale);
 const href = (path: string) => localizedHref(path, locale);
 const systems = await getSystemRecords(locale);
 
-const categoryTags = await getSystemCategoryIndex();
+const categoryTags = await getSystemCategoryIndex(locale);
 
 const title = ui.catalog.systems.title(systems.length);
 const description = ui.catalog.systems.description;

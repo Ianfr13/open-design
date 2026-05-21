@@ -7,6 +7,10 @@ import {
   getLocalizedString,
   type LandingLocaleCode,
 } from './i18n';
+import {
+  explicitLocalizedString,
+  localizePluginText,
+} from './content-i18n';
 
 type TrustTier = 'official' | 'trusted' | 'restricted';
 
@@ -220,7 +224,10 @@ const useCaseQuery = (
   locale: LandingLocaleCode = DEFAULT_LOCALE,
 ): string | undefined => {
   const record = asRecord(value);
-  return localizedString(record?.query, locale);
+  return explicitLocalizedString(
+    record?.query as Parameters<typeof explicitLocalizedString>[0],
+    locale,
+  );
 };
 
 const localPluginPath = (pluginDir: string, entry: string): string | undefined => {
@@ -377,11 +384,6 @@ const entryFromMarketplace = (
     return undefined;
   }
 
-  const trust = registryTrust;
-  const title = localizedString(rawEntry.title, locale) ?? titleize(id.split('/').at(-1) ?? id);
-  const description =
-    localizedString(rawEntry.description, locale) ??
-    'Agent-native Open Design workflow packaged as a portable plugin.';
   const tags = asStringArray(rawEntry.tags);
   const capabilities = asStringArray(rawEntry.capabilitiesSummary);
   const version = asString(rawEntry.version) ?? '0.1.0';
@@ -391,6 +393,30 @@ const entryFromMarketplace = (
   const taskKind = asString(rawEntry.taskKind);
   const surface = undefined;
   const preview = previewFrom(undefined, id, rawEntry.preview, locale);
+  const trust = registryTrust;
+  const rawTitle =
+    explicitLocalizedString(
+      rawEntry.title as Parameters<typeof explicitLocalizedString>[0],
+      locale,
+    ) ?? titleize(id.split('/').at(-1) ?? id);
+  const rawDescription =
+    explicitLocalizedString(
+      rawEntry.description as Parameters<typeof explicitLocalizedString>[0],
+      locale,
+    ) ?? 'Agent-native Open Design workflow packaged as a portable plugin.';
+  const localized = localizePluginText({
+    id,
+    title: rawTitle,
+    description: rawDescription,
+    locale,
+    mode,
+    taskKind,
+    surface,
+    visualKind: preview?.type,
+    labels: [...tags, ...capabilities],
+  });
+  const title = localized.title;
+  const description = localized.description;
 
   return {
     id,
@@ -512,16 +538,35 @@ const officialEntryFromManifest = (
   const od = asRecord(manifest?.od) as RawOdMetadata | undefined;
   const capabilities = asStringArray(od?.capabilities);
   const tags = asStringArray(manifest?.tags);
-  const title = localizedString(manifest?.title, locale) ?? titleize(pluginName);
-  const description =
-    localizedString(manifest?.description, locale) ??
-    'First-party Open Design workflow packaged as a portable plugin.';
   const detailHref = detailHrefFor(id);
   const mode = asString(od?.mode);
   const taskKind = asString(od?.taskKind);
   const surface = asString(od?.surface);
   const preview = previewFrom(pluginDir, id, od?.preview, locale);
-  const exampleQuery = useCaseQuery(od?.useCase, locale);
+  const rawTitle =
+    explicitLocalizedString(
+      manifest?.title as Parameters<typeof explicitLocalizedString>[0],
+      locale,
+    ) ?? titleize(pluginName);
+  const rawDescription =
+    explicitLocalizedString(
+      manifest?.description as Parameters<typeof explicitLocalizedString>[0],
+      locale,
+    ) ?? 'First-party Open Design workflow packaged as a portable plugin.';
+  const localized = localizePluginText({
+    id,
+    title: rawTitle,
+    description: rawDescription,
+    locale,
+    mode,
+    taskKind,
+    surface,
+    visualKind: preview?.type,
+    labels: [...tags, ...capabilities],
+  });
+  const title = localized.title;
+  const description = localized.description;
+  const exampleQuery = useCaseQuery(od?.useCase, locale) ?? localized.exampleQuery;
 
   return {
     id,

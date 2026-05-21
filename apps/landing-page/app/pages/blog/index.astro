@@ -25,8 +25,11 @@ import Topbar from '../../_components/topbar.astro';
 import { getCatalogCounts } from '../../_lib/catalog';
 import { getGithubRepoMeta } from '../../_lib/github';
 import {
+  explicitLocalizedString,
+  localizeBlogPostText,
+} from '../../content-i18n';
+import {
   getLandingUiCopy,
-  getLocalizedString,
   getLocaleDefinition,
   localeFromPath,
   localizedHref,
@@ -104,11 +107,17 @@ const localizedPostField = (
   const i18n = (post.data as typeof post.data & {
     i18n?: Record<string, Partial<Record<typeof field, string>>>;
   }).i18n;
-  return getLocalizedString(
-    i18n?.[locale]?.[field] ?? post.data[field],
+  const fallbackPost = localizeBlogPostText({
+    id: post.id,
+    title: post.data.title,
+    summary: post.data.summary,
+    category: post.data.category,
     locale,
-    post.data[field],
-  );
+  });
+  return explicitLocalizedString(
+    i18n?.[locale]?.[field] as Parameters<typeof explicitLocalizedString>[0],
+    locale,
+  ) ?? fallbackPost[field];
 };
 
 ---
