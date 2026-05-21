@@ -24,7 +24,7 @@ od:
     entry: index.html
   design_system:
     requires: false
-  example_prompt: "Generate today's Open Orbit GitHub briefing. GitHub is my only connected connector — pull yesterday's PRs, review requests, issues, CI runs, and merges and render them as a GitHub Notifications + PR-diff page."
+  example_prompt: "生成今天的 Open Orbit GitHub 简报。GitHub 是我唯一已连接的数据源——请拉取昨天的 PR、审查请求、Issue、CI 运行和合并记录，并将它们渲染为一个 GitHub Notifications + PR diff 风格的页面。"
 ---
 
 # Orbit · GitHub Briefing
@@ -44,6 +44,14 @@ job is to **reproduce it**, not reinterpret it.
 - Same event groups in the same order, with the same row count
 - Same diff-preview placement, same CI-fail block, same attention block
 - Same `<script>` block at the end (filter / hover / link injection)
+
+**Localization exception.** When Orbit specifies a non-English product
+language, keep that exact structure, order, DOM, class names, tokens,
+and counts, but translate the **visible user-facing copy** (headings,
+nav labels, filter labels, helper text, takeaways, recommendations,
+footer copy) into the requested language unless a quoted source item,
+repo name, branch name, code snippet, or identifier should stay in its
+original form.
 
 **Step 3.** You may refresh mock values (PR numbers, titles, times,
 CI commit messages) so they read as "today", but you must **not**
