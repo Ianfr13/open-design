@@ -501,7 +501,8 @@ function annotateMissingOdIds(doc: string): string {
     const selector = [
       'section', 'article', 'header', 'footer', 'nav', 'main', 'aside',
       'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-      'button', 'a', '[id]',
+      'p', 'li', 'blockquote', 'figcaption', 'label',
+      'button', 'a', 'img', '[id]',
       'body > div[class]', 'body > div[id]',
       'section > div[class]', 'section > div[id]',
       'article > div[class]', 'article > div[id]',

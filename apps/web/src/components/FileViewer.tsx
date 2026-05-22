@@ -4639,6 +4639,9 @@ function HtmlViewer({
         if (!snapshot.elementId) return;
         setHoveredCommentTarget(snapshot);
         setLiveCommentTargets((current) => new Map(current).set(snapshot.elementId, snapshot));
+        if (commentPortalHost && boardMode && boardTool === 'inspect') {
+          setActiveCommentTarget((current) => current ?? snapshot);
+        }
         return;
       }
       if (data.type === 'od:comment-target') {
@@ -4697,7 +4700,7 @@ function HtmlViewer({
     }
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [boardMode, drawClickSelectionMode, file.name, isOurPreviewIframeSource, previewComments]);
+  }, [boardMode, boardTool, commentPortalHost, drawClickSelectionMode, file.name, isOurPreviewIframeSource, previewComments]);
 
   useEffect(() => {
     if (!manualEditMode) {
@@ -6619,7 +6622,7 @@ function HtmlViewer({
               </div>
             ) : null}
             {!commentPortalHost ? commentComposer : null}
-            {boardMode && !activeCommentTarget && hoveredCommentTarget ? (
+            {boardMode && hoveredCommentTarget && (!activeCommentTarget || commentPortalHost) ? (
               <AnnotationHoverPopover target={hoveredCommentTarget} scale={overlayPreviewScale} />
             ) : null}
             {commentPortalHost && commentSidePanel
