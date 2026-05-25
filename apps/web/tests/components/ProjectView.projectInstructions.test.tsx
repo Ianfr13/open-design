@@ -91,13 +91,16 @@ vi.mock('../../src/state/projects', async () => {
 vi.mock('../../src/components/AppChromeHeader', () => ({
   AppChromeHeader: ({
     children,
+    fileActionsBefore,
     actions,
   }: {
     children: ReactNode;
+    fileActionsBefore?: ReactNode;
     actions?: ReactNode;
   }) => (
     <header>
       {children}
+      {fileActionsBefore}
       {actions}
     </header>
   ),
@@ -183,7 +186,6 @@ const SAVED = 'Always use tabs, never spaces.';
 
 async function openProjectInstructionsFromSettings() {
   fireEvent.click(await screen.findByTestId('project-settings-trigger'));
-  fireEvent.click(await screen.findByTestId('project-settings-instructions'));
 }
 
 describe('ProjectView – saved Project instructions surface (#1822)', () => {
