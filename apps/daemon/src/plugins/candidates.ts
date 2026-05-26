@@ -160,11 +160,23 @@ function isPluginLikeRepoRef(ref: string): boolean {
   );
 }
 
+function githubRepoTitle(ref: string): string {
+  try {
+    const url = new URL(ref);
+    if (url.hostname === 'github.com') {
+      const parts = url.pathname.split('/').filter(Boolean);
+      if (parts.length >= 2) return parts.slice(0, 2).join('/');
+    }
+  } catch {
+    const parts = ref.replace(/^github:/, '').split(/[/?#]/)[0]?.split('/').filter(Boolean) ?? [];
+    if (parts.length >= 2) return parts.slice(0, 2).join('/');
+  }
+  return 'GitHub plugin source';
+}
+
 function repoCandidate(ref: string): SkillPluginCandidateInput | null {
   if (!isPluginLikeRepoRef(ref)) return null;
-  const refPath = ref.replace(/^github:/, '').split(/[/?#]/)[0] ?? '';
-  const parts = refPath.split('/').filter(Boolean);
-  const repoTitle = parts.length >= 2 ? parts.slice(0, 2).join('/') : 'GitHub plugin source';
+  const repoTitle = githubRepoTitle(ref);
   return {
     sourceKind: 'repo-link',
     sourceRef: ref,

@@ -100,8 +100,13 @@ describe('skill plugin candidate detection', () => {
     ]);
     expect(candidates.find((candidate) => candidate.sourceRef === 'docs/research-agent.md')?.title)
       .toBe('Research Agent');
-    expect(candidates.find((candidate) => candidate.sourceKind === 'repo-link')?.draftInput.artifactKind)
-      .toBe('repo-plugin');
+    expect(candidates.find((candidate) => candidate.sourceKind === 'repo-link')).toMatchObject({
+      title: 'nexu-io/open-design',
+      draftInput: {
+        artifactKind: 'repo-plugin',
+        title: 'nexu-io/open-design',
+      },
+    });
   });
 
   it('deduplicates GitHub shorthand and URL spellings for the same repository artifact', async () => {
