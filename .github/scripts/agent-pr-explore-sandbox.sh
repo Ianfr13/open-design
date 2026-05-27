@@ -933,7 +933,21 @@ cat > "$artifacts/manifest.json" <<JSON
 }
 JSON
 
-gh pr diff "$PR_NUMBER" --repo "$BASE_REPO" --name-only > "$changed_files_file"
+# gh hits api.github.com under the hood and a single transient blip there
+# (timeout / 5xx) would otherwise abort the whole run before exploration. Retry
+# the read-only PR-context calls a few times with backoff. gh writes nothing to
+# stdout on a failed API call, so retrying is safe even mid-pipe.
+gh_retry() {
+  local attempt
+  for attempt in 1 2 3 4; do
+    if "$@"; then return 0; fi
+    [ "$attempt" = 4 ] && return 1
+    echo "::warning::gh call failed (attempt ${attempt}/4): $* — retrying" >&2
+    sleep $((attempt * 4))
+  done
+}
+
+gh_retry gh pr diff "$PR_NUMBER" --repo "$BASE_REPO" --name-only > "$changed_files_file"
 
 while IFS= read -r changed_path; do
   if is_app_surface_path "$changed_path"; then
@@ -960,13 +974,13 @@ echo "$deterministic_verifier" > "$artifacts/deterministic-verifier.txt"
   echo "Head SHA: $HEAD_SHA"
   echo
   echo "## PR body"
-  gh pr view "$PR_NUMBER" --repo "$BASE_REPO" --json title,body --jq '"# " + .title + "\n\n" + (.body // "")'
+  gh_retry gh pr view "$PR_NUMBER" --repo "$BASE_REPO" --json title,body --jq '"# " + .title + "\n\n" + (.body // "")'
   echo
   echo "## Changed files"
   cat "$changed_files_file"
   echo
   echo "## Text patches"
-  gh api --paginate "repos/${BASE_REPO}/pulls/${PR_NUMBER}/files" --jq \
+  gh_retry gh api --paginate "repos/${BASE_REPO}/pulls/${PR_NUMBER}/files" --jq \
     '.[] | "### " + .filename + " (" + .status + ", +" + (.additions | tostring) + "/-" + (.deletions | tostring) + ")\n```diff\n" + (if .patch == null then "[binary or generated patch omitted]" else (.patch[0:'"$file_patch_max_chars"'] + (if (.patch | length) > '"$file_patch_max_chars"' then "\n[patch truncated]" else "" end)) end) + "\n```\n"'
 } > "$context_file"
 head -c "$context_max_bytes" "$context_file" > "$trimmed_context_file"
