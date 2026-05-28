@@ -1990,6 +1990,14 @@ function shouldSkipPluginContextEntry(name) {
   return PLUGIN_CONTEXT_SKIP_DIRS.has(name) || PLUGIN_CONTEXT_SKIP_FILES.has(name);
 }
 
+export function selectPromptImagePaths(
+  agentId,
+  safeImages,
+  amrStagedImages,
+) {
+  return agentId === 'amr' ? amrStagedImages : safeImages;
+}
+
 async function ensureGhReady() {
   const version = await execGhBuffered(['--version'], { timeout: 10_000 });
   if (!version.ok) {
@@ -10401,7 +10409,7 @@ export async function startServer({
     });
     const amrStagedImages =
       def.id === 'amr'
-        ? await stageAmrImagePaths(cwd ?? PROJECT_ROOT, safeImages)
+        ? await stageAmrImagePaths(cwd ?? PROJECT_ROOT, safeImages, UPLOAD_DIR)
         : safeImages;
 
     // Project-scoped attachments: project-relative paths inside cwd. Each
@@ -10665,6 +10673,11 @@ export async function startServer({
     // instructions and request) — see server.ts:9920 composer notes.
     const ECHO_GUARD =
       '\n\n(Do not quote, restate, or echo the # Instructions block above in your reply. Begin your response with the answer to the # User request below.)';
+    const promptImagePaths = selectPromptImagePaths(
+      def.id,
+      safeImages,
+      amrStagedImages,
+    );
     const composed = [
       instructionPrompt
         ? `# Instructions (read first)\n\n${instructionPrompt}${cwdHint}${linkedDirsHint}${ECHO_GUARD}\n\n---\n`
@@ -10674,8 +10687,8 @@ export async function startServer({
             ? `# Instructions${linkedDirsHint}${ECHO_GUARD}\n\n---\n`
             : '',
       `# User request\n\n${userRequestPrompt}${attachmentHint}${commentHint}`,
-      safeImages.length
-        ? `\n\n${safeImages.map((p) => `@${p}`).join(' ')}`
+      promptImagePaths.length
+        ? `\n\n${promptImagePaths.map((p) => `@${p}`).join(' ')}`
         : '',
     ].join('');
     // Per-agent model + reasoning the user picked in the model menu.

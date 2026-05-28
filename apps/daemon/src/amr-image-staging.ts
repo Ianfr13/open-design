@@ -40,9 +40,13 @@ async function pruneStagedAttachments(stagingDir: string): Promise<void> {
 export async function stageAmrImagePaths(
   cwd: string | null | undefined,
   imagePaths: string[],
+  uploadRoot?: string | null,
 ): Promise<string[]> {
   if (!cwd || !Array.isArray(imagePaths) || imagePaths.length === 0) return [];
   const root = path.resolve(cwd);
+  const uploadRootReal = uploadRoot
+    ? await fs.promises.realpath(uploadRoot).catch(() => null)
+    : null;
   const stagingDir = path.join(root, STAGING_DIRNAME);
   await fs.promises.mkdir(stagingDir, { recursive: true });
   await pruneStagedAttachments(stagingDir);
@@ -52,15 +56,17 @@ export async function stageAmrImagePaths(
     if (typeof inputPath !== 'string' || inputPath.trim().length === 0) continue;
     try {
       const resolved = path.resolve(inputPath);
-      const stat = await fs.promises.stat(resolved);
+      const real = await fs.promises.realpath(resolved);
+      if (uploadRootReal && !isWithinRoot(uploadRootReal, real)) continue;
+      const stat = await fs.promises.stat(real);
       if (!stat.isFile()) continue;
-      if (isWithinRoot(root, resolved)) {
-        staged.push(resolved);
+      if (isWithinRoot(root, real)) {
+        staged.push(real);
         continue;
       }
-      const basename = path.basename(resolved);
+      const basename = path.basename(real);
       const destination = path.join(stagingDir, `${randomUUID()}-${basename}`);
-      await fs.promises.copyFile(resolved, destination);
+      await fs.promises.copyFile(real, destination);
       staged.push(destination);
     } catch {
       // Ignore malformed or missing files; attachments are advisory input.
