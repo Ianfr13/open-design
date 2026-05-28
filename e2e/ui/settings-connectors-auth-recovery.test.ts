@@ -6,6 +6,19 @@ const OPEN_SETTINGS_LABEL = /Open settings|打开设置|開啟設定/i;
 
 test.describe.configure({ timeout: 30_000 });
 
+type ConnectorFixture = {
+  id: string;
+  name: string;
+  provider: 'composio';
+  category: string;
+  description: string;
+  status: 'available' | 'connected' | 'error';
+  accountLabel?: string;
+  lastError?: string;
+  auth: { provider: 'composio'; configured: true };
+  tools: readonly unknown[];
+};
+
 const CONNECTORS = [
   {
     id: 'github',
@@ -28,7 +41,7 @@ const CONNECTORS = [
     auth: { provider: 'composio', configured: true },
     tools: [],
   },
-] as const;
+] as const satisfies readonly ConnectorFixture[];
 
 function baseConfig(): Record<string, unknown> {
   return {
@@ -124,7 +137,7 @@ async function openConnectorsSettings(
     pendingAuthorization = null,
     blockPopup = false,
   }: {
-    connectors?: typeof CONNECTORS;
+    connectors?: readonly ConnectorFixture[];
     onPrepare?: () => Record<string, unknown>;
     onConnect?: () => { status: number; body: Record<string, unknown> };
     onCancel?: () => { status: number; body: Record<string, unknown> };

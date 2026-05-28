@@ -14,6 +14,11 @@ type UserSystem = {
   updatedAt: string;
 };
 
+function requireSystem(system: UserSystem | undefined): UserSystem {
+  if (!system) throw new Error('design system fixture missing');
+  return system;
+}
+
 function baseConfig(): Record<string, unknown> {
   return {
     mode: 'daemon',
@@ -148,13 +153,14 @@ async function routeDesignSystemsManager(
       if (system && body.status) {
         system.status = body.status;
       }
+      const responseSystem = requireSystem(system ?? systems[0]);
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
           designSystem: {
-            ...(system ?? systems[0]),
-            body: `# ${(system ?? systems[0]).title}`,
+            ...responseSystem,
+            body: `# ${responseSystem.title}`,
           },
         }),
       });
@@ -173,7 +179,7 @@ async function routeDesignSystemsManager(
     }
     if (/^\/api\/design-systems\/[^/]+$/.test(path) && method === 'GET') {
       const id = decodeURIComponent(path.split('/').at(-1) ?? '');
-      const system = systems.find((entry) => entry.id === id) ?? systems[0];
+      const system = requireSystem(systems.find((entry) => entry.id === id) ?? systems[0]);
       await route.fulfill({
         status: 200,
         contentType: 'application/json',

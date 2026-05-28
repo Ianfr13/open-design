@@ -2142,7 +2142,7 @@ test('sending another prompt while a run is active queues it and starts it after
   await routeMockAgents(page);
 
   let runCount = 0;
-  let releaseFirstRun: (() => void) | null = null;
+  let releaseFirstRun!: () => void;
   const firstRunReleased = new Promise<void>((resolve) => {
     releaseFirstRun = resolve;
   });
@@ -2230,7 +2230,6 @@ test('sending another prompt while a run is active queues it and starts it after
   await expect(queuedStrip).toContainText('second queued prompt');
   expect(runCount).toBe(1);
 
-  if (!releaseFirstRun) throw new Error('first run release handle missing');
   releaseFirstRun();
 
   await expect.poll(() => runCount).toBe(2);
