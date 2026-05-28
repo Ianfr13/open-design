@@ -452,14 +452,15 @@ test('qwen args check promptViaStdin, base args, model args and exclude `-` sent
   assert.equal(withModel.includes('-'), false);
 });
 
-// `agy` v1.0.3 takes the prompt as the value of `-p` (the flag is named
-test('antigravity pipes prompt via stdin with -p - sentinel', () => {
+// `agy` exposes a `chat` subcommand (`agy chat --help` documents
+// `antigravity chat [options] [prompt]`) with `-` as the stdin sentinel.
+test('antigravity pipes prompt via stdin via chat subcommand', () => {
   assert.equal(antigravity.bin, 'agy');
   assert.equal(antigravity.streamFormat, 'plain');
   assert.equal(antigravity.promptViaStdin, true);
 
   const args = antigravity.buildArgs('write hello world', [], [], {}, {});
-  assert.deepEqual(args, ['-p', '-']);
+  assert.deepEqual(args, ['chat', '-']);
 
   // No `--model` flag exists upstream, so buildArgs argv must stay the
   // same regardless of which label the user picks.
@@ -467,7 +468,7 @@ test('antigravity pipes prompt via stdin with -p - sentinel', () => {
     model: 'Gemini 3.1 Pro (High)',
   }, {});
   assert.equal(withModel.includes('--model'), false);
-  assert.deepEqual(withModel, ['-p', '-']);
+  assert.deepEqual(withModel, ['chat', '-']);
 
   // Argv must NOT carry `-c` even on follow-up turns. We tested resume
   // mode and found agy's `-c` activates an internal agentic loop (tool
@@ -480,13 +481,13 @@ test('antigravity pipes prompt via stdin with -p - sentinel', () => {
   const followUp = antigravity.buildArgs('next message', [], [], {}, {
     hasPriorAssistantTurn: true,
   });
-  assert.deepEqual(followUp, ['-p', '-']);
+  assert.deepEqual(followUp, ['chat', '-']);
   assert.equal(followUp.includes('-c'), false);
 
   const firstTurn = antigravity.buildArgs('first', [], [], {}, {
     hasPriorAssistantTurn: false,
   });
-  assert.deepEqual(firstTurn, ['-p', '-']);
+  assert.deepEqual(firstTurn, ['chat', '-']);
   assert.equal(antigravity.resumesSessionViaCli, undefined);
 
   assert.equal(antigravity.maxPromptArgBytes, undefined);

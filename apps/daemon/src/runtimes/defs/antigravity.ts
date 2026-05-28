@@ -111,7 +111,7 @@ export const antigravityAgentDef = {
     if (options.model && options.model !== DEFAULT_MODEL_OPTION.id) {
       writeAntigravityModelSelection(options.model);
     }
-    const args: string[] = [];
+    const args: string[] = ['chat'];
     // Always opt into `--log-file` when the daemon supplied a path so
     // it can post-exit grep for the actual upstream failure shape (auth
     // missing vs quota reached vs upstream error) — without it the
@@ -121,7 +121,7 @@ export const antigravityAgentDef = {
     if (runtimeContext.agentLogFilePath) {
       args.push('--log-file', runtimeContext.agentLogFilePath);
     }
-    args.push('-p', '-');
+    args.push('-');
     return args;
   },
   promptViaStdin: true,
