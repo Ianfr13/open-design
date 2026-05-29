@@ -21,8 +21,6 @@ const href = (path: string) => localizedHref(path, locale);
 const REPO = 'https://github.com/nexu-io/open-design';
 const DISCORD = 'https://discord.gg/9ptkbbqRu';
 const X_TWITTER = 'https://x.com/nexudotio';
-const HTML_ANYTHING = 'https://open-design.ai/html-anything/';
-const NEXU_IO = 'https://nexu.io';
 ---
 
 <footer class='sub-footer' data-od-id='sub-footer'>
@@ -43,7 +41,7 @@ const NEXU_IO = 'https://nexu.io';
         <h5>{ui.footer.products}</h5>
         <ul>
           <li><a href={href('/')}>Open Design</a></li>
-          <li><a href={HTML_ANYTHING}>{ui.footer.htmlAnything}</a></li>
+          <li><a href={href('/html-anything/')}>{ui.footer.htmlAnything}</a></li>
         </ul>
       </div>
       <div class='sub-footer-col'>
