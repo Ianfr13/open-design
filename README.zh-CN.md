@@ -49,31 +49,40 @@ Open Design 是这样一种产物：Anthropic 随 Claude Design 推出的 **Agen
 
 ---
 
-## 产品一览
+## 产品速览
 
-一张图看懂 Open Design 长什么样、能做什么。从这里进入：**Home** 总览、**Automation** 编排任务、**Design System** 沉淀品牌契约、**Plugin** 扩展能力；进入任一项目的 **Studio**，即可流式产出原型、实时工件、HyperFrame、演示文稿与图片。
+一张图看懂 Open Design 长什么样、能做什么。从 **Home** 发起创作，用 **Automation** 编排重复流程，在 **Design System** 沉淀品牌契约，靠 **Plugin** 与 **集成** 扩展能力；进入任一项目的 **Studio**，同一套设计系统即可流式产出原型、实时工件、HyperFrame、演示文稿与图片。
 
 ### 核心页面
 
 <table>
 <tr>
-<td width="50%" valign="top">
+<td valign="top">
 <img src="docs/screenshots/product/home.png" alt="Home 页" /><br/>
-<sub><b>Home</b>——总览入口。选择技能、设计系统，输入需求，一处发起所有创作。</sub>
-</td>
-<td width="50%" valign="top">
-<img src="docs/screenshots/product/automation.png" alt="Automation 页" /><br/>
-<sub><b>Automation</b>——把重复的设计流程编排成可复用的自动化任务。</sub>
+<sub><b>Home</b>——总览入口。选择技能与设计系统，输入需求，一处发起所有创作。</sub>
 </td>
 </tr>
+</table>
+
+<table>
 <tr>
+<td width="50%" valign="top">
+<img src="docs/screenshots/product/automation.png" alt="Automation 页" /><br/>
+<sub><b>Automation</b>——把重复的设计流程编排成可复用、可定时的自动化任务。</sub>
+</td>
 <td width="50%" valign="top">
 <img src="docs/screenshots/product/design-system.png" alt="Design System 页" /><br/>
 <sub><b>Design System</b>——把团队的 <code>DESIGN.md</code> 沉淀为品牌契约，所有产物据此塑形。</sub>
 </td>
+</tr>
+<tr>
 <td width="50%" valign="top">
 <img src="docs/screenshots/product/plugin.png" alt="Plugin 页" /><br/>
-<sub><b>Plugin</b>——400+ 开箱即用插件，按需扩展生成能力。</sub>
+<sub><b>Plugin</b>——浏览、安装并分发工作流插件，按需扩展生成能力。</sub>
+</td>
+<td width="50%" valign="top">
+<img src="docs/screenshots/product/integrations.png" alt="Integrations 页" /><br/>
+<sub><b>集成</b>——接入外部系统与 MCP 工具，把 Open Design 用到任意 IDE、脚本与自动化中。</sub>
 </td>
 </tr>
 </table>
@@ -84,29 +93,14 @@ Open Design 是这样一种产物：Anthropic 随 Claude Design 推出的 **Agen
 
 <table>
 <tr>
-<td width="33%" valign="top">
-<img src="docs/screenshots/product/studio-prototype.png" alt="原型" /><br/>
-<sub><b>原型</b>——Web · 桌面 · 移动端单页 HTML 工件。</sub>
+<td width="50%" valign="top">
+<img src="docs/screenshots/product/studio-ppt.png" alt="演示文稿" /><br/>
+<sub><b>演示文稿</b>——可逐页预览、键盘翻页、导出 PPTX / PDF 的 pitch deck。</sub>
 </td>
-<td width="33%" valign="top">
-<img src="docs/screenshots/product/studio-live.png" alt="实时制品" /><br/>
-<sub><b>实时制品</b>——可调参、原地可编辑的实时仪表盘与工件。</sub>
-</td>
-<td width="33%" valign="top">
-<img src="docs/screenshots/product/studio-hyperframe.png" alt="HyperFrame" /><br/>
-<sub><b>HyperFrame</b>——动态图形与动效帧。</sub>
-</td>
-</tr>
-<tr>
-<td width="33%" valign="top">
-<img src="docs/screenshots/product/studio-ppt.png" alt="PPT" /><br/>
-<sub><b>PPT</b>——可导出 PPTX 的演示文稿。</sub>
-</td>
-<td width="33%" valign="top">
+<td width="50%" valign="top">
 <img src="docs/screenshots/product/studio-image.png" alt="图片" /><br/>
-<sub><b>图片</b>——品牌级图片与视觉素材。</sub>
+<sub><b>图片</b>——品牌级图片与视觉素材，支持高分辨率生成与下载。</sub>
 </td>
-<td width="33%" valign="top"></td>
 </tr>
 </table>
 
