@@ -11,7 +11,10 @@
   <a href="https://open-design.ai/"><img alt="download" src="https://img.shields.io/badge/download-open--design.ai-ff6b35?style=flat" /></a>
   <a href="https://github.com/nexu-io/open-design/releases"><img alt="release" src="https://img.shields.io/github/v/release/nexu-io/open-design?style=flat&color=blueviolet&label=release&include_prereleases&display_name=tag" /></a>
   <a href="LICENSE"><img alt="license" src="https://img.shields.io/badge/license-Apache%202.0-blue.svg?style=flat" /></a>
+  <a href="https://discord.gg/qhbcCH8Am4"><img alt="discord" src="https://img.shields.io/badge/discord-join-5865F2?style=flat&logo=discord&logoColor=white" /></a>
+  <!-- 动态在线人数版本（shields.io 经 GitHub camo 代理偶发限流裂开，作为备用）:
   <a href="https://discord.gg/qhbcCH8Am4"><img alt="discord" src="https://img.shields.io/discord/1479002485040480266?style=flat&logo=discord&logoColor=white&label=discord&color=5865F2&cacheSeconds=3600" /></a>
+  -->
   <a href="https://x.com/nexudotio"><img alt="follow" src="https://img.shields.io/badge/follow-%40nexudotio-1DA1F2?style=flat&logo=x&logoColor=white" /></a>
   <a href="QUICKSTART.md"><img alt="quickstart" src="https://img.shields.io/badge/quickstart-3%20commands-green?style=flat" /></a>
 </p>
