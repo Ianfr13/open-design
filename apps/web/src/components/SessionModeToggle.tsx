@@ -128,7 +128,8 @@ export function SessionModeToggle({ mode, onChange, disabled = false }: Props) {
   const active = modes.find((item) => item.mode === mode) ?? modes[1]!;
   const preview = modes.find((item) => item.mode === (previewMode ?? mode)) ?? active;
   const disabledState = disabled || !onChange;
-  const showHoverCard = cardVisible && !open && !disabledState;
+  const showCard = cardVisible && !disabledState;
+  const showStandaloneCard = showCard && !open;
 
   const closeMenu = useCallback(() => {
     setOpen(false);
@@ -176,7 +177,7 @@ export function SessionModeToggle({ mode, onChange, disabled = false }: Props) {
         className={`session-mode-toggle__trigger${open ? ' is-open' : ''}`}
         disabled={disabledState}
         aria-label={active.title}
-        aria-describedby={showHoverCard ? cardId : undefined}
+        aria-describedby={showStandaloneCard ? cardId : undefined}
         aria-haspopup="menu"
         aria-expanded={open}
         data-testid="session-mode-trigger"
@@ -193,7 +194,7 @@ export function SessionModeToggle({ mode, onChange, disabled = false }: Props) {
         onClick={() => {
           setOpen(!open);
           setPreviewMode(mode);
-          setCardVisible(open);
+          setCardVisible(true);
         }}
       >
         <Icon name={active.icon} size={13} />
@@ -201,43 +202,55 @@ export function SessionModeToggle({ mode, onChange, disabled = false }: Props) {
         <Icon name="chevron-down" size={12} />
       </button>
       {open ? (
-        <div className="session-mode-toggle__menu">
-          <div className="session-mode-toggle__options" role="menu">
-            {modes.map((item) => {
-              const itemActive = item.mode === mode;
-              return (
-                <button
-                  key={item.mode}
-                  type="button"
-                  role="menuitemradio"
-                  aria-checked={itemActive}
-                  className={`session-mode-toggle__option${itemActive ? ' is-active' : ''}`}
-                  aria-label={item.title}
-                  onPointerEnter={() => setPreviewMode(item.mode)}
-                  onFocus={() => setPreviewMode(item.mode)}
-                  onClick={() => {
-                    if (!itemActive) onChange?.(item.mode);
-                    closeMenu();
-                  }}
-                >
-                  <Icon name={item.icon} size={13} />
-                  <span className="session-mode-toggle__label">{item.label}</span>
-                  <span className="session-mode-toggle__check" aria-hidden>
-                    {itemActive ? <Icon name="check" size={13} /> : null}
-                  </span>
-                </button>
-              );
-            })}
+        <div className="session-mode-toggle__popover">
+          <div className="session-mode-toggle__menu" role="menu">
+            <div className="session-mode-toggle__options">
+              {modes.map((item) => {
+                const itemActive = item.mode === mode;
+                return (
+                  <button
+                    key={item.mode}
+                    type="button"
+                    role="menuitemradio"
+                    aria-checked={itemActive}
+                    className={`session-mode-toggle__option${itemActive ? ' is-active' : ''}`}
+                    aria-label={item.title}
+                    onPointerEnter={() => {
+                      setPreviewMode(item.mode);
+                      setCardVisible(true);
+                    }}
+                    onFocus={() => {
+                      setPreviewMode(item.mode);
+                      setCardVisible(true);
+                    }}
+                    onClick={() => {
+                      if (!itemActive) onChange?.(item.mode);
+                      closeMenu();
+                    }}
+                  >
+                    <Icon name={item.icon} size={13} />
+                    <span className="session-mode-toggle__label">{item.label}</span>
+                    <span className="session-mode-toggle__check" aria-hidden>
+                      {itemActive ? <Icon name="check" size={13} /> : null}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-          <ModeDescriptionCard
-            item={preview}
-            bestForLabel={t('chat.mode.cardBestFor')}
-            tryLabel={t('chat.mode.cardTry')}
-            className="session-mode-toggle__menu-card"
-          />
+          {showCard ? (
+            <ModeDescriptionCard
+              item={preview}
+              bestForLabel={t('chat.mode.cardBestFor')}
+              tryLabel={t('chat.mode.cardTry')}
+              className="session-mode-toggle__popover-card"
+              id={cardId}
+              role="tooltip"
+            />
+          ) : null}
         </div>
       ) : null}
-      {showHoverCard ? (
+      {showStandaloneCard ? (
         <ModeDescriptionCard
           item={preview}
           bestForLabel={t('chat.mode.cardBestFor')}

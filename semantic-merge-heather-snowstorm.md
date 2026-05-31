@@ -1,17 +1,20 @@
 # heather-snowstorm vs origin/main 语义化合并说明
 
-生成时间：2026-05-31  
+首次生成：2026-05-31  
+补充扫描：2026-06-01  
 当前分支：`heather-snowstorm`  
 对比基准：`origin/main...HEAD`  
 merge-base：`cfde84b03`  
-当前 HEAD：`3a3fbfa9e`  
+当前 HEAD：`892e5830c`  
 本地 `origin/main`：`53fb17585`
+当前工作区状态：除本文档外，还有 22 个未提交优化文件，集中在 `SessionModeToggle.tsx`、`chat.css`、`SessionModeToggle.test.tsx`，以及 19 个 locale 文件的 Design Agent 多模态说明文案更新。
 
 ## 一句话总结
 
 这个分支把 Open Design 的项目工作区从“文件/预览标签页”扩展为更完整的 workspace shell：在同一套 tab strip 里新增 `+` 启动器、Side Chat、项目目录终端、Chat/Design Agent 会话模式切换，以及预览截图复制到剪贴板。后端同步补齐了 contracts、SQLite conversation mode、context-seeded conversation、terminal PTY API、`od shell` / `od chat` CLI parity，并增加相关测试和依赖。
 
-整体 diff：70 个文件，约 `+4370 / -235`。无删除文件、无 rename。
+当前已提交代码 diff（不含本文档）：73 个文件，约 `+5091 / -240`。无删除文件、无 rename。  
+当前未提交代码 diff：22 个文件，约 `+178 / -123`，集中在 SessionModeToggle 交互/布局、测试，以及 Design Agent mode 的多模态说明文案。
 
 ## 提交脉络
 
@@ -19,6 +22,17 @@ merge-base：`cfde84b03`
 - `79c039efd feat(daemon): introduce session mode for conversations`
 - `44492af1f feat(daemon): enhance conversation session mode handling`
 - `3a3fbfa9e feat(workspace): integrate terminal viewer and enhance chat functionality`
+- `892e5830c feat(workspace): enhance chat and session mode functionality`
+
+## 2026-06-01 追加扫描
+
+在原有 workspace shell / terminal / side-chat 基础上，这轮新增优化集中在聊天体验和 session mode 可解释性：
+
+- Assistant 完成态 footer 新增“复制回复 Markdown”按钮，复制的是原始 `message.content`，不是渲染后的 HTML。
+- Assistant footer controls 合并了 copy 和 feedback controls，避免 footer 上独立按钮挤占布局。
+- SessionModeToggle 从简单下拉升级为本地化说明卡：hover/focus trigger 时显示当前模式说明，打开 menu 后根据选项 hover/focus 切换说明。
+- 新增 mode guidance i18n keys：Chat mode / Design Agent mode 的标题、摘要、适用场景和示例提问，已补齐全部 locale。
+- 当前工作区还有未提交的 SessionModeToggle / i18n 优化：打开 menu 时把选项列表和说明卡拆成并排 popover；移动端改为纵向 grid；`aria-describedby` 只挂在独立 hover card 上；Design Agent 文案从“网页/Deck/看板/文件/原型”扩展为更明确的多模态输出，包括 live artifacts、slides、images、videos、HyperFrames、audio、dashboards 和 project files。
 
 ## 能力总览
 
@@ -189,6 +203,54 @@ FileViewer preview toolbar 新增 Screenshot button。点击后复用现有 prev
 - 修改 `apps/web/src/runtime/exports.ts`
 - 修改 `apps/web/tests/components/FileViewer.test.tsx`
 
+### 6. Assistant 回复 Markdown 复制
+
+Assistant message 的完成 footer 新增 copy button。它复制原始 Markdown 内容，适合用户把回答粘到外部文档、另一个 agent、PR 描述或聊天窗口，而不会丢失列表、标题、代码块等 Markdown 结构。
+
+行为：
+
+- 只要 `message.content.trim()` 非空，就在 assistant footer 里显示 copy control。
+- 复制内容为原始 `message.content`，不是 stripped artifact，也不是渲染后的 HTML。
+- 复用现有 `copyToClipboard()` helper。
+- 复制成功后按钮 aria/title 文案切换成 `chat.copyDone`，2 秒后恢复。
+- copy control 与 feedback controls 包在 `.assistant-footer-controls`，feedback 原有 border/margin 被归一化，避免重复分隔线。
+
+关键文件：
+
+- 修改 `apps/web/src/components/AssistantMessage.tsx`
+- 修改 `apps/web/src/styles/viewer/theater.css`
+- 修改 `apps/web/src/i18n/types.ts`
+- 修改 `apps/web/src/i18n/locales/*.ts`
+- 修改 `apps/web/tests/components/AssistantMessage.test.tsx`
+
+### 7. SessionModeToggle 解释性增强
+
+原来的 mode toggle 只是显示 `Chat` / `Design Agent` 两个选项；新提交把它扩展成“可解释的模式选择器”，让用户在切换前能理解两种模式的行为差异。
+
+行为：
+
+- `SessionModeToggle.tsx` 改为使用 i18n keys，不再硬编码英文 label/title。
+- trigger hover/focus 时展示当前 mode 的说明卡。
+- menu 打开后，选项 hover/focus 会更新说明卡，展示对应模式的 summary、Best for、Try asking 示例。
+- 说明卡包含图标、标题、短摘要、适用场景和 3 条示例 query。
+- 使用 `useId()` 给独立 hover card 生成 `aria-describedby` 目标。
+- 测试新增 zh-CN localization 覆盖，验证 trigger tooltip 和 menu option preview 都能显示本地化文案。
+
+当前未提交优化继续细化了这个交互：
+
+- 打开 menu 时使用 `.session-mode-toggle__popover` 包住菜单和说明卡，desktop 并排、mobile 纵向。
+- 说明卡在 menu open 时保持可见，且随 option hover/focus 更新，而不是嵌在 menu 内部占满列表宽度。
+- `showStandaloneCard` 与 `showCard` 分离：独立 hover card 才用于 `aria-describedby`；open menu 的 card 走 popover tooltip 角色。
+- Design Agent mode 的说明文案进一步强调 Open Design 的多模态能力：pages、prototypes、live artifacts、slides、images、videos、HyperFrames、audio、dashboards、project files；示例 query 也从单纯 landing/dashboard 扩展到 HyperFrames prototype 和 campaign 的 image/video/audio concepts。
+
+关键文件：
+
+- 修改 `apps/web/src/components/SessionModeToggle.tsx`
+- 修改 `apps/web/src/styles/chat.css`
+- 修改 `apps/web/src/i18n/types.ts`
+- 修改 `apps/web/src/i18n/locales/*.ts`
+- 修改 `apps/web/tests/components/SessionModeToggle.test.tsx`
+
 ## 文件 CRUD 清单
 
 ### Create：新增文件
@@ -199,7 +261,7 @@ FileViewer preview toolbar 新增 Screenshot button。点击后复用现有 prev
 | `apps/daemon/src/terminals.ts` | in-memory PTY session manager、node-pty 动态加载、spawn-helper chmod 修复、SSE replay、write/resize/kill/shutdown。 |
 | `apps/daemon/src/terminal-routes.ts` | `/api/projects/:id/terminals` HTTP route registrar。 |
 | `apps/daemon/tests/terminals.spawn-helper.test.ts` | 回归测试：prebuilt spawn-helper 丢失 `+x` 时 create terminal 自修复并成功 spawn。 |
-| `apps/web/src/components/SessionModeToggle.tsx` | Chat / Design Agent mode segmented dropdown。 |
+| `apps/web/src/components/SessionModeToggle.tsx` | Chat / Design Agent mode toggle；现已包含本地化说明卡、hover/focus preview、menu option guidance。 |
 | `apps/web/src/components/workspace/SideChatTab.tsx` | workspace 中的 secondary ChatPane。 |
 | `apps/web/src/components/workspace/SideChatTab.module.css` | Side Chat tab 局部样式。 |
 | `apps/web/src/components/workspace/TabLauncherMenu.tsx` | `+` launcher 菜单：搜索文件、过滤、create-new actions。 |
@@ -233,6 +295,7 @@ FileViewer preview toolbar 新增 Screenshot button。点击后复用现有 prev
 | `apps/web/src/components/FileWorkspace.tsx` | 接入 launcher、Side Chat、Terminal tab、非文件 tab labels/icons、最新 tab state ref、launcher toast。 |
 | `apps/web/src/components/ChatPane.tsx` | 向 composer 传 session mode 与 mode change callback。 |
 | `apps/web/src/components/ChatComposer.tsx` | footer 新增 SessionModeToggle；移除可见 pet composer entry，但保留手动 `/pet` handler wiring。 |
+| `apps/web/src/components/AssistantMessage.tsx` | 完成态 footer 新增复制原始 Markdown 的 copy button，并与 feedback controls 合并展示。 |
 | `apps/web/src/components/HomeHero.tsx` | Home composer footer 新增 SessionModeToggle。 |
 | `apps/web/src/components/HomeView.tsx` | Home 维护 session mode；Chat mode 下不默认绑定 fallback scenario plugin；submit 传 `conversationMode`。 |
 | `apps/web/src/App.tsx` | create project 输入透传 `conversationMode`。 |
@@ -241,11 +304,13 @@ FileViewer preview toolbar 新增 Screenshot button。点击后复用现有 prev
 | `apps/web/src/components/FileViewer.tsx` | preview toolbar 新增 screenshot-to-clipboard button。 |
 | `apps/web/src/runtime/exports.ts` | 新增 `copyImageDataUrlToClipboard()`。 |
 | `apps/web/src/components/Icon.tsx` | 新增 `terminal` icon。 |
-| `apps/web/src/styles/chat.css` | SessionModeToggle 样式。 |
+| `apps/web/src/styles/chat.css` | SessionModeToggle、mode guidance card、popover/mobile layout 样式。 |
+| `apps/web/src/styles/viewer/theater.css` | Assistant footer copy/feedback controls 与 copy button 样式。 |
 | `apps/web/src/styles/workspace/drawer.css` | `+` 按钮、tabs actions、ws-body positioning。 |
 | `apps/web/src/index.css` | import xterm global CSS wrapper。 |
-| `apps/web/src/i18n/types.ts` | 新增 workspace launcher / side-chat / terminal 文案 keys。 |
-| `apps/web/src/i18n/locales/*.ts` | 所有 locale 增加上述 workspace 文案。 |
+| `apps/web/src/i18n/types.ts` | 新增 workspace launcher / side-chat / terminal、mode guidance、assistant copy Markdown 文案 keys。 |
+| `apps/web/src/i18n/locales/*.ts` | 所有 locale 增加上述 workspace 与 chat mode 文案。 |
+| `apps/web/tests/components/AssistantMessage.test.tsx` | 覆盖复制原始 assistant Markdown 和复制成功状态。 |
 | `apps/web/tests/components/FileWorkspace.test.tsx` | 覆盖 launcher 在父 tabs 更新后追加 terminal/side-chat。 |
 | `apps/web/tests/components/FileViewer.test.tsx` | 更新截图按钮断言。 |
 | `apps/web/tests/components/ChatComposer.context-pickers.test.tsx` | 更新 pet composer entry 不再显示的测试。 |
@@ -295,6 +360,7 @@ FileViewer preview toolbar 新增 Screenshot button。点击后复用现有 prev
    - `apps/web/src/components/SessionModeToggle.tsx`
    - `apps/web/src/components/workspace/*`
    - `apps/web/src/components/Icon.tsx`
+   - `apps/web/src/components/AssistantMessage.tsx`
 
 5. **Web integration surfaces**
    - `apps/web/src/components/ProjectView.tsx`
@@ -310,6 +376,7 @@ FileViewer preview toolbar 新增 Screenshot button。点击后复用现有 prev
 
 6. **Styles/i18n/tests/deps**
    - `apps/web/src/styles/chat.css`
+   - `apps/web/src/styles/viewer/theater.css`
    - `apps/web/src/styles/workspace/drawer.css`
    - `apps/web/src/styles/workspace/terminal.css`
    - `apps/web/src/index.css`
@@ -370,6 +437,24 @@ CLI 文件大、dispatch 在顶部，冲突时注意：
 
 `apps/daemon/src/prompts/system.ts` 和 `packages/contracts/src/prompts/system.ts` 都有 Chat mode override。另一个 worktree 合并时要保持两份语义一致，否则 daemon 模式和 BYOK/API 模式行为会漂移。
 
+### `apps/web/src/components/SessionModeToggle.tsx`
+
+这个文件现在同时承载 mode 切换、说明卡、tooltip/menu accessibility 和本地化文案渲染，另一个 worktree 如果也动了 composer footer 或模式入口，冲突概率较高。重点保留：
+
+- `MODE_META` 使用 i18n key，而不是硬编码英文字符串。
+- trigger hover/focus 显示当前 mode 的 standalone card。
+- menu 打开后 option hover/focus 更新 preview card。
+- 未提交优化里的 `.session-mode-toggle__popover` 结构是当前更清晰的布局方向：menu 列表和说明卡并列，而不是说明卡塞在 menu 内。
+- mobile 需要保持 `max-width: calc(100vw - ...)` 约束，避免说明卡溢出 composer。
+
+### `apps/web/src/components/AssistantMessage.tsx`
+
+新增 copy Markdown 时不要和 artifact stripping、rendered HTML、feedback analytics 混淆：
+
+- copy source 应保持 `message.content`。
+- copy button 可以和 feedback controls 同一 footer controls 容器，但不应改变 feedback eligibility。
+- 空内容 assistant 不显示 copy button；`copyMarkdown` 也参与 `showCompletionRow`，保证文本回答即使没有反馈入口也能显示 footer copy。
+
 ## 验证建议
 
 最小建议：
@@ -388,6 +473,8 @@ pnpm --filter @open-design/web test
 ```bash
 pnpm --filter @open-design/daemon test -- terminals.spawn-helper.test.ts
 pnpm --filter @open-design/web test -- TerminalViewer.test.tsx
+pnpm --filter @open-design/web test -- SessionModeToggle.test.tsx
+pnpm --filter @open-design/web test -- AssistantMessage.test.tsx
 ```
 
 针对 UI 手工验收：
@@ -404,6 +491,8 @@ pnpm tools-dev run web --daemon-port 17456 --web-port 17573
 - 切换 Chat / Design Agent mode，发一条普通问题，确认 Chat mode 不默认进入 artifact discovery。
 - 新建 Terminal，确认 shell cwd 是项目目录，可输入命令；关闭 tab 后 shell 被 kill。
 - Preview mode 点击 Screenshot，确认剪贴板可粘贴图片；权限被拒时有 toast。
+- Hover Chat / Design Agent toggle，确认当前模式说明卡出现；打开菜单后 hover 另一个选项，确认说明卡同步切换。
+- 在 assistant 文本回答 footer 点击 copy，确认粘贴出来的是原始 Markdown。
 
 ## 语义合并时的保留原则
 
@@ -414,3 +503,5 @@ pnpm tools-dev run web --daemon-port 17456 --web-port 17573
 - Context-seeded conversation 是 copy messages，不是引用 source conversation；复制时要清空 run pointers。
 - Non-file workspace tabs 复用 persisted open tabs state；不要引入第二套 tab store。
 - `node-pty` 是 native dependency；改 package manifests 后需要 `pnpm install`，lockfile 也需要一起带上。
+- Session mode 是用户容易误解的入口；合并时保留说明卡和本地化示例，不要退回只显示两个短 label 的版本。
+- Assistant copy 按钮复制 raw Markdown；不要改为复制 DOM textContent，否则代码块、列表和链接结构会丢失。

@@ -621,13 +621,21 @@
   cursor: default;
   opacity: 0.65;
 }
-.session-mode-toggle__menu {
+.session-mode-toggle__popover {
   position: absolute;
   bottom: calc(100% + 6px);
   left: 0;
   z-index: 32;
-  width: min(320px, calc(100vw - 32px));
-  padding: 6px;
+  display: flex;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  align-items: flex-end;
+  gap: 8px;
+}
+.session-mode-toggle__menu {
+  width: max-content;
+  min-width: 168px;
+  padding: 4px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--bg-panel);
@@ -670,7 +678,6 @@
   justify-content: center;
 }
 .session-mode-card {
-  width: 100%;
   padding: 10px;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -685,10 +692,10 @@
   z-index: 33;
   width: min(320px, calc(100vw - 32px));
 }
-.session-mode-toggle__menu-card {
-  margin-top: 6px;
-  background: var(--bg-subtle);
-  box-shadow: none;
+.session-mode-toggle__popover-card {
+  width: 320px;
+  flex: 0 0 320px;
+  background: var(--bg-panel);
 }
 .session-mode-card__head {
   display: flex;
@@ -760,9 +767,17 @@
   .session-mode-toggle__trigger {
     max-width: 138px;
   }
-  .session-mode-toggle__menu,
+  .session-mode-toggle__popover {
+    display: grid;
+    width: min(292px, calc(100vw - 24px));
+  }
   .session-mode-toggle__hover-card {
     width: min(292px, calc(100vw - 24px));
+  }
+  .session-mode-toggle__menu,
+  .session-mode-toggle__popover-card {
+    width: 100%;
+    min-width: 0;
   }
 }
 .composer-import {
