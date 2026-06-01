@@ -1539,6 +1539,8 @@ function meaningfulDomFallbackTarget(el) {
   }, true);
   var mo = new MutationObserver(schedulePostTargets);
   mo.observe(document.documentElement, { subtree: true, childList: true, attributes: true });
+  var textMo = new MutationObserver(schedulePostActiveCommentTarget);
+  textMo.observe(document.documentElement, { subtree: true, characterData: true });
   // Reflect the host-requested initial modes on the documentElement so
   // the cursor/hover styles match what the bridge picks up on click.
   if (commentEnabled) document.documentElement.toggleAttribute('data-od-comment-mode', true);

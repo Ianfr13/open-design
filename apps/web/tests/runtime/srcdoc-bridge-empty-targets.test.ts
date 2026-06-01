@@ -209,6 +209,40 @@ describe('selection bridge — empty annotation surface (#890)', () => {
     expect(clickMessages[0].clickedDescendant).toBeUndefined();
   });
 
+  it('refreshes the active comment target when its text node mutates after picking it', async () => {
+    const { win, parentPostMessage } = setupBridgeDom(
+      '<main data-od-id="hero">Draft copy</main>',
+      'comment',
+      ['[data-od-id="hero"]'],
+    );
+
+    await new Promise<void>((resolve) => win.setTimeout(resolve, 10));
+    parentPostMessage.mockClear();
+
+    const target = win.document.querySelector('[data-od-id="hero"]');
+    expect(target).not.toBeNull();
+    target!.dispatchEvent(
+      new win.MouseEvent('click', { bubbles: true, cancelable: true }),
+    );
+
+    const clickMessages = parentPostMessage.mock.calls
+      .map((call) => call[0])
+      .filter((message) => message?.type === 'od:comment-target');
+    expect(clickMessages).toHaveLength(1);
+    expect(clickMessages[0].text).toBe('Draft copy');
+
+    parentPostMessage.mockClear();
+    target!.firstChild!.textContent = 'Updated copy';
+    await new Promise<void>((resolve) => win.setTimeout(resolve, 20));
+
+    const updateMessages = parentPostMessage.mock.calls
+      .map((call) => call[0])
+      .filter((message) => message?.type === 'od:comment-active-target-update');
+    expect(updateMessages).toHaveLength(1);
+    expect(updateMessages[0].elementId).toBe('hero');
+    expect(updateMessages[0].text).toBe('Updated copy');
+  });
+
   it('does not invent fallback targets in Inspect mode for unannotated elements', async () => {
     const { win, parentPostMessage } = setupBridgeDom(
       '<main><button id="cta">Launch</button></main>',
