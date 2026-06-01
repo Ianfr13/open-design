@@ -6093,7 +6093,6 @@ export async function startServer({
         },
         configuredEnv,
         undefined,
-        { resolvedBin: agentLaunch.selectedPath },
       ),
       agentLaunch,
     );
