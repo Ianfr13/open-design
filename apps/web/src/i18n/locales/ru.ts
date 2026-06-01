@@ -1881,4 +1881,8 @@ export const ru: Dict = {
   'generationPreview.awaitingLead': 'Ответьте на несколько вопросов в чате, чтобы продолжить.',
   'generationPreview.stoppedTitle': 'Генерация приостановлена',
   'generationPreview.stoppedLead': 'Продолжите оставшиеся шаги в чате слева.',
+  'generationPreview.reasonAuth': 'Сессия или авторизация истекли',
+  'generationPreview.reasonRateLimited': 'Слишком много запросов',
+  'generationPreview.reasonService': 'Сервис генерации недоступен',
+  'generationPreview.reasonBalance': 'Баланс аккаунта исчерпан',
 };

@@ -1881,4 +1881,8 @@ export const ptBR: Dict = {
   'generationPreview.awaitingLead': 'Responda algumas perguntas no chat para continuar.',
   'generationPreview.stoppedTitle': 'Geração pausada',
   'generationPreview.stoppedLead': 'Retome as etapas restantes pelo chat à esquerda.',
+  'generationPreview.reasonAuth': 'Login ou autorização expirou',
+  'generationPreview.reasonRateLimited': 'Muitas solicitações',
+  'generationPreview.reasonService': 'Serviço de geração indisponível',
+  'generationPreview.reasonBalance': 'Saldo da conta esgotado',
 };

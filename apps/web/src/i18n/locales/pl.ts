@@ -1840,4 +1840,8 @@ export const pl: Dict = {
   'generationPreview.awaitingLead': 'Odpowiedz na kilka pytań na czacie, aby kontynuować.',
   'generationPreview.stoppedTitle': 'Generowanie wstrzymane',
   'generationPreview.stoppedLead': 'Wznów pozostałe kroki z czatu po lewej stronie.',
+  'generationPreview.reasonAuth': 'Sesja lub autoryzacja wygasła',
+  'generationPreview.reasonRateLimited': 'Zbyt wiele żądań',
+  'generationPreview.reasonService': 'Usługa generowania niedostępna',
+  'generationPreview.reasonBalance': 'Saldo konta wyczerpane',
 };

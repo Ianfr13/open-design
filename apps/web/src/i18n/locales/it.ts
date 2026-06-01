@@ -1699,4 +1699,8 @@ export const it: Dict = {
   'generationPreview.awaitingLead': 'Rispondi ad alcune domande nella chat per continuare.',
   'generationPreview.stoppedTitle': 'Generazione in pausa',
   'generationPreview.stoppedLead': 'Riprendi i passaggi rimanenti dalla chat a sinistra.',
+  'generationPreview.reasonAuth': 'Accesso o autorizzazione scaduti',
+  'generationPreview.reasonRateLimited': 'Troppe richieste',
+  'generationPreview.reasonService': 'Servizio di generazione non disponibile',
+  'generationPreview.reasonBalance': 'Saldo del conto esaurito',
 };

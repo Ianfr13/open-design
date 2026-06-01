@@ -1777,4 +1777,8 @@ export const ja: Dict = {
   'generationPreview.awaitingLead': 'チャットでいくつかの質問に答えると続行します。',
   'generationPreview.stoppedTitle': '生成を一時停止しました',
   'generationPreview.stoppedLead': '左側のチャットから残りのステップを再開できます。',
+  'generationPreview.reasonAuth': 'ログインまたは認証の有効期限が切れました',
+  'generationPreview.reasonRateLimited': 'リクエストが多すぎます',
+  'generationPreview.reasonService': '生成サービスを一時的に利用できません',
+  'generationPreview.reasonBalance': 'アカウント残高が不足しています',
 };

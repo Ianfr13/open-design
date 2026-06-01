@@ -1883,4 +1883,8 @@ export const uk: Dict = {
   'generationPreview.awaitingLead': 'Дайте відповідь на кілька запитань у чаті, щоб продовжити.',
   'generationPreview.stoppedTitle': 'Генерацію призупинено',
   'generationPreview.stoppedLead': 'Продовжте решту кроків у чаті ліворуч.',
+  'generationPreview.reasonAuth': 'Сесія або авторизація завершилися',
+  'generationPreview.reasonRateLimited': 'Забагато запитів',
+  'generationPreview.reasonService': 'Сервіс генерації недоступний',
+  'generationPreview.reasonBalance': 'Баланс облікового запису вичерпано',
 };

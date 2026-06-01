@@ -1890,4 +1890,8 @@ export const ko: Dict = {
   'generationPreview.awaitingLead': '왼쪽 채팅에서 몇 가지 질문에 답하면 계속됩니다.',
   'generationPreview.stoppedTitle': '생성이 일시중지됨',
   'generationPreview.stoppedLead': '왼쪽 채팅에서 남은 단계를 다시 시작할 수 있습니다.',
+  'generationPreview.reasonAuth': '로그인 또는 인증이 만료되었습니다',
+  'generationPreview.reasonRateLimited': '요청이 너무 많습니다',
+  'generationPreview.reasonService': '생성 서비스를 일시적으로 사용할 수 없습니다',
+  'generationPreview.reasonBalance': '계정 잔액이 부족합니다',
 };

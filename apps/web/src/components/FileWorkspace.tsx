@@ -116,6 +116,11 @@ interface Props {
   artifactHtml?: string | null;
   conversationError?: string | null;
   onRetry?: (message: ChatMessage) => void;
+  // Contextual failure recovery, mirrored from the chat error card so the
+  // preview surface can offer the same one-click fix (AMR authorize, terminal
+  // sign-in) instead of a bare retry.
+  onAuthorizeAndRetry?: (message: ChatMessage) => void;
+  onLaunchTerminalAuth?: () => void;
 }
 
 interface SketchState {
@@ -239,6 +244,8 @@ export function FileWorkspace({
   artifactHtml,
   conversationError,
   onRetry,
+  onAuthorizeAndRetry,
+  onLaunchTerminalAuth,
 }: Props) {
   const t = useT();
   const analytics = useAnalytics();
@@ -1008,6 +1015,12 @@ export function FileWorkspace({
                 ? () => onRetry(generationPreview.retryTarget!)
                 : undefined
             }
+            onAuthorizeAndRetry={
+              generationPreview.retryTarget && onAuthorizeAndRetry
+                ? () => onAuthorizeAndRetry(generationPreview.retryTarget!)
+                : undefined
+            }
+            onLaunchTerminalAuth={onLaunchTerminalAuth}
           />
         ) : activeTab === DESIGN_FILES_TAB ? (
           <DesignFilesPanel

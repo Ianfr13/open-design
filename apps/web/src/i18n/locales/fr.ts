@@ -2490,4 +2490,8 @@ export const fr: Dict = {
   'generationPreview.awaitingLead': 'Répondez à quelques questions dans le chat pour continuer.',
   'generationPreview.stoppedTitle': 'Génération en pause',
   'generationPreview.stoppedLead': 'Reprenez les étapes restantes depuis le chat à gauche.',
+  'generationPreview.reasonAuth': 'Connexion ou autorisation expirée',
+  'generationPreview.reasonRateLimited': 'Trop de requêtes',
+  'generationPreview.reasonService': 'Service de génération indisponible',
+  'generationPreview.reasonBalance': 'Solde du compte épuisé',
 };

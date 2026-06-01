@@ -1850,4 +1850,8 @@ export const hu: Dict = {
   'generationPreview.awaitingLead': 'Válaszolj néhány kérdésre a csevegésben a folytatáshoz.',
   'generationPreview.stoppedTitle': 'Generálás szüneteltetve',
   'generationPreview.stoppedLead': 'Folytasd a hátralévő lépéseket a bal oldali csevegésből.',
+  'generationPreview.reasonAuth': 'A bejelentkezés vagy engedély lejárt',
+  'generationPreview.reasonRateLimited': 'Túl sok kérés',
+  'generationPreview.reasonService': 'A generálási szolgáltatás nem érhető el',
+  'generationPreview.reasonBalance': 'A fiókegyenleg elfogyott',
 };

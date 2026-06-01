@@ -1841,4 +1841,8 @@ export const ar: Dict = {
   'generationPreview.awaitingLead': 'أجب عن بعض الأسئلة في المحادثة للمتابعة.',
   'generationPreview.stoppedTitle': 'تم إيقاف الإنشاء مؤقتًا',
   'generationPreview.stoppedLead': 'تابع الخطوات المتبقية من المحادثة على اليسار.',
+  'generationPreview.reasonAuth': 'انتهت صلاحية تسجيل الدخول أو التفويض',
+  'generationPreview.reasonRateLimited': 'طلبات كثيرة جدًا',
+  'generationPreview.reasonService': 'خدمة الإنشاء غير متاحة مؤقتًا',
+  'generationPreview.reasonBalance': 'نفد رصيد الحساب',
 };

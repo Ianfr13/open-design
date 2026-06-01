@@ -1778,4 +1778,8 @@ export const de: Dict = {
   'generationPreview.awaitingLead': 'Beantworte ein paar kurze Fragen im Chat, um fortzufahren.',
   'generationPreview.stoppedTitle': 'Generierung pausiert',
   'generationPreview.stoppedLead': 'Setze die verbleibenden Schritte im Chat links fort.',
+  'generationPreview.reasonAuth': 'Anmeldung oder Autorisierung abgelaufen',
+  'generationPreview.reasonRateLimited': 'Zu viele Anfragen',
+  'generationPreview.reasonService': 'Generierungsdienst nicht verfügbar',
+  'generationPreview.reasonBalance': 'Kontoguthaben aufgebraucht',
 };

@@ -1883,4 +1883,8 @@ export const fa: Dict = {
   'generationPreview.awaitingLead': 'برای ادامه، به چند پرسش در گفتگو پاسخ دهید.',
   'generationPreview.stoppedTitle': 'ساخت متوقف شد',
   'generationPreview.stoppedLead': 'مراحل باقی‌مانده را از گفتگوی سمت چپ ادامه دهید.',
+  'generationPreview.reasonAuth': 'ورود یا مجوز منقضی شده است',
+  'generationPreview.reasonRateLimited': 'درخواست‌های بیش از حد',
+  'generationPreview.reasonService': 'سرویس تولید در دسترس نیست',
+  'generationPreview.reasonBalance': 'موجودی حساب تمام شده است',
 };

@@ -1940,6 +1940,10 @@ export interface Dict {
   'generationPreview.awaitingLead': string;
   'generationPreview.stoppedTitle': string;
   'generationPreview.stoppedLead': string;
+  'generationPreview.reasonAuth': string;
+  'generationPreview.reasonRateLimited': string;
+  'generationPreview.reasonService': string;
+  'generationPreview.reasonBalance': string;
   'designFiles.title': string;
   'designFiles.upload': string;
   'designFiles.pasteText': string;

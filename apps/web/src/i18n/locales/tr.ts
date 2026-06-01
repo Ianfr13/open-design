@@ -1827,4 +1827,8 @@ export const tr: Dict = {
   'generationPreview.awaitingLead': 'Devam etmek için sohbette birkaç soruyu yanıtlayın.',
   'generationPreview.stoppedTitle': 'Oluşturma duraklatıldı',
   'generationPreview.stoppedLead': 'Kalan adımları soldaki sohbetten sürdürün.',
+  'generationPreview.reasonAuth': 'Oturum veya yetki süresi doldu',
+  'generationPreview.reasonRateLimited': 'Çok fazla istek',
+  'generationPreview.reasonService': 'Oluşturma hizmeti kullanılamıyor',
+  'generationPreview.reasonBalance': 'Hesap bakiyesi tükendi',
 };

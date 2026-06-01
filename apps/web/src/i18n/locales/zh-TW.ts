@@ -2162,4 +2162,8 @@ export const zhTW: Dict = {
   'generationPreview.awaitingLead': '在左側聊天裡回答幾個問題即可繼續生成。',
   'generationPreview.stoppedTitle': '生成已暫停',
   'generationPreview.stoppedLead': '可在左側聊天裡繼續未完成的步驟。',
+  'generationPreview.reasonAuth': '登入或授權已失效',
+  'generationPreview.reasonRateLimited': '請求過於頻繁',
+  'generationPreview.reasonService': '生成服務暫時無法使用',
+  'generationPreview.reasonBalance': '帳戶餘額不足',
 };

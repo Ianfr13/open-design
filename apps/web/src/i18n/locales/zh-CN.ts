@@ -2594,4 +2594,8 @@ export const zhCN: Dict = {
   'generationPreview.awaitingLead': '在左侧聊天里回答几个问题即可继续生成。',
   'generationPreview.stoppedTitle': '生成已暂停',
   'generationPreview.stoppedLead': '可在左侧聊天里继续未完成的步骤。',
+  'generationPreview.reasonAuth': '登录或授权已失效',
+  'generationPreview.reasonRateLimited': '请求过于频繁',
+  'generationPreview.reasonService': '生成服务暂时不可用',
+  'generationPreview.reasonBalance': '账户余额不足',
 };

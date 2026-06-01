@@ -1,4 +1,6 @@
 import { useT } from '../i18n';
+import type { Dict } from '../i18n/types';
+import { AMR_RECHARGE_URL } from '../runtime/amr-guidance';
 import type { GenerationPreviewModel } from '../runtime/generation-preview';
 import { Icon } from './Icon';
 import styles from './GenerationPreviewStage.module.css';
@@ -6,9 +8,40 @@ import styles from './GenerationPreviewStage.module.css';
 type Props = {
   model: GenerationPreviewModel;
   onRetry?: (() => void) | undefined;
+  // AMR/Antigravity contextual recovery, mirrored from the chat error card.
+  // Each is pre-bound to the failed run in the parent so the stage stays dumb.
+  onAuthorizeAndRetry?: (() => void) | undefined;
+  onLaunchTerminalAuth?: (() => void) | undefined;
 };
 
-export function GenerationPreviewStage({ model, onRetry }: Props) {
+// Map a structured run error code to a recognizable, localized reason headline
+// so the failed surface names the cause ("Rate limited") instead of only
+// echoing the raw upstream string. Unknown codes fall back to the generic
+// "generation failed" title.
+function reasonTitleKey(code: string | null): keyof Dict | null {
+  switch (code) {
+    case 'AGENT_AUTH_REQUIRED':
+    case 'AMR_AUTH_REQUIRED':
+    case 'UNAUTHORIZED':
+      return 'generationPreview.reasonAuth';
+    case 'RATE_LIMITED':
+      return 'generationPreview.reasonRateLimited';
+    case 'UPSTREAM_UNAVAILABLE':
+    case 'AGENT_UNAVAILABLE':
+      return 'generationPreview.reasonService';
+    case 'AMR_INSUFFICIENT_BALANCE':
+      return 'generationPreview.reasonBalance';
+    default:
+      return null;
+  }
+}
+
+export function GenerationPreviewStage({
+  model,
+  onRetry,
+  onAuthorizeAndRetry,
+  onLaunchTerminalAuth,
+}: Props) {
   const t = useT();
 
   const generating = model.phase === 'generating';
@@ -19,18 +52,26 @@ export function GenerationPreviewStage({ model, onRetry }: Props) {
     prepare: t('generationPreview.stepPrepare'),
   };
 
+  const failedReasonKey = model.phase === 'failed' ? reasonTitleKey(model.errorCode) : null;
+
   const title =
     model.phase === 'failed'
-      ? t('generationPreview.failedTitle')
+      ? failedReasonKey
+        ? t(failedReasonKey)
+        : t('generationPreview.failedTitle')
       : model.phase === 'stopped'
         ? t('generationPreview.stoppedTitle')
         : model.phase === 'awaiting-input'
           ? t('generationPreview.awaitingTitle')
           : t('generationPreview.title');
 
+  // For failures prefer the case-specific copy (AMR auth / balance) over the
+  // raw upstream string, mirroring the chat error card's `displayError`.
   const lead =
     model.phase === 'failed'
-      ? model.errorMessage || t('generationPreview.failedFallback')
+      ? model.failureUi?.messageKey
+        ? t(model.failureUi.messageKey)
+        : model.errorMessage || t('generationPreview.failedFallback')
       : model.phase === 'stopped'
         ? t('generationPreview.stoppedLead')
         : model.phase === 'awaiting-input'
@@ -106,15 +147,53 @@ export function GenerationPreviewStage({ model, onRetry }: Props) {
           ) : null}
         </div>
       ) : null}
-      {model.phase === 'failed' && onRetry ? (
-        <button
-          type="button"
-          className={styles.retry}
-          data-testid="generation-preview-retry"
-          onClick={onRetry}
-        >
-          {t('generationPreview.retry')}
-        </button>
+      {model.phase === 'failed' && model.failureUi ? (
+        <div className={styles.actions}>
+          {model.failureUi.primaryAction === 'authorize' && onAuthorizeAndRetry ? (
+            <button
+              type="button"
+              className={styles.action}
+              data-testid="generation-preview-authorize"
+              onClick={onAuthorizeAndRetry}
+            >
+              {t('chat.amrError.authorizeCta')}
+            </button>
+          ) : (model.failureUi.primaryAction === 'launch-terminal-auth'
+              || model.failureUi.primaryAction === 'launch-terminal-switch-model')
+            && onLaunchTerminalAuth ? (
+            <button
+              type="button"
+              className={styles.action}
+              data-testid="generation-preview-launch-terminal"
+              onClick={onLaunchTerminalAuth}
+            >
+              {t(
+                model.failureUi.primaryAction === 'launch-terminal-switch-model'
+                  ? 'chat.antigravityError.launchSwitchModelCta'
+                  : 'chat.antigravityError.launchTerminalCta',
+              )}
+            </button>
+          ) : model.failureUi.primaryAction === 'recharge' ? (
+            <button
+              type="button"
+              className={styles.action}
+              data-testid="generation-preview-recharge"
+              onClick={() => window.open(AMR_RECHARGE_URL, '_blank', 'noopener,noreferrer')}
+            >
+              {t('chat.amrError.rechargeCta')}
+            </button>
+          ) : null}
+          {(model.failureUi.primaryAction === 'retry' || model.failureUi.secondaryRetry) && onRetry ? (
+            <button
+              type="button"
+              className={styles.retry}
+              data-testid="generation-preview-retry"
+              onClick={onRetry}
+            >
+              {t('generationPreview.retry')}
+            </button>
+          ) : null}
+        </div>
       ) : null}
     </section>
   );

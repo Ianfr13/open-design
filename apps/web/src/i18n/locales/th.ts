@@ -1670,4 +1670,8 @@ export const th: Dict = {
   'generationPreview.awaitingLead': 'ตอบคำถามสองสามข้อในแชทเพื่อดำเนินการต่อ',
   'generationPreview.stoppedTitle': 'หยุดการสร้างชั่วคราว',
   'generationPreview.stoppedLead': 'ดำเนินการขั้นตอนที่เหลือต่อจากแชทด้านซ้าย',
+  'generationPreview.reasonAuth': 'การเข้าสู่ระบบหรือการอนุญาตหมดอายุ',
+  'generationPreview.reasonRateLimited': 'มีคำขอมากเกินไป',
+  'generationPreview.reasonService': 'บริการสร้างไม่พร้อมใช้งานชั่วคราว',
+  'generationPreview.reasonBalance': 'ยอดคงเหลือในบัญชีหมด',
 };

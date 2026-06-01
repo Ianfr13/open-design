@@ -1883,4 +1883,8 @@ export const id: Dict = {
   'generationPreview.awaitingLead': 'Jawab beberapa pertanyaan di obrolan untuk melanjutkan.',
   'generationPreview.stoppedTitle': 'Pembuatan dijeda',
   'generationPreview.stoppedLead': 'Lanjutkan langkah yang tersisa dari obrolan di kiri.',
+  'generationPreview.reasonAuth': 'Login atau otorisasi kedaluwarsa',
+  'generationPreview.reasonRateLimited': 'Terlalu banyak permintaan',
+  'generationPreview.reasonService': 'Layanan pembuatan tidak tersedia',
+  'generationPreview.reasonBalance': 'Saldo akun habis',
 };
