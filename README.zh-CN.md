@@ -1,8 +1,8 @@
 <h1 align="center">Open Design：The open-source Claude Design alternative</h1>
 
-> 🔥 Open Design 0.8.0 已发布。这一版重点上线两件事：Plugin 体系，让模板和工作流像文件夹一样添加、复制、分享；Design System，支持导入品牌规范并沉淀为可复用的 [`DESIGN.md`](design-systems/)。[下载 0.8.0](https://github.com/nexu-io/open-design/releases) · [参与讨论](https://github.com/nexu-io/open-design/discussions/1727)
-
-> 🏅 **正在全球招募 Open Design Fellow**——付费维护者：$1,000 / MR、免费 LLM 额度、所在地区的官方增长授权，以及核心团队审查通道。详情 → [MAINTAINERS.md](MAINTAINERS.md) 与 [Discord](https://discord.gg/qhbcCH8Am4) 公告。
+> 🔥 **Open Design 0.8.0 已发布。** 这一版重点上线两件事：Plugin 体系，让模板和工作流像文件夹一样添加、复制、分享；Design System，支持导入品牌规范并沉淀为可复用的 [`DESIGN.md`](design-systems/)。[下载 0.8.0](https://github.com/nexu-io/open-design/releases) · [参与讨论](https://github.com/nexu-io/open-design/discussions/1727)
+>
+> 🏅 **Open Design Fellow 计划正式开放。** 如果你也相信设计应该是开放的，欢迎成为 Open Design Fellow，和核心团队一起打磨产品，让更多人参与并定义设计的未来。详情 → [`MAINTAINERS.md`](MAINTAINERS.md) 与 [Discord](https://discord.gg/qhbcCH8Am4)。
 
 <p align="center">
   <img src="docs/assets/banner-zh.png" alt="Open Design — The open-source Claude Design alternative · 150 Design Systems · 261 Plugins · 21 Coding Agents · 14 Media Providers" width="100%" />
@@ -11,13 +11,14 @@
 <p align="center">
   <a href="https://open-design.ai/">官网</a> ·
   <a href="https://open-design.ai/">下载</a> ·
-  <a href="https://discord.gg/qhbcCH8Am4"><img alt="discord" src="https://img.shields.io/discord/1479002485040480266?style=flat&logo=discord&logoColor=white&label=discord&color=5865F2&cacheSeconds=3600" /></a> ·
+  <a href="https://discord.gg/qhbcCH8Am4">Discord</a> ·
   <a href="https://x.com/nexudotio">关注 @nexudotio</a>
 </p>
 
 <p align="center">
   <a href="https://github.com/nexu-io/open-design/releases"><img alt="release" src="https://img.shields.io/github/v/release/nexu-io/open-design?style=flat&color=blueviolet&label=release&include_prereleases&display_name=tag" /></a>
   <a href="LICENSE"><img alt="license" src="https://img.shields.io/badge/license-Apache%202.0-blue.svg?style=flat" /></a>
+  <a href="https://discord.gg/qhbcCH8Am4"><img alt="discord" src="https://img.shields.io/discord/1479002485040480266?style=flat&logo=discord&logoColor=white&label=discord&color=5865F2&cacheSeconds=3600" /></a>
   <a href="QUICKSTART.md"><img alt="quickstart" src="https://img.shields.io/badge/quickstart-3%20commands-green?style=flat" /></a>
 </p>
 
@@ -53,7 +54,7 @@ Open Design 是这样一种产物：Anthropic 随 Claude Design 推出的 **Agen
 
 ## 产品速览
 
-一张图看懂 Open Design 长什么样、能做什么。从 **Home** 发起创作，用 **Automation** 编排重复流程，在 **Design System** 沉淀品牌契约，靠 **Plugin** 与 **集成** 扩展能力；进入任一项目的 **Studio**，同一套设计系统即可流式产出原型、实时工件、HyperFrame、演示文稿与图片。
+快速看懂 Open Design 长什么样、能做什么。从 **Home** 发起创作，用 **Automation** 编排重复流程，在 **Design System** 沉淀品牌契约，靠 **Plugin** 与 **集成** 扩展能力；进入任一项目的 **Studio**，同一套设计系统即可流式产出原型、实时工件、HyperFrame、演示文稿与图片。
 
 ### 核心页面
 
