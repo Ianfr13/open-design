@@ -271,6 +271,7 @@ export const ar: Dict = {
   'settings.amrSigningIn': 'Signing in…',
   'settings.amrCancelSignIn': 'Cancel sign-in',
   'settings.amrAccountStatus': 'AMR account status',
+  'settings.amrConsole': 'AMR Console',
   'settings.amrLoginErrorCompact': 'AMR sign-in failed.',
   'settings.apiSection': 'Anthropic API',
   'settings.quickFillProvider': 'ملء المزوّد سريعًا',
@@ -320,6 +321,8 @@ export const ar: Dict = {
     'يتم جلبه من CLI عندما يعرض أمر `models`. "الافتراضي" يترك الخيار لإعدادات CLI؛ "مخصص..." يسمح لك بكتابة أي معرف نموذج يقبله CLI.',
   'settings.modelPickerLiveHint':
     'تم تحديث النماذج من CLI المثبت. لا يزال الخيار الافتراضي يستخدم إعدادات CLI.',
+  'settings.modelPickerLiveCatalogOnlyHint':
+    'تم تحديث النماذج من CLI المثبت.',
   'settings.modelPickerFallbackHint':
     'يتم عرض الإعدادات الافتراضية المضمنة. انقر على إعادة المسح لجلب النماذج المباشرة من CLI.',
   'settings.cliEnvTitle': 'CLI config locations',
@@ -757,6 +760,8 @@ export const ar: Dict = {
   'avatar.useApi': 'استخدام API · BYOK',
   'avatar.codeAgent': 'وكيل الكود',
   'avatar.rescan': 'إعادة مسح PATH',
+  'avatar.amrConsole': 'AMR account',
+  'avatar.amrConsoleMeta': 'Balance & recharge',
   'avatar.settings': 'الإعدادات',
   'avatar.backToProjects': 'العودة للمشاريع',
   'avatar.metaActive': 'نشط',

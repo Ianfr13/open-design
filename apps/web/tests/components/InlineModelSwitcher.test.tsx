@@ -255,6 +255,53 @@ describe('InlineModelSwitcher AMR row', () => {
     expect(within(popover).queryByRole('button', { name: 'Sign out' })).toBeNull();
   });
 
+  it('fetches BYOK models on demand in Home when the shared catalog is empty', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = input.toString();
+      if (url === '/api/provider/models') {
+        return new Response(JSON.stringify({
+          ok: true,
+          kind: 'success',
+          latencyMs: 12,
+          models: [
+            { id: 'gpt-4.1-mini', label: 'gpt-4.1-mini' },
+            { id: 'gpt-5.5', label: 'gpt-5.5' },
+          ],
+        }), { status: 200, headers: { 'content-type': 'application/json' } });
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <InlineModelSwitcher
+        config={{
+          ...baseConfig,
+          mode: 'api',
+          apiProtocol: 'openai',
+          baseUrl: 'https://api.openai.com/v1',
+          apiProviderBaseUrl: 'https://api.openai.com/v1',
+          apiKey: 'sk-test',
+          model: 'gpt-4.1-mini',
+        }}
+        agents={[amrAgent, codexAgent]}
+        daemonLive={true}
+        onModeChange={vi.fn()}
+        onAgentChange={vi.fn()}
+        onAgentModelChange={vi.fn()}
+        onApiProtocolChange={vi.fn()}
+        onApiModelChange={vi.fn()}
+        providerModelsCache={{}}
+        onOpenSettings={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('inline-model-switcher-chip'));
+    await vi.waitFor(() => {
+      expect(fetchMock).toHaveBeenCalled();
+    });
+  });
+
   it('filters fetched BYOK provider models in the Home switcher search box', async () => {
     renderSwitcher(
       {
@@ -298,6 +345,47 @@ describe('InlineModelSwitcher AMR row', () => {
     expect(
       within(modelPopover).getAllByRole('option').map((option) => option.textContent?.trim()),
     ).toEqual(['gpt-4.1-mini', 'gpt-5.5']);
+  });
+
+  it('keeps the Home switcher popover open long enough for BYOK model clicks to apply', async () => {
+    const onApiModelChange = vi.fn();
+    render(
+      <InlineModelSwitcher
+        config={{
+          ...baseConfig,
+          mode: 'api',
+          apiProtocol: 'openai',
+          baseUrl: 'https://api.openai.com/v1',
+          apiProviderBaseUrl: 'https://api.openai.com/v1',
+          apiKey: 'sk-test',
+          model: 'gpt-4.1-mini',
+        }}
+        agents={[amrAgent, codexAgent]}
+        daemonLive={true}
+        onModeChange={vi.fn()}
+        onAgentChange={vi.fn()}
+        onAgentModelChange={vi.fn()}
+        onApiProtocolChange={vi.fn()}
+        onApiModelChange={onApiModelChange}
+        providerModelsCache={{
+          [providerModelsCacheKey('openai', 'https://api.openai.com/v1', 'sk-test', '')]: [
+            { id: 'gpt-4.1-mini', label: 'gpt-4.1-mini' },
+            { id: 'gpt-5.5', label: 'gpt-5.5' },
+          ],
+        }}
+        onOpenSettings={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('inline-model-switcher-chip'));
+    const modelPicker = screen.getByTestId('inline-model-switcher-api-model');
+    fireEvent.click(modelPicker);
+    const modelPopover = screen.getByTestId('inline-model-switcher-api-model-popover');
+    const option = within(modelPopover).getByRole('option', { name: 'gpt-5.5' });
+    fireEvent.mouseDown(option);
+    fireEvent.click(option);
+
+    expect(onApiModelChange).toHaveBeenCalledWith('gpt-5.5');
   });
 
   it('prefers fetched BYOK provider models over only showing the currently selected custom model', async () => {
@@ -725,4 +813,54 @@ describe('InlineModelSwitcher AMR row', () => {
       within(modelPopover).getByRole('option', { name: 'Claude 3.5 Haiku' }),
     ).toBeTruthy();
   });
+  it('closes only the nested Home BYOK model popover on Escape and keeps the switcher open', async () => {
+    render(
+      <InlineModelSwitcher
+        config={{
+          ...baseConfig,
+          mode: 'api',
+          apiProtocol: 'openai',
+          baseUrl: 'https://api.openai.com/v1',
+          apiProviderBaseUrl: 'https://api.openai.com/v1',
+          apiKey: 'sk-test',
+          model: 'gpt-4.1-mini',
+        }}
+        agents={[amrAgent, codexAgent]}
+        daemonLive={true}
+        onModeChange={vi.fn()}
+        onAgentChange={vi.fn()}
+        onAgentModelChange={vi.fn()}
+        onApiProtocolChange={vi.fn()}
+        onApiModelChange={vi.fn()}
+        providerModelsCache={{
+          [providerModelsCacheKey('openai', 'https://api.openai.com/v1', 'sk-test', '')]: [
+            { id: 'gpt-4.1-mini', label: 'gpt-4.1-mini' },
+            { id: 'gpt-5.5', label: 'gpt-5.5' },
+            { id: 'gpt-image-2', label: 'gpt-image-2' },
+            { id: 'o4-mini', label: 'o4-mini' },
+            { id: 'o3', label: 'o3' },
+            { id: 'gpt-4o', label: 'gpt-4o' },
+            { id: 'gpt-4o-mini', label: 'gpt-4o-mini' },
+            { id: 'deepseek-v4-flash', label: 'deepseek-v4-flash' },
+          ],
+        }}
+        onOpenSettings={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('inline-model-switcher-chip'));
+    const switcherPopover = await screen.findByTestId('inline-model-switcher-popover');
+    const modelPicker = within(switcherPopover).getByTestId('inline-model-switcher-api-model');
+    fireEvent.click(modelPicker);
+
+    const modelPopover = await screen.findByTestId('inline-model-switcher-api-model-popover');
+    const search = within(modelPopover).getByTestId('inline-model-switcher-api-model-search');
+    fireEvent.keyDown(search, { key: 'Escape' });
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('inline-model-switcher-api-model-popover')).toBeNull();
+    });
+    expect(screen.getByTestId('inline-model-switcher-popover')).toBeTruthy();
+  });
+
 });

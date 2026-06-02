@@ -271,6 +271,7 @@ export const fa: Dict = {
   'settings.amrSigningIn': 'Signing in…',
   'settings.amrCancelSignIn': 'Cancel sign-in',
   'settings.amrAccountStatus': 'AMR account status',
+  'settings.amrConsole': 'AMR Console',
   'settings.amrLoginErrorCompact': 'AMR sign-in failed.',
   'settings.apiSection': 'Anthropic API',
   'settings.quickFillProvider': 'پر کردن سریع ارائه‌دهنده',
@@ -320,6 +321,8 @@ export const fa: Dict = {
     'هنگامی که CLI یک دستور `models` را ارائه می‌دهد از آن دریافت می‌شود. «پیش‌فرض» انتخاب را به پیکربندی خود CLI واگذار می‌کند؛ «سفارشی…» به شما امکان می‌دهد هر شناسه مدلی را که CLI می‌پذیرد تایپ کنید.',
   'settings.modelPickerLiveHint':
     'مدل‌ها از CLI نصب‌شده به‌روزرسانی شدند. گزینه پیش‌فرض همچنان از تنظیمات CLI استفاده می‌کند.',
+  'settings.modelPickerLiveCatalogOnlyHint':
+    'مدل‌ها از CLI نصب‌شده به‌روزرسانی شدند.',
   'settings.modelPickerFallbackHint':
     'پیش‌فرض‌های داخلی نمایش داده می‌شوند. برای دریافت مدل‌های زنده از CLI روی اسکن مجدد کلیک کنید.',
   'settings.cliEnvTitle': 'CLI config locations',
@@ -779,6 +782,8 @@ export const fa: Dict = {
   'avatar.useApi': 'استفاده از API · BYOK',
   'avatar.codeAgent': 'عامل کد',
   'avatar.rescan': 'اسکن مجدد PATH',
+  'avatar.amrConsole': 'AMR account',
+  'avatar.amrConsoleMeta': 'Balance & recharge',
   'avatar.settings': 'تنظیمات',
   'avatar.backToProjects': 'بازگشت به پروژه‌ها',
   'avatar.metaActive': 'فعال',

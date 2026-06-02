@@ -269,6 +269,7 @@ export const th: Dict = {
   'settings.amrSigningIn': 'Signing in…',
   'settings.amrCancelSignIn': 'Cancel sign-in',
   'settings.amrAccountStatus': 'AMR account status',
+  'settings.amrConsole': 'AMR Console',
   'settings.amrLoginErrorCompact': 'AMR sign-in failed.',
   'settings.apiSection': 'Anthropic API',
   'settings.quickFillProvider': 'เลือกผู้ให้บริการอย่างรวดเร็ว',
@@ -314,6 +315,8 @@ export const th: Dict = {
   'settings.modelPickerHint': 'ดึงข้อมูลจาก CLI เมื่อมีคำสั่ง `models`',
   'settings.modelPickerLiveHint':
     'รีเฟรชโมเดลจาก CLI ที่ติดตั้งแล้ว ค่าเริ่มต้นยังใช้การตั้งค่าของ CLI',
+  'settings.modelPickerLiveCatalogOnlyHint':
+    'รีเฟรชโมเดลจาก CLI ที่ติดตั้งแล้ว',
   'settings.modelPickerFallbackHint':
     'กำลังแสดงค่าเริ่มต้นในตัว คลิกสแกนอีกครั้งเพื่อดึงโมเดลสดจาก CLI',
   'settings.cliEnvTitle': 'ตำแหน่งการตั้งค่า CLI',
@@ -731,6 +734,8 @@ export const th: Dict = {
   'avatar.useApi': 'ใช้ API · BYOK',
   'avatar.codeAgent': 'เอเจนต์โค้ด',
   'avatar.rescan': 'สแกนหาใหม่',
+  'avatar.amrConsole': 'AMR account',
+  'avatar.amrConsoleMeta': 'Balance & recharge',
   'avatar.settings': 'การตั้งค่า',
   'avatar.backToProjects': 'กลับไปยังโปรเจกต์',
   'avatar.metaActive': 'เปิดใช้งาน',

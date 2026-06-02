@@ -1133,6 +1133,53 @@
 }
 .avatar-popover-head .who { font-weight: 600; font-size: 13px; }
 .avatar-popover-head .where { font-size: 11.5px; color: var(--text-muted); }
+.avatar-amr-account-link,
+.avatar-amr-account-link:visited {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) 14px;
+  align-items: center;
+  gap: 10px;
+  margin: 0 6px 6px;
+  padding: 9px 10px;
+  color: var(--text);
+  text-decoration: none;
+  border: 1px solid color-mix(in srgb, var(--accent) 16%, var(--border-soft));
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--accent-tint) 34%, var(--bg-panel));
+}
+.avatar-amr-account-link:hover {
+  background: color-mix(in srgb, var(--accent-tint) 52%, var(--bg-panel));
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--border));
+}
+.avatar-amr-account-link__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-strong);
+}
+.avatar-amr-account-link__copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.avatar-amr-account-link__copy span:first-child {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 650;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.avatar-amr-account-link__copy span:last-child {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .avatar-item {
   display: flex;
   align-items: center;
@@ -1192,18 +1239,21 @@ a.avatar-item:visited {
 }
 .avatar-select-row {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  width: 100%;
   font-size: 12px;
   color: var(--text-muted);
 }
 .avatar-select-label {
   flex-shrink: 0;
-  min-width: 64px;
+  min-width: 0;
 }
 .avatar-select {
-  flex: 1;
-  min-width: 0;
+  display: block;
+  width: 100%;
+  min-width: min(340px, 100%);
   font-size: 12px;
   padding: 4px 6px;
   border-radius: var(--radius-sm);

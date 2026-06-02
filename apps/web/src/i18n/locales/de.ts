@@ -271,6 +271,7 @@ export const de: Dict = {
   'settings.amrSigningIn': 'Signing in…',
   'settings.amrCancelSignIn': 'Cancel sign-in',
   'settings.amrAccountStatus': 'AMR account status',
+  'settings.amrConsole': 'AMR Console',
   'settings.amrLoginErrorCompact': 'AMR sign-in failed.',
   'settings.apiSection': 'Anthropic API',
   'settings.quickFillProvider': 'Anbieter schnell ausfüllen',
@@ -320,6 +321,8 @@ export const de: Dict = {
     'Wird aus der CLI geladen, wenn sie einen `models`-Befehl anbietet. „Standard“ überlässt die Auswahl der CLI-Konfiguration; mit „Benutzerdefiniert…“ können Sie jede von der CLI akzeptierte Modell-ID eingeben.',
   'settings.modelPickerLiveHint':
     'Modelle wurden aus der installierten CLI aktualisiert. Standard verwendet weiterhin die CLI-Konfiguration.',
+  'settings.modelPickerLiveCatalogOnlyHint':
+    'Modelle wurden aus der installierten CLI aktualisiert.',
   'settings.modelPickerFallbackHint':
     'Integrierte Standardwerte werden angezeigt. Klicken Sie auf Neu scannen, um Live-Modelle aus der CLI abzurufen.',
   'settings.cliEnvTitle': 'CLI config locations',
@@ -645,6 +648,8 @@ export const de: Dict = {
   'avatar.useApi': 'API · BYOK verwenden',
   'avatar.codeAgent': 'Code-Agent',
   'avatar.rescan': 'PATH neu scannen',
+  'avatar.amrConsole': 'AMR account',
+  'avatar.amrConsoleMeta': 'Balance & recharge',
   'avatar.settings': 'Einstellungen',
   'avatar.backToProjects': 'Zurück zu Projekten',
   'avatar.metaActive': 'aktiv',

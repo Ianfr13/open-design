@@ -128,6 +128,7 @@ import type {
   ProjectTemplate,
   LiveArtifactEventItem,
   LiveArtifactSummary,
+  ProviderModelOption,
   SkillSummary,
 } from '../types';
 import { historyWithApiAttachmentContext } from '../api-attachment-context';
@@ -216,6 +217,8 @@ interface Props {
     id: string,
     choice: { model?: string; reasoning?: string },
   ) => void;
+  onApiModelChange?: (model: string) => void;
+  providerModelsCache?: Record<string, ProviderModelOption[]>;
   onRefreshAgents: () => void;
   onOpenSettings: (section?: SettingsSection) => void;
   onOpenAmrSettings?: () => void;
@@ -499,6 +502,8 @@ export function ProjectView({
   onModeChange,
   onAgentChange,
   onAgentModelChange,
+  onApiModelChange,
+  providerModelsCache,
   onRefreshAgents,
   onOpenSettings,
   onOpenAmrSettings,
@@ -4322,6 +4327,11 @@ export function ProjectView({
             >
               <Icon name="settings" size={16} />
             </button>
+            {/* MERGE-TODO(@zoeforfun #3266, @AmyShang-alt): kept main's toolbar
+                layout (Handoff + settings + workspace-tabs div; AvatarMenu lives
+                in the up-placement menu above). release/v0.9.0 relocated
+                Handoff+AvatarMenu into AppChromeHeader's actions= slot — decide
+                whether to adopt that shipped layout here. */}
             <div
               className="app-chrome-file-actions-before workspace-tabs-file-actions"
               data-app-chrome-file-actions="true"

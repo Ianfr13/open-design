@@ -275,6 +275,11 @@ type InspectTarget = {
 const MAX_CACHED_SLIDE_STATES = 64;
 const htmlPreviewSlideState = new Map<string, SlideState>();
 const MAX_CACHED_PREVIEW_VIEWPORTS = 128;
+// Grace window before the inspect hover card is torn down. Long enough to absorb
+// the async iframe mouseout (od:comment-leave) that fires when the pointer slides
+// onto the card or hops back onto the element under it, short enough to read as
+// an immediate dismiss when the pointer really leaves.
+const HOVER_CARD_DISMISS_DELAY_MS = 80;
 const htmlPreviewViewportState = new Map<string, PreviewViewportId>();
 const MARKDOWN_CODE_BLOCK_ATTR = 'data-markdown-code-block';
 const MARKDOWN_COPY_BLOCK_ATTR = 'data-copy-code-block';
@@ -4486,7 +4491,45 @@ const [manualEditTargets, setManualEditTargets] = useState<ManualEditTarget[]>([
   );
   const [activeCommentTarget, setActiveCommentTarget] = useState<PreviewCommentSnapshot | null>(null);
   const [hoveredCommentTarget, setHoveredCommentTarget] = useState<PreviewCommentSnapshot | null>(null);
+  // True while the pointer is physically over the floating hover card. The card
+  // sits on top of the preview iframe, so reaching it makes the iframe fire a
+  // mouseout -> od:comment-leave. We ignore that leave while pinned so the card
+  // (and its selectable values) stays put instead of unmounting and flickering.
+  // The pointer cannot be over the iframe and the host card at once, so a fresh
+  // od:comment-hover never races this; only the card's own leave clears it.
+  const hoverCardPinnedRef = useRef(false);
+  // Tearing the card down is always deferred by a beat rather than done
+  // synchronously. The iframe's mouseout (od:comment-leave) arrives async via
+  // postMessage; the card's own mouseenter and the next od:comment-hover are the
+  // signals that the pointer actually landed on the card or back on the element
+  // it overlaps. Deferring lets those cancel the dismiss before it lands.
+  // Synchronous teardown raced ahead of them: the card flickered on the way in
+  // and vanished the moment you moved off it back onto the element it described.
+  const hoverCardDismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cancelHoverCardDismiss = useCallback(() => {
+    if (hoverCardDismissTimerRef.current !== null) {
+      clearTimeout(hoverCardDismissTimerRef.current);
+      hoverCardDismissTimerRef.current = null;
+    }
+  }, []);
+  const scheduleHoverCardDismiss = useCallback(() => {
+    if (hoverCardDismissTimerRef.current !== null) clearTimeout(hoverCardDismissTimerRef.current);
+    hoverCardDismissTimerRef.current = setTimeout(() => {
+      hoverCardDismissTimerRef.current = null;
+      // hoverCardPinnedRef tracks "pointer is physically over the card". If it
+      // got (re-)pinned while we waited, this now-stale dismiss must not fire.
+      if (!hoverCardPinnedRef.current) setHoveredCommentTarget(null);
+    }, HOVER_CARD_DISMISS_DELAY_MS);
+  }, []);
   const [hoveredPodMemberId, setHoveredPodMemberId] = useState<string | null>(null);
+  // If the card unmounts for any other reason while the pointer is still over
+  // it (its onMouseLeave never fires), drop the pin so later leaves dismiss
+  // normally instead of being swallowed forever.
+  useEffect(() => {
+    if (!hoveredCommentTarget) hoverCardPinnedRef.current = false;
+  }, [hoveredCommentTarget]);
+  // Don't let a pending dismiss outlive the component.
+  useEffect(() => cancelHoverCardDismiss, [cancelHoverCardDismiss]);
   const [activePreviewCommentId, setActivePreviewCommentId] = useState<string | null>(null);
   const [liveCommentTargets, setLiveCommentTargets] = useState<Map<string, PreviewCommentSnapshot>>(() => new Map());
   const liveCommentTargetsRef = useRef(liveCommentTargets);
@@ -5362,12 +5405,22 @@ const [manualEditTargets, setManualEditTargets] = useState<ManualEditTarget[]>([
         return;
       }
       if (data.type === 'od:comment-leave') {
-        setHoveredCommentTarget(null);
+        // Already firmly on the card — nothing to dismiss.
+        if (hoverCardPinnedRef.current) return;
+        // The pointer left the element. It may be sliding onto the floating card
+        // (which overlaps the iframe) or hopping toward an adjacent element —
+        // both should keep the card up. Defer the dismiss so the card's
+        // mouseenter or the next comment-hover can cancel it; only a leave with
+        // nothing following actually tears the card down.
+        scheduleHoverCardDismiss();
         return;
       }
       if (data.type === 'od:comment-hover') {
         const snapshot = snapshotFromData(data);
         if (!snapshot.elementId || !isValidCommentOverlayPosition(snapshot.position)) return;
+        // Pointer landed on an element — cancel any deferred dismiss so moving
+        // from the card back onto the element it describes keeps the card.
+        cancelHoverCardDismiss();
         setHoveredCommentTarget((current) => (
           current && commentSnapshotEqual(current, snapshot) ? current : snapshot
         ));
@@ -5382,6 +5435,7 @@ const [manualEditTargets, setManualEditTargets] = useState<ManualEditTarget[]>([
         const snapshot = snapshotFromData(data);
         if (!snapshot.elementId || !isValidCommentOverlayPosition(snapshot.position)) return;
         const shouldOpenComposer = boardMode || commentCreateMode;
+        cancelHoverCardDismiss();
         setActiveCommentTarget((current) => (shouldOpenComposer ? snapshot : current));
         setHoveredCommentTarget(snapshot);
         setLiveCommentTargets((current) => new Map(current).set(snapshot.elementId, snapshot));
@@ -5430,7 +5484,7 @@ const [manualEditTargets, setManualEditTargets] = useState<ManualEditTarget[]>([
     }
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [activeCommentTarget, boardMode, boardTool, commentPortalHost, file.name, isOurPreviewIframeSource, previewComments]);
+  }, [activeCommentTarget, boardMode, boardTool, cancelHoverCardDismiss, commentPortalHost, file.name, isOurPreviewIframeSource, previewComments, scheduleHoverCardDismiss]);
 
   useEffect(() => {
     if (!boardMode || !activeCommentTarget || activeCommentTarget.selectionKind === 'pod') return;
@@ -7681,64 +7735,6 @@ const [manualEditTargets, setManualEditTargets] = useState<ManualEditTarget[]>([
                   </PreviewDrawOverlay>
                 </div>
               </div>
-              {boardMode ? (
-                <CommentPreviewOverlays
-                  comments={commentCreateMode ? visibleSideComments : []}
-                  liveTargets={liveCommentTargets}
-                  hoveredTarget={hoveredCommentTarget}
-                  hoveredPodMemberId={hoveredPodMemberId}
-                  activeTarget={activeCommentTarget}
-                  boardTool={boardTool}
-                  showActivePin={commentCreateMode}
-                  scale={overlayPreviewScale}
-                  offsetX={overlayPreviewTransform.offsetX}
-                  offsetY={overlayPreviewTransform.offsetY}
-                  strokePoints={strokePoints}
-                  activeSlideIndex={effectiveDeck ? slideState?.active ?? null : null}
-                  onOpenComment={(comment, snapshot) => {
-                    setCommentPanelOpen(true);
-                    setCommentSidePanelCollapsed(false);
-                    setCommentCreateMode(true);
-                    setBoardMode(true);
-                    setActiveCommentTarget(snapshot);
-                    setHoveredCommentTarget(snapshot);
-                    setActivePreviewCommentId(comment.id);
-                    setCommentDraft(comment.note);
-                    setQueuedBoardNotes([]);
-                  }}
-                />
-              ) : null}
-              {exportToast ? (
-                <div className="comment-toast-anchor">
-                  <Toast
-                    message={exportToast}
-                    ttlMs={2200}
-                    onDismiss={() => setExportToast(null)}
-                  />
-                </div>
-              ) : null}
-              {commentSavedToast ? (
-                <div className="comment-toast-anchor">
-                  <Toast
-                    message={commentSavedToast}
-                    ttlMs={2200}
-                    onDismiss={() => setCommentSavedToast(null)}
-                  />
-                </div>
-              ) : null}
-              {templateSavedToast ? (
-                <div className="comment-toast-anchor">
-                  <Toast
-                    message={templateSavedToast}
-                    ttlMs={2200}
-                    onDismiss={() => setTemplateSavedToast(null)}
-                  />
-                </div>
-              ) : null}
-              {commentComposer}
-              {boardMode && !commentCreateMode && hoveredCommentTarget && (!activeCommentTarget || commentPortalHost) ? (
-                <AnnotationHoverPopover target={hoveredCommentTarget} scale={overlayPreviewScale} />
-              ) : null}
               {/*
                 Hint banner for Inspect / Picker modes. The bridge in
                 `apps/web/src/runtime/srcdoc.ts` posts `od:comment-targets`
@@ -7796,6 +7792,80 @@ const [manualEditTargets, setManualEditTargets] = useState<ManualEditTarget[]>([
                 </div>
               ) : null}
             </div>
+            {boardMode ? (
+              <CommentPreviewOverlays
+                comments={commentCreateMode ? visibleSideComments : []}
+                liveTargets={liveCommentTargets}
+                hoveredTarget={hoveredCommentTarget}
+                hoveredPodMemberId={hoveredPodMemberId}
+                activeTarget={activeCommentTarget}
+                boardTool={boardTool}
+                showActivePin={commentCreateMode}
+                scale={overlayPreviewScale}
+                offsetX={overlayPreviewTransform.offsetX}
+                offsetY={overlayPreviewTransform.offsetY}
+                strokePoints={strokePoints}
+                activeSlideIndex={effectiveDeck ? slideState?.active ?? null : null}
+                onOpenComment={(comment, snapshot) => {
+                  setCommentPanelOpen(true);
+                  setCommentSidePanelCollapsed(false);
+                  setCommentCreateMode(true);
+                  setBoardMode(true);
+                  setActiveCommentTarget(snapshot);
+                  setHoveredCommentTarget(snapshot);
+                  setActivePreviewCommentId(comment.id);
+                  setCommentDraft(comment.note);
+                  setQueuedBoardNotes([]);
+                }}
+              />
+            ) : null}
+            {exportToast ? (
+              <div className="comment-toast-anchor">
+                <Toast
+                  message={exportToast}
+                  ttlMs={2200}
+                  onDismiss={() => setExportToast(null)}
+                />
+              </div>
+            ) : null}
+            {commentSavedToast ? (
+              <div className="comment-toast-anchor">
+                <Toast
+                  message={commentSavedToast}
+                  ttlMs={2200}
+                  onDismiss={() => setCommentSavedToast(null)}
+                />
+              </div>
+            ) : null}
+            {templateSavedToast ? (
+              <div className="comment-toast-anchor">
+                <Toast
+                  message={templateSavedToast}
+                  ttlMs={2200}
+                  onDismiss={() => setTemplateSavedToast(null)}
+                />
+              </div>
+            ) : null}
+            {commentComposer}
+            {boardMode && !commentCreateMode && hoveredCommentTarget && (!activeCommentTarget || commentPortalHost) ? (
+              <AnnotationHoverPopover
+                target={hoveredCommentTarget}
+                scale={overlayPreviewScale}
+                onMouseEnter={() => {
+                  hoverCardPinnedRef.current = true;
+                  cancelHoverCardDismiss();
+                }}
+                onMouseLeave={() => {
+                  hoverCardPinnedRef.current = false;
+                  // Defer: the pointer may be moving back onto the element the
+                  // card describes (a fresh comment-hover will cancel this) or
+                  // off into empty space (then this dismiss lands). Clearing
+                  // synchronously here is what made the card vanish when you
+                  // moved off it while still hovering the element.
+                  scheduleHoverCardDismiss();
+                }}
+              />
+            ) : null}
             {commentPortalHost && commentSidePanel
               ? createPortal(commentSidePanel, commentPortalHost)
               : commentPortalId

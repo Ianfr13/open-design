@@ -271,6 +271,7 @@ export const hu: Dict = {
   'settings.amrSigningIn': 'Signing in…',
   'settings.amrCancelSignIn': 'Cancel sign-in',
   'settings.amrAccountStatus': 'AMR account status',
+  'settings.amrConsole': 'AMR Console',
   'settings.amrLoginErrorCompact': 'AMR sign-in failed.',
   'settings.apiSection': 'Anthropic API',
   'settings.quickFillProvider': 'Szolgáltató gyors kitöltése',
@@ -320,6 +321,8 @@ export const hu: Dict = {
     'A CLI-tól kérdezi le, ha az közzéteszi a `models` parancsot. Az „Alapértelmezett" a CLI saját konfigjára bízza a választást; az „Egyedi…" tetszőleges, a CLI által elfogadott modell-id-t enged megadni.',
   'settings.modelPickerLiveHint':
     'A modellek frissültek a telepített CLI-ből. Az Alapértelmezett továbbra is a CLI konfigurációját használja.',
+  'settings.modelPickerLiveCatalogOnlyHint':
+    'A modellek frissültek a telepített CLI-ből.',
   'settings.modelPickerFallbackHint':
     'A beépített alapértékek láthatók. Kattints az Újraellenőrzésre az élő CLI-modellek lekéréséhez.',
   'settings.cliEnvTitle': 'CLI config locations',
@@ -757,6 +760,8 @@ export const hu: Dict = {
   'avatar.useApi': 'API · BYOK használata',
   'avatar.codeAgent': 'Kód-ügynök',
   'avatar.rescan': 'PATH újraellenőrzése',
+  'avatar.amrConsole': 'AMR account',
+  'avatar.amrConsoleMeta': 'Balance & recharge',
   'avatar.settings': 'Beállítások',
   'avatar.backToProjects': 'Vissza a projektekhez',
   'avatar.metaActive': 'aktív',

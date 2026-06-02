@@ -271,6 +271,7 @@ export const tr: Dict = {
   'settings.amrSigningIn': 'Signing in…',
   'settings.amrCancelSignIn': 'Cancel sign-in',
   'settings.amrAccountStatus': 'AMR account status',
+  'settings.amrConsole': 'AMR Console',
   'settings.amrLoginErrorCompact': 'AMR sign-in failed.',
   'settings.apiSection': 'Anthropic API',
   'settings.quickFillProvider': 'Sağlayıcıyı hızlı doldur',
@@ -320,6 +321,8 @@ export const tr: Dict = {
     'Bir `models` komutu açığa çıkaran CLI’lardan getirilir. "Varsayılan" seçimi CLI’ın kendi ayarına bırakır; "Özel…" CLI’ın kabul edeceği herhangi bir model kimliği seçmenize izin verir.',
   'settings.modelPickerLiveHint':
     'Modeller kurulu CLI\'dan yenilendi. Varsayılan seçenek hâlâ CLI yapılandırmasını kullanır.',
+  'settings.modelPickerLiveCatalogOnlyHint':
+    'Modeller kurulu CLI\'dan yenilendi.',
   'settings.modelPickerFallbackHint':
     'Yerleşik varsayılanlar gösteriliyor. CLI\'dan canlı modelleri almak için Yeniden tara\'ya tıklayın.',
   'settings.modelCustom': 'Özel (aşağıya yazın)…',
@@ -746,6 +749,8 @@ export const tr: Dict = {
   'avatar.useApi': 'API · BYOK kullan',
   'avatar.codeAgent': 'Kod ajanı',
   'avatar.rescan': 'PATH’ı yeniden tara',
+  'avatar.amrConsole': 'AMR account',
+  'avatar.amrConsoleMeta': 'Balance & recharge',
   'avatar.settings': 'Ayarlar',
   'avatar.backToProjects': 'Projelere dön',
   'avatar.metaActive': 'aktif',

@@ -271,6 +271,7 @@ export const ptBR: Dict = {
   'settings.amrSigningIn': 'Signing in…',
   'settings.amrCancelSignIn': 'Cancel sign-in',
   'settings.amrAccountStatus': 'AMR account status',
+  'settings.amrConsole': 'AMR Console',
   'settings.amrLoginErrorCompact': 'AMR sign-in failed.',
   'settings.apiSection': 'API da Anthropic',
   'settings.quickFillProvider': 'Preencher provedor',
@@ -320,6 +321,8 @@ export const ptBR: Dict = {
     'Buscado na CLI quando ela expõe um comando `models`. "Padrão" deixa a escolha para a configuração da própria CLI; "Personalizado…" permite digitar qualquer id de modelo aceito pela CLI.',
   'settings.modelPickerLiveHint':
     'Os modelos foram atualizados a partir da CLI instalada. O padrão ainda usa a configuração da CLI.',
+  'settings.modelPickerLiveCatalogOnlyHint':
+    'Os modelos foram atualizados a partir da CLI instalada.',
   'settings.modelPickerFallbackHint':
     'Mostrando padrões integrados. Clique em Reescanear para buscar modelos ao vivo da CLI.',
   'settings.cliEnvTitle': 'CLI config locations',
@@ -778,6 +781,8 @@ export const ptBR: Dict = {
   'avatar.useApi': 'Usar API · BYOK',
   'avatar.codeAgent': 'Agente de código',
   'avatar.rescan': 'Reescanear PATH',
+  'avatar.amrConsole': 'AMR account',
+  'avatar.amrConsoleMeta': 'Balance & recharge',
   'avatar.settings': 'Configurações',
   'avatar.backToProjects': 'Voltar aos projetos',
   'avatar.metaActive': 'ativo',

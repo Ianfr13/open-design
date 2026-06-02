@@ -18,7 +18,7 @@ import {
   startVelaLogin,
   type VelaLoginStatus,
 } from '../providers/daemon';
-import type { AgentInfo, ApiProtocol, AppConfig, ExecMode } from '../types';
+import type { AgentInfo, ApiProtocol, AppConfig, ExecMode, ProviderModelOption } from '../types';
 import { apiProtocolLabel } from '../utils/apiProtocol';
 import { AgentIcon } from './AgentIcon';
 import { Icon } from './Icon';
@@ -31,6 +31,7 @@ import {
   notifyAmrLoginStatusChanged,
 } from './amrLoginPolling';
 import { normalizeAgentModelChoice } from './agentModelSelection';
+import { fetchProviderModels } from '../providers/provider-models';
 import { SearchableModelSelect } from './modelOptions';
 import {
   mergeProviderModelOptions,
@@ -122,6 +123,7 @@ export function InlineModelSwitcher({
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const [amrStatus, setAmrStatus] = useState<VelaLoginStatus | null>(null);
+  const [discoveredProviderModels, setDiscoveredProviderModels] = useState<Record<string, ProviderModelOption[]>>({});
   const [amrLoginPending, setAmrLoginPending] = useState(false);
   const [amrLoginError, setAmrLoginError] = useState(false);
   const [amrReminderSeen, setAmrReminderSeen] = useState(readAmrReminderSeen);
@@ -356,6 +358,12 @@ export function InlineModelSwitcher({
         : null;
 
   const apiProtocol = config.apiProtocol ?? 'anthropic';
+  const providerModelsInputKey = [
+    apiProtocol,
+    config.baseUrl.trim().replace(/\/+$/, ''),
+    config.apiKey.trim(),
+    apiProtocol === 'azure' ? (config.apiVersion?.trim() ?? '') : '',
+  ].join('\n');
   const providerForProtocol = useMemo(
     () =>
       KNOWN_PROVIDERS.find(
@@ -377,7 +385,14 @@ export function InlineModelSwitcher({
       ),
     [apiProtocol, config.apiKey, config.apiVersion, config.baseUrl],
   );
-  const fetchedApiModelOptions = providerModelsCache?.[providerModelsKey] ?? [];
+  // MERGE-TODO(@YUHAO-corn #3286, @AmyShang-alt #3262): persisted/shared
+  // providerModelsCache keyed by the fingerprinted key (BYOK security, PR#3286);
+  // ephemeral discoveredProviderModels still keyed by providerModelsInputKey —
+  // confirm acceptable, or re-key the discovery state to the fingerprint too.
+  const fetchedProviderModels =
+    providerModelsCache?.[providerModelsKey] ??
+    discoveredProviderModels[providerModelsInputKey] ??
+    [];
   const suggestedApiModelIds = useMemo(
     () =>
       Array.from(
@@ -390,8 +405,8 @@ export function InlineModelSwitcher({
     [apiProtocol, providerForProtocol],
   );
   const apiModelOptions = useMemo(
-    () => mergeProviderModelOptions(fetchedApiModelOptions, suggestedApiModelIds),
-    [fetchedApiModelOptions, suggestedApiModelIds],
+    () => mergeProviderModelOptions(fetchedProviderModels, suggestedApiModelIds),
+    [fetchedProviderModels, suggestedApiModelIds],
   );
   const apiModelIds = useMemo(
     () => apiModelOptions.map((model) => model.id),
@@ -401,6 +416,38 @@ export function InlineModelSwitcher({
     () => apiModelOptions.map((model) => ({ id: model.id, label: model.label })),
     [apiModelOptions],
   );
+
+  useEffect(() => {
+    if (!open || config.mode !== 'api') return;
+    if (fetchedProviderModels.length > 0) return;
+    if (apiProtocol === 'azure' || apiProtocol === 'ollama') return;
+    const baseUrl = config.baseUrl?.trim() ?? '';
+    const apiKey = config.apiKey?.trim() ?? '';
+    if (!baseUrl || !apiKey) return;
+    let cancelled = false;
+    void fetchProviderModels({
+      protocol: apiProtocol,
+      baseUrl,
+      apiKey,
+    }).then((result) => {
+      if (cancelled || !result.ok || !result.models?.length) return;
+      setDiscoveredProviderModels((current) => ({
+        ...current,
+        [providerModelsInputKey]: result.models ?? [],
+      }));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    open,
+    config.mode,
+    apiProtocol,
+    config.baseUrl,
+    config.apiKey,
+    providerModelsInputKey,
+    fetchedProviderModels.length,
+  ]);
 
   // Chip text — keep it tight so the pill doesn't wrap on small viewports.
   // CLI: "Claude · Sonnet 4.5"; BYOK: "Anthropic · sonnet-4.5".
@@ -664,6 +711,7 @@ export function InlineModelSwitcher({
                     data-testid="inline-model-switcher-agent-model"
                     searchInputTestId="inline-model-switcher-agent-model-search"
                     popoverTestId="inline-model-switcher-agent-model-popover"
+                    minSearchableOptions={5}
                     searchPlaceholder={t('designs.searchPlaceholder')}
                     aria-label={t('inlineSwitcher.modelLabel')}
                     models={currentAgent.models}

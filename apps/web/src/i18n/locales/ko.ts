@@ -271,6 +271,7 @@ export const ko: Dict = {
   'settings.amrSigningIn': 'Signing in…',
   'settings.amrCancelSignIn': 'Cancel sign-in',
   'settings.amrAccountStatus': 'AMR account status',
+  'settings.amrConsole': 'AMR Console',
   'settings.amrLoginErrorCompact': 'AMR sign-in failed.',
   'settings.apiSection': 'Anthropic API',
   'settings.quickFillProvider': '제공자 빠른 입력',
@@ -320,6 +321,8 @@ export const ko: Dict = {
     'CLI가 `models` 명령어를 지원할 때 가져옵니다. "Default"는 CLI 자체 설정을 따르며, "직접 입력…"을 선택하면 CLI가 허용하는 모델 ID를 입력할 수 있습니다.',
   'settings.modelPickerLiveHint':
     '설치된 CLI에서 모델을 새로 고쳤습니다. 기본값은 계속 CLI 구성을 사용합니다.',
+  'settings.modelPickerLiveCatalogOnlyHint':
+    '설치된 CLI에서 모델을 새로 고쳤습니다.',
   'settings.modelPickerFallbackHint':
     '내장 기본값을 표시 중입니다. CLI에서 실시간 모델을 가져오려면 다시 스캔을 클릭하세요.',
   'settings.cliEnvTitle': 'CLI config locations',
@@ -757,6 +760,8 @@ export const ko: Dict = {
   'avatar.useApi': 'API · BYOK 사용',
   'avatar.codeAgent': '코드 에이전트',
   'avatar.rescan': 'PATH 다시 스캔',
+  'avatar.amrConsole': 'AMR account',
+  'avatar.amrConsoleMeta': 'Balance & recharge',
   'avatar.settings': '설정',
   'avatar.backToProjects': '프로젝트 목록으로 돌아가기',
   'avatar.metaActive': '활성',

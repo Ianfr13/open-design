@@ -213,6 +213,7 @@ interface Props {
   onRefreshAgents: (
     options?: AgentRefreshOptions,
   ) => AgentInfo[] | Promise<AgentInfo[] | void> | void;
+  onAmrLoginStatusChange?: (status: VelaLoginStatus | null) => void;
   /** Re-fetch functional skills into App state after Settings mutations. */
   onSkillsRefresh?: () => Promise<void> | void;
   daemonMediaProviders?: AppConfig['mediaProviders'] | null;
@@ -237,6 +238,14 @@ export interface AgentRefreshOptions {
   throwOnError?: boolean;
   agentCliEnv?: AppConfig['agentCliEnv'];
 }
+
+// When AMR sign-in completes, vela's live `models` catalog can lag the
+// credential write by a beat (the link backend has to register the freshly
+// authorized device). Re-detect a few times so a momentarily-empty catalog
+// doesn't leave the model picker hidden — the symptom that previously needed
+// an app restart / reinstall to clear.
+const AMR_SIGN_IN_RESCAN_ATTEMPTS = 4;
+const AMR_SIGN_IN_RESCAN_RETRY_MS = 1500;
 
 function codexPathStrings(locale: Locale) {
   if (locale === 'zh-CN') {
@@ -850,6 +859,7 @@ export function SettingsDialog({
   composioConfigLoading = false,
   onClose,
   onRefreshAgents,
+  onAmrLoginStatusChange,
   onSkillsRefresh,
   daemonMediaProviders,
   daemonMediaProvidersFetchState = 'idle',
@@ -926,6 +936,10 @@ export function SettingsDialog({
   });
 
   useEffect(() => {
+    onAmrLoginStatusChange?.(amrCardStatus);
+  }, [amrCardStatus, onAmrLoginStatusChange]);
+
+  useEffect(() => {
     const hasAmrAgent = agents.some((agent) => agent.id === 'amr' && agent.available);
     if (!hasAmrAgent) {
       setAmrCardStatus(null);
@@ -934,7 +948,13 @@ export function SettingsDialog({
       return;
     }
     let cancelled = false;
-    setAmrCardStatusReady(false);
+    // Refetch in place on every agents refresh, but do NOT flip
+    // `amrCardStatusReady` back to false here. The post-sign-in model-catalog
+    // rescan loop hands down a fresh `agents` array on each retry; tearing the
+    // pill down to the hidden `--placeholder` between the reset and the async
+    // status read made the Sign out action blink out and back on every tick.
+    // Readiness latches true after the first read and only resets when AMR
+    // becomes unavailable (handled above).
     void fetchVelaLoginStatus().then((next) => {
       if (!cancelled) {
         setAmrCardStatus(next);
@@ -943,6 +963,38 @@ export function SettingsDialog({
     });
     return () => {
       cancelled = true;
+    };
+  }, [agents]);
+
+  // Reconcile AMR sign-in state whenever the user returns to the window. The
+  // vela device-login flow completes in an external browser / AMR console; if
+  // the in-pill poll has already timed out (or the login finished fully
+  // out-of-band), the card would otherwise keep showing the stale signed-out
+  // state until Settings is closed and reopened. Refetching on focus /
+  // visibility keeps the signed-in state, email, and Sign out action live.
+  useEffect(() => {
+    const hasAmrAgent = agents.some((agent) => agent.id === 'amr' && agent.available);
+    if (!hasAmrAgent) return;
+    let cancelled = false;
+    // Passive read only. Push the daemon's current status down into the card;
+    // the pill mirrors it via `initialStatus` (and clears any stale login error
+    // when it sees a signed-in status). Do NOT republish the login-state-change
+    // event here — that restarts the pill's poll/pending machine on every focus
+    // and, while the external browser is stealing and returning focus during a
+    // login, ping-pongs the action between "Signing in…" and "Authorize".
+    const resyncAmrStatus = () => {
+      if (document.visibilityState === 'hidden') return;
+      void fetchVelaLoginStatus().then((next) => {
+        if (cancelled || !next) return;
+        setAmrCardStatus(next);
+      });
+    };
+    window.addEventListener('focus', resyncAmrStatus);
+    document.addEventListener('visibilitychange', resyncAmrStatus);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('focus', resyncAmrStatus);
+      document.removeEventListener('visibilitychange', resyncAmrStatus);
     };
   }, [agents]);
   const [byokPreconditionNotice, setByokPreconditionNotice] = useState<{
@@ -986,6 +1038,9 @@ export function SettingsDialog({
   const providerTestAbortRef = useRef<AbortController | null>(null);
   const providerModelsAbortRef = useRef<AbortController | null>(null);
   const pendingAgentInstallRescanRef = useRef(false);
+  // Guards the AMR catalog-chase loop so concurrent renders can't start it
+  // twice (see the re-detect effect below).
+  const amrRescanInFlightRef = useRef(false);
   const agentTestRevisionRef = useRef(0);
   const providerTestRevisionRef = useRef(0);
   const providerModelsRevisionRef = useRef(0);
@@ -1221,6 +1276,67 @@ export function SettingsDialog({
       window.removeEventListener('focus', handleReturnToSettings);
     };
   }, [agentRescanRunning, handleRefreshAgents]);
+
+  // Chase AMR's live model catalog whenever the user is signed in but the
+  // model list hasn't arrived yet. AMR is detected at app start (often while
+  // signed out, so it comes back with an empty, fail-closed list), and the
+  // live `vela models` catalog only becomes fetchable once the credential
+  // lands — and can lag the credential write by a beat. We must cover every
+  // way Settings ends up "signed in + empty", not just an in-Settings
+  // sign-in edge: onboarding signs in and re-detects exactly once, so if that
+  // single call lands during the propagation window Settings later mounts
+  // already signed in with an empty list. Keying on `loggedIn === true` +
+  // "AMR has no models" handles both; the picker shows its loading state
+  // (see renderAgentModelConfig) until the catalog fills in.
+  //
+  // `onRefreshAgents` / `agents` are read through refs so re-detecting (which
+  // changes their identity) can't tear the retry loop down mid-flight — that
+  // is what made the loading row flash and vanish before the catalog arrived.
+  // The in-flight ref keeps a single loop running across renders.
+  const onRefreshAgentsRef = useRef(onRefreshAgents);
+  onRefreshAgentsRef.current = onRefreshAgents;
+  const agentsRef = useRef(agents);
+  agentsRef.current = agents;
+  useEffect(() => {
+    if (amrCardStatus?.loggedIn !== true) return;
+    const amr = agentsRef.current.find((agent) => agent.id === 'amr');
+    if (!amr || (amr.models?.length ?? 0) > 0) return;
+    if (amrRescanInFlightRef.current) return;
+    amrRescanInFlightRef.current = true;
+    let cancelled = false;
+    void (async () => {
+      try {
+        for (
+          let attempt = 0;
+          attempt < AMR_SIGN_IN_RESCAN_ATTEMPTS && !cancelled;
+          attempt += 1
+        ) {
+          let next: void | AgentInfo[];
+          try {
+            next = await onRefreshAgentsRef.current();
+          } catch {
+            return;
+          }
+          if (cancelled) return;
+          const detected = Array.isArray(next) ? next : [];
+          const refreshed = detected.find((agent) => agent.id === 'amr');
+          // Stop once the live catalog has caught up (or AMR vanished); a
+          // still-empty list means vela hasn't published the catalog yet, so
+          // retry.
+          if (!refreshed || (refreshed.models?.length ?? 0) > 0) return;
+          await new Promise((resolve) => {
+            setTimeout(resolve, AMR_SIGN_IN_RESCAN_RETRY_MS);
+          });
+        }
+      } finally {
+        amrRescanInFlightRef.current = false;
+      }
+    })();
+    return () => {
+      cancelled = true;
+      amrRescanInFlightRef.current = false;
+    };
+  }, [amrCardStatus?.loggedIn]);
 
   const handleTestAgent = async () => {
     if (agentTestState.status === 'running') {
@@ -2207,6 +2323,41 @@ export function SettingsDialog({
     const hasReasoning =
       Array.isArray(selected.reasoningOptions) &&
       selected.reasoningOptions.length > 0;
+    // AMR's live catalog only lands a beat after sign-in. While the user is
+    // signed in but the model list hasn't arrived yet, show the picker in a
+    // loading state instead of hiding it — so the dropdown appears at sign-in
+    // and simply fills in, rather than popping in seconds later.
+    if (selected.id === 'amr' && !hasModels && (amrCardStatus?.loggedIn ?? false)) {
+      return (
+        <div className="agent-card-config">
+          <label className="field">
+            <span className="field-label">
+              {t('settings.modelPicker')}
+              <span
+                className="agent-model-source-badge live"
+                aria-hidden="true"
+              >
+                {t('settings.modelSourceLive')}
+              </span>
+            </span>
+            <div className="agent-model-select-wrap">
+              <div
+                className="settings-model-select agent-model-select-loading"
+                role="status"
+                aria-busy="true"
+                data-testid={`settings-agent-model-loading-${selected.id}`}
+              >
+                <Icon name="spinner" size={13} className="icon-spin" />
+                <span>{t('common.loading')}</span>
+              </div>
+            </div>
+          </label>
+          <p className="hint agent-model-row-hint">
+            {t('settings.modelPickerLiveHint')}
+          </p>
+        </div>
+      );
+    }
     if (!hasModels && !hasReasoning) return null;
     const choice = cfg.agentModels?.[selected.id] ?? {};
     const knownModelIds = selected.models?.map((m) => m.id) ?? [];
@@ -2261,7 +2412,9 @@ export function SettingsDialog({
         : t('settings.modelSourceFallback');
     const modelSourceHint =
       modelSource === 'live'
-        ? t('settings.modelPickerLiveHint')
+        ? selected.supportsCustomModel === false
+          ? t('settings.modelPickerLiveCatalogOnlyHint')
+          : t('settings.modelPickerLiveHint')
         : t('settings.modelPickerFallbackHint');
     return (
       <div className="agent-card-config">
@@ -2285,6 +2438,8 @@ export function SettingsDialog({
                   searchPlaceholder={t('designs.searchPlaceholder')}
                   searchInputTestId={`settings-agent-model-search-${selected.id}`}
                   popoverTestId={`settings-agent-model-popover-${selected.id}`}
+                  minSearchableOptions={5}
+                  popoverMinWidth={340}
                   models={selected.models!}
                   onChange={(nextValue) => {
                     if (nextValue === CUSTOM_MODEL_SENTINEL) {
@@ -2969,6 +3124,7 @@ export function SettingsDialog({
                                         initialStatus={amrCardStatus}
                                         skipInitialRefresh
                                         signInLabel={t('settings.amrAuthorize')}
+                                        showConsoleAction={amrCardStatus?.loggedIn === true}
                                         revealPendingCancelAction={amrRevealPendingCancelAction}
                                         onStatusChange={setAmrCardStatus}
                                       />

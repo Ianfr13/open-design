@@ -115,7 +115,7 @@ import {
   AMR_LOGIN_POLL_INTERVAL_MS,
   amrLoginPollOutcome,
 } from './amrLoginPolling';
-import { renderModelOptions } from './modelOptions';
+import { SearchableModelSelect } from './modelOptions';
 import {
   providerModelsCacheKey,
   type ProviderModelsCache,
@@ -845,6 +845,9 @@ function OnboardingView({
     | { status: 'running'; inputKey: string }
     | { status: 'done'; inputKey: string; result: ProviderModelsResponse }
   >({ status: 'idle' });
+  const [amrCloudVisible, setAmrCloudVisible] = useState(
+    () => agents.length === 0 || agents.some((agent) => agent.id === 'amr' && agent.available),
+  );
   const [localProviderModelsCache, setLocalProviderModelsCache] =
     useState<ProviderModelsCache>({});
   const hasSharedProviderModelsCache =
@@ -857,6 +860,12 @@ function OnboardingView({
     hasSharedProviderModelsCache
       ? onProviderModelsCacheChange!
       : setLocalProviderModelsCache;
+  // MERGE-TODO(@YUHAO-corn #3286, @AmyShang-alt #3262): release's model-picker
+  // names aliased onto main's fingerprint-keyed cache so BYOK raw API keys never
+  // become React cache map keys (security, PR#3286). Verify discovery + search UI
+  // still read the right cache at runtime.
+  const providerModelsCache = activeProviderModelsCache;
+  const setProviderModelsCache = activeSetProviderModelsCache;
   const [profile, setProfile] = useState({
     role: '',
     orgSize: '',
@@ -922,7 +931,7 @@ function OnboardingView({
     (agent) => agent.available && agent.id !== 'amr' && visibleAgentIds.includes(agent.id),
   );
   const amrAgent = agents.find((agent) => agent.id === 'amr' && agent.available) ?? null;
-  const showAmrCloudOption = amrAgent !== null || agents.length === 0;
+  const showAmrCloudOption = amrCloudVisible;
   const amrSignedIn = amrStatus?.loggedIn === true;
   const amrSelectedAndSignedOut = runtime === 'amr' && !amrSignedIn;
   const amrAgentChoice = config.agentModels?.amr ?? {};
@@ -953,6 +962,11 @@ function OnboardingView({
       agentRevealTimersRef.current = [];
     };
   }, []);
+
+  useEffect(() => {
+    if (amrCloudVisible) return;
+    if (amrAgent || agents.length === 0) setAmrCloudVisible(true);
+  }, [agents.length, amrAgent, amrCloudVisible]);
 
   useEffect(() => {
     if (!amrAgent || runtime !== null) return;
@@ -1403,6 +1417,16 @@ function OnboardingView({
         return;
       }
       if (await pollAmrLoginCompletion()) {
+        // Re-detect agents now that AMR is signed in: the live `vela models`
+        // catalog only becomes fetchable after the credential lands, and the
+        // last detection ran while signed out (empty, fail-closed model
+        // list). Without this the model picker stays empty until an app
+        // restart. Best-effort — Settings can still rescan manually.
+        try {
+          await onRefreshAgents();
+        } catch {
+          // ignore; sign-in itself succeeded
+        }
         setStep((current) => current + 1);
       }
     } finally {
@@ -2062,13 +2086,24 @@ function OnboardingCliSetupPanel({
         </div>
       ) : null}
       {selectedAgent && modelOptions.length > 0 ? (
-        <OnboardingDropdown
-          label={`${t('settings.modelPicker')} · ${selectedAgent.name}`}
-          placeholder={t('settings.modelSourceFallback')}
-          value={selectedModel}
-          options={modelOptions}
-          onChange={onSelectModel}
-        />
+        <label className="onboarding-view__model-picker">
+          <span className="onboarding-view__model-label">
+            {`${t('settings.modelPicker')} · ${selectedAgent.name}`}
+          </span>
+          <span className="onboarding-view__model-select-wrap">
+            <SearchableModelSelect
+              className="inline-switcher__select onboarding-view__model-select"
+              value={selectedModel}
+              onChange={onSelectModel}
+              models={modelOptions.map((option) => ({ id: option.value, label: option.label }))}
+              searchPlaceholder={t('newproj.modelSearch')}
+              searchInputTestId="onboarding-cli-model-search"
+              popoverTestId="onboarding-cli-model-popover"
+              minSearchableOptions={5}
+              popoverMinWidth={340}
+            />
+          </span>
+        </label>
       ) : null}
     </div>
   );
@@ -2104,16 +2139,21 @@ function OnboardingAmrModelSelect({
         </span>
       </span>
       <span className="onboarding-view__model-select-wrap">
-        <select
+        <SearchableModelSelect
+          className="inline-switcher__select onboarding-view__model-select"
           value={selectedModel}
-          onChange={(event) => onSelectModel(event.target.value)}
-        >
-          {renderModelOptions(displayModels)}
-        </select>
-        <Icon
-          name="chevron-down"
-          size={12}
-          className="onboarding-view__model-select-chevron"
+          onChange={onSelectModel}
+          models={displayModels}
+          additionalOptions={
+            selectedModel && !displayModels.some((model) => model.id === selectedModel)
+              ? [{ value: selectedModel, label: selectedModel }]
+              : undefined
+          }
+          searchPlaceholder={t('newproj.modelSearch')}
+          searchInputTestId="onboarding-amr-model-search"
+          popoverTestId="onboarding-amr-model-popover"
+          minSearchableOptions={5}
+          popoverMinWidth={340}
         />
       </span>
     </label>
@@ -2290,14 +2330,27 @@ function OnboardingByokSetupPanel({
           />
         </label>
         {modelOptions.length > 0 ? (
-          <OnboardingDropdown
-            label={t('settings.model')}
-            placeholder={selectedProvider?.model ?? 'claude-sonnet-4-5'}
-            value={model}
-            options={modelOptions}
-            onChange={onModelChange}
-            placement="top"
-          />
+          <label className="onboarding-view__model-picker onboarding-view__setup-model-picker">
+            <span className="onboarding-view__model-label">{t('settings.model')}</span>
+            <span className="onboarding-view__model-select-wrap">
+              <SearchableModelSelect
+                className="inline-switcher__select onboarding-view__model-select"
+                value={model}
+                onChange={onModelChange}
+                models={modelOptions.map((option) => ({ id: option.value, label: option.label }))}
+                searchPlaceholder={t('newproj.modelSearch')}
+                searchInputTestId="onboarding-byok-model-search"
+                popoverTestId="onboarding-byok-model-popover"
+                minSearchableOptions={5}
+                popoverMinWidth={340}
+                additionalOptions={
+                  model && !modelOptions.some((option) => option.value === model)
+                    ? [{ value: model, label: model }]
+                    : undefined
+                }
+              />
+            </span>
+          </label>
         ) : (
           <label className="onboarding-view__inline-field">
             <span>{t('settings.model')}</span>

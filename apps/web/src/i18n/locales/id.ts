@@ -271,6 +271,7 @@ export const id: Dict = {
   'settings.amrSigningIn': 'Signing in…',
   'settings.amrCancelSignIn': 'Cancel sign-in',
   'settings.amrAccountStatus': 'AMR account status',
+  'settings.amrConsole': 'AMR Console',
   'settings.amrLoginErrorCompact': 'AMR sign-in failed.',
   'settings.apiSection': 'Anthropic API',
   'settings.quickFillProvider': 'Provider isi cepat',
@@ -317,6 +318,8 @@ export const id: Dict = {
     'Diambil dari CLI jika tersedia. "Default" mengikuti konfigurasi CLI; "Custom..." untuk mengetik model id sendiri.',
   'settings.modelPickerLiveHint':
     'Model diperbarui dari CLI yang terpasang. Default tetap memakai konfigurasi CLI.',
+  'settings.modelPickerLiveCatalogOnlyHint':
+    'Model diperbarui dari CLI yang terpasang.',
   'settings.modelPickerFallbackHint':
     'Menampilkan default bawaan. Klik Pindai ulang untuk mengambil model langsung dari CLI.',
   'settings.cliEnvTitle': 'Lokasi konfigurasi CLI',
@@ -870,6 +873,8 @@ export const id: Dict = {
   'avatar.useApi': 'Gunakan Anthropic API',
   'avatar.codeAgent': 'Code agent',
   'avatar.rescan': 'Pindai ulang PATH',
+  'avatar.amrConsole': 'AMR account',
+  'avatar.amrConsoleMeta': 'Balance & recharge',
   'avatar.settings': 'Pengaturan',
   'avatar.backToProjects': 'Kembali ke proyek',
   'avatar.metaActive': 'aktif',

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { EntryShell } from '../../src/components/EntryShell';
@@ -54,11 +55,10 @@ function baseConfig(overrides: Partial<AppConfig> = {}): AppConfig {
   } as AppConfig;
 }
 
-function renderOnboarding(
+function defaultEntryShellProps(
   overrides: Partial<React.ComponentProps<typeof EntryShell>> = {},
-) {
-  window.history.replaceState(null, '', '/onboarding');
-  const props: React.ComponentProps<typeof EntryShell> = {
+): React.ComponentProps<typeof EntryShell> {
+  return {
     skills: [],
     designTemplates: [],
     designSystems: [],
@@ -92,6 +92,13 @@ function renderOnboarding(
     onCompleteOnboarding: vi.fn(),
     ...overrides,
   };
+}
+
+function renderOnboarding(
+  overrides: Partial<React.ComponentProps<typeof EntryShell>> = {},
+) {
+  window.history.replaceState(null, '', '/onboarding');
+  const props = defaultEntryShellProps(overrides);
 
   render(
     <I18nProvider initial="en">
@@ -100,6 +107,44 @@ function renderOnboarding(
   );
 
   return props;
+}
+
+function renderOnboardingWithAgentRefresh({
+  initialAgents,
+  refreshedAgents,
+}: {
+  initialAgents: AgentInfo[];
+  refreshedAgents: AgentInfo[];
+}) {
+  window.history.replaceState(null, '', '/onboarding');
+  const onRefreshAgents = vi.fn(() => refreshedAgents);
+  const onModeChange = vi.fn();
+  const onAgentChange = vi.fn();
+
+  function Harness() {
+    const [agents, setAgents] = useState(initialAgents);
+    const handleRefreshAgents = () => {
+      const nextAgents = onRefreshAgents();
+      setAgents(nextAgents);
+      return nextAgents;
+    };
+    const props = defaultEntryShellProps({
+      agents,
+      onModeChange,
+      onAgentChange,
+      onRefreshAgents: handleRefreshAgents,
+    });
+
+    return (
+      <I18nProvider initial="en">
+        <EntryShell {...props} />
+      </I18nProvider>
+    );
+  }
+
+  render(<Harness />);
+
+  return { onRefreshAgents, onModeChange, onAgentChange };
 }
 
 afterEach(() => {
@@ -169,6 +214,28 @@ describe('EntryShell onboarding Open Design AMR runtime', () => {
     const localPanel = screen.getByText('Local CLI').closest('.onboarding-view__setup-panel');
     expect(localPanel?.textContent).toContain('Claude Code');
     expect(localPanel?.textContent).not.toContain('AMR');
+  });
+
+  it('keeps Open Design AMR visible after Local CLI refresh returns only local agents', async () => {
+    vi.useFakeTimers();
+    globalThis.fetch = vi.fn(async () =>
+      jsonResponse({ loggedIn: false, profile: 'prod', user: null, configPath: '/x' }),
+    ) as typeof fetch;
+    const props = renderOnboardingWithAgentRefresh({
+      initialAgents: [amrAgent(), cliAgent()],
+      refreshedAgents: [cliAgent()],
+    });
+
+    expect(screen.getByRole('button', { name: /Open Design AMR/i })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /Local coding agent/i }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(300);
+    });
+
+    expect(props.onRefreshAgents).toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: /Open Design AMR/i })).toBeTruthy();
+    expect(screen.getByText('Local CLI')).toBeTruthy();
+    expect(screen.getByText('Claude Code')).toBeTruthy();
   });
 
   it('keeps AMR login pending while device authorization is waiting', async () => {
@@ -312,6 +379,51 @@ describe('EntryShell onboarding Open Design AMR runtime', () => {
     await vi.advanceTimersByTimeAsync(2000);
     await vi.waitFor(() => {
       expect(screen.getByRole('heading', { name: 'About you' })).toBeTruthy();
+    });
+  });
+
+  // First-install repro: AMR was detected while signed out (empty, fail-closed
+  // model list). After device authorization completes the live `vela models`
+  // catalog becomes fetchable, so onboarding must re-detect agents — otherwise
+  // the Settings model picker stays empty until an app restart / reinstall.
+  it('re-detects agents after AMR device authorization completes during onboarding', async () => {
+    let statusCalls = 0;
+    const fetchMock = vi.fn(async (input, init) => {
+      const url = String(input);
+      if (url.endsWith('/api/integrations/vela/status')) {
+        statusCalls += 1;
+        return jsonResponse(
+          statusCalls >= 3
+            ? {
+                loggedIn: true,
+                profile: 'prod',
+                user: { id: 'u', email: 'user@example.com' },
+                configPath: '/x',
+              }
+            : { loggedIn: false, profile: 'prod', user: null, configPath: '/x' },
+        );
+      }
+      if (url.endsWith('/api/integrations/vela/login') && init?.method === 'POST') {
+        return jsonResponse({ pid: 123 }, 202);
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    globalThis.fetch = fetchMock as typeof fetch;
+    const onRefreshAgents = vi.fn(() => [
+      amrAgent({ models: [{ id: 'glm-5.1', label: 'glm-5.1' }] }),
+      cliAgent(),
+    ]);
+    renderOnboarding({ onRefreshAgents });
+
+    const signIn = await screen.findByRole('button', { name: /Sign in to continue/i });
+    vi.useFakeTimers();
+    fireEvent.click(signIn);
+    await act(async () => {});
+
+    expect(onRefreshAgents).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(2000);
+    await vi.waitFor(() => {
+      expect(onRefreshAgents).toHaveBeenCalled();
     });
   });
 

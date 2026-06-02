@@ -255,6 +255,7 @@ export const en: Dict = {
   'settings.amrSigningIn': 'Signing in…',
   'settings.amrCancelSignIn': 'Cancel sign-in',
   'settings.amrAccountStatus': 'AMR account status',
+  'settings.amrConsole': 'AMR Console',
   'settings.amrLoginErrorCompact': 'AMR sign-in failed.',
   'settings.advanced': 'Advanced',
   'settings.amrLogin': 'Sign in',
@@ -332,6 +333,8 @@ export const en: Dict = {
     'Default uses the CLI’s own config. Custom… lets you type any model id.',
   'settings.modelPickerLiveHint':
     "Model list comes from this CLI. Default uses the CLI's own config.",
+  'settings.modelPickerLiveCatalogOnlyHint':
+    'Model list comes from this CLI.',
   'settings.modelPickerFallbackHint':
     'Showing built-in defaults. Click Rescan to pull live models from the CLI.',
   'settings.cliEnvTitle': 'Advanced: proxy & custom paths',
@@ -1362,6 +1365,8 @@ export const en: Dict = {
   'avatar.useApi': 'Use API · BYOK',
   'avatar.codeAgent': 'Code agent',
   'avatar.rescan': 'Rescan PATH',
+  'avatar.amrConsole': 'AMR account',
+  'avatar.amrConsoleMeta': 'Balance & recharge',
   'avatar.settings': 'Settings',
   'avatar.backToProjects': 'Back to projects',
   'avatar.metaActive': 'active',

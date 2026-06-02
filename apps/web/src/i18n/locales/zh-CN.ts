@@ -255,6 +255,7 @@ export const zhCN: Dict = {
   'settings.amrSigningIn': '登录中…',
   'settings.amrCancelSignIn': '取消登录',
   'settings.amrAccountStatus': 'AMR 账户状态',
+  'settings.amrConsole': '控制台',
   'settings.amrLoginErrorCompact': 'AMR 登录失败。',
   'settings.advanced': '高级设置',
   'settings.amrLogin': '登录',
@@ -332,6 +333,7 @@ export const zhCN: Dict = {
     '当 CLI 提供 `models` 命令时会自动拉取。选择「默认」则沿用 CLI 自身的配置；选择「自定义」可手动输入任何 CLI 支持的模型 id。',
   'settings.modelPickerLiveHint':
     '模型列表来自这个 CLI；选“默认”会沿用 CLI 自己的设置。',
+  'settings.modelPickerLiveCatalogOnlyHint': '模型列表来自这个 CLI。',
   'settings.modelPickerFallbackHint':
     '正在显示内置默认值。点击“重新扫描”可从 CLI 拉取实时模型。',
   'settings.cliEnvTitle': 'CLI 配置位置',
@@ -1354,6 +1356,8 @@ export const zhCN: Dict = {
   'avatar.useApi': '使用 API · BYOK',
   'avatar.codeAgent': '代码代理',
   'avatar.rescan': '重新扫描 PATH',
+  'avatar.amrConsole': 'AMR 账户',
+  'avatar.amrConsoleMeta': '余额与充值',
   'avatar.settings': '设置',
   'avatar.backToProjects': '返回项目列表',
   'avatar.metaActive': '使用中',

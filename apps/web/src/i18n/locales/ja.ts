@@ -271,6 +271,7 @@ export const ja: Dict = {
   'settings.amrSigningIn': 'Signing in…',
   'settings.amrCancelSignIn': 'Cancel sign-in',
   'settings.amrAccountStatus': 'AMR account status',
+  'settings.amrConsole': 'AMR Console',
   'settings.amrLoginErrorCompact': 'AMR sign-in failed.',
   'settings.apiSection': 'Anthropic API',
   'settings.quickFillProvider': 'プロバイダーをクイック入力',
@@ -320,6 +321,8 @@ export const ja: Dict = {
     'CLI が `models` コマンドを公開している場合に取得されます。「デフォルト」は CLI 自身の設定に委ね、「カスタム…」は CLI が受け付ける任意のモデル ID を入力できます。',
   'settings.modelPickerLiveHint':
     'インストール済みの CLI からモデルを更新しました。デフォルトは引き続き CLI 設定を使用します。',
+  'settings.modelPickerLiveCatalogOnlyHint':
+    'インストール済みの CLI からモデルを更新しました。',
   'settings.modelPickerFallbackHint':
     '組み込みのデフォルトを表示しています。再スキャンをクリックすると CLI から最新モデルを取得します。',
   'settings.cliEnvTitle': 'CLI config locations',
@@ -644,6 +647,8 @@ export const ja: Dict = {
   'avatar.useApi': 'API · BYOK を使用',
   'avatar.codeAgent': 'コードエージェント',
   'avatar.rescan': 'PATH を再スキャン',
+  'avatar.amrConsole': 'AMR account',
+  'avatar.amrConsoleMeta': 'Balance & recharge',
   'avatar.settings': '設定',
   'avatar.backToProjects': 'プロジェクトに戻る',
   'avatar.metaActive': 'アクティブ',
