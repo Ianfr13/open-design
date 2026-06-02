@@ -1242,36 +1242,31 @@ export default function Page({
                 </ul>
               </div>
               <div className='foot-col'>
-                <h5>{home.footer.columns.library}</h5>
+                {/*
+                 * Plugins column — title and entries mirror the header
+                 * Plugins dropdown and the sub-page footer exactly
+                 * (Templates → Skills → Systems, plain names, no count
+                 * prefixes). Reuses the shared `nav` copy so the three
+                 * surfaces can never drift; `home.footer.columns.library`
+                 * and `home.footer.libraryLinks.*` are intentionally left
+                 * unused here.
+                 */}
+                <h5>{commonCopy.header.nav.plugins}</h5>
                 <ul>
                   <li>
+                    <a href={href('/plugins/templates/')}>
+                      {commonCopy.header.nav.templates}
+                    </a>
+                  </li>
+                  <li>
                     <a href={href('/plugins/skills/')}>
-                      {home.footer.libraryLinks.skills(skills)}
+                      {commonCopy.header.nav.skills}
                     </a>
                   </li>
                   <li>
                     <a href={href('/plugins/systems/')}>
-                      {home.footer.libraryLinks.systems(systems)}
+                      {commonCopy.header.nav.systems}
                     </a>
-                  </li>
-                  <li>
-                    <a href={href('/plugins/templates/')}>
-                      {home.footer.libraryLinks.templates}
-                    </a>
-                  </li>
-                  {/*
-                   * Sister product: HTML Anything is the agent-driven HTML
-                   * editor from the same team. Listed here as a peer to the
-                   * Open Design library facets so the home delivers a real
-                   * inline anchor link to /html-anything/ — nav-only entries
-                   * (the Product dropdown) carry less SEO weight than a body
-                   * anchor in a discoverable section like the footer. The
-                   * brand name stays in English on every locale, so we
-                   * hardcode the label rather than threading a new key
-                   * through 18 home-copy translations.
-                   */}
-                  <li>
-                    <a href='/html-anything/'>HTML Anything</a>
                   </li>
                 </ul>
               </div>
