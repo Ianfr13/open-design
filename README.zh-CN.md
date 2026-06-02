@@ -1,6 +1,6 @@
 <h1 align="center">Open Design：The open-source Claude Design alternative</h1>
 
-> 🔥 **Open Design 0.8.0 已发布。** 这一版重点上线两件事：Plugin 体系，让模板和工作流像文件夹一样添加、复制、分享；Design System，支持导入品牌规范并沉淀为可复用的 [`DESIGN.md`](design-systems/)。[下载 0.8.0](https://github.com/nexu-io/open-design/releases) · [参与讨论](https://github.com/nexu-io/open-design/discussions/1727)
+> 🔥 **Open Design 0.9.0 正式发布：创作，从此无需准备。** [官方 Model Router](https://open-design.ai/amr) 直接内置于应用，无需额外配置、不用安装 CLI，也不必准备 API Key。只需打开应用，登录账号，就能立刻开始设计与创作。[下载 0.9.0](https://github.com/nexu-io/open-design/releases) · [参与讨论](https://github.com/nexu-io/open-design/discussions/1727)
 >
 > 🏅 **Open Design Fellow 计划正式开放。** 如果你也相信设计应该是开放的，欢迎成为 Open Design Fellow，和核心团队一起打磨产品，让更多人参与并定义设计的未来。详情 → [`MAINTAINERS.md`](MAINTAINERS.md) 与 [Discord](https://discord.gg/qhbcCH8Am4)。
 
