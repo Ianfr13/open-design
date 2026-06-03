@@ -92,6 +92,25 @@ export function ManualEditPanel({
     onError('');
     onStyleChange?.(targetForInspector.id, normalized.styles, `Style: ${targetForInspector.label}`);
   };
+  const applyContent = () => {
+    if (!targetForInspector) return;
+    onError('');
+    if (targetForInspector.kind === 'link') {
+      onApplyPatch(
+        { id: targetForInspector.id, kind: 'set-link', text: draft.text, href: draft.href },
+        `Content: ${targetForInspector.label}`,
+      );
+      return;
+    }
+    if (targetForInspector.kind === 'image') {
+      onApplyPatch(
+        { id: targetForInspector.id, kind: 'set-image', src: draft.src, alt: draft.alt },
+        `Content: ${targetForInspector.label}`,
+      );
+      return;
+    }
+    onApplyPatch({ id: targetForInspector.id, kind: 'set-text', value: draft.text }, `Content: ${targetForInspector.label}`);
+  };
 
   const startPanelDrag = (event: ReactPointerEvent<HTMLButtonElement>) => {
     if (!onFloatingPositionChange) return;
@@ -159,12 +178,21 @@ export function ManualEditPanel({
         </div>
         <div className="manual-edit-scroll">
           {targetForInspector ? (
-            <StyleInspector
-              targetKind={targetForInspector.kind}
-              styles={draft.styles}
-              layoutEnabled={targetForInspector.isLayoutContainer}
-              onChange={changeTargetStyle}
-            />
+            <>
+              <ContentEditor
+                target={targetForInspector}
+                draft={draft}
+                busy={Boolean(busy)}
+                onDraftChange={onDraftChange}
+                onApply={applyContent}
+              />
+              <StyleInspector
+                targetKind={targetForInspector.kind}
+                styles={draft.styles}
+                layoutEnabled={targetForInspector.isLayoutContainer}
+                onChange={changeTargetStyle}
+              />
+            </>
           ) : !targetForInspector ? (
             <PageInspector
               enabled={pageStylesEnabled}
@@ -292,6 +320,74 @@ export function ManualEditPanel({
         </div>
       </section>
     </aside>
+  );
+}
+
+function ContentEditor({
+  target,
+  draft,
+  busy,
+  onDraftChange,
+  onApply,
+}: {
+  target: ManualEditTarget;
+  draft: ManualEditDraft;
+  busy: boolean;
+  onDraftChange: (draft: ManualEditDraft) => void;
+  onApply: () => void;
+}) {
+  const t = useT();
+  return (
+    <div className="manual-edit-tab-body manual-edit-content-editor">
+      <div className="cc-section">
+        <header className="cc-section-head">{t('manualEdit.tabContent')}</header>
+        <div className="cc-section-body">
+          {target.kind === 'image' ? (
+            <>
+              <label className="manual-edit-field">
+                <span>{t('manualEdit.imageUrl')}</span>
+                <input
+                  value={draft.src}
+                  onChange={(event) => onDraftChange({ ...draft, src: event.currentTarget.value })}
+                />
+              </label>
+              <label className="manual-edit-field">
+                <span>{t('manualEdit.altText')}</span>
+                <input
+                  value={draft.alt}
+                  onChange={(event) => onDraftChange({ ...draft, alt: event.currentTarget.value })}
+                />
+              </label>
+            </>
+          ) : (
+            <label className="manual-edit-field">
+              <span>{t('manualEdit.text')}</span>
+              <textarea
+                value={draft.text}
+                onChange={(event) => onDraftChange({ ...draft, text: event.currentTarget.value })}
+              />
+            </label>
+          )}
+          {target.kind === 'link' ? (
+            <label className="manual-edit-field">
+              <span>{t('manualEdit.href')}</span>
+              <input
+                value={draft.href}
+                onChange={(event) => onDraftChange({ ...draft, href: event.currentTarget.value })}
+              />
+            </label>
+          ) : null}
+          <button
+            type="button"
+            className="manual-edit-footer-btn primary manual-edit-apply-content"
+            disabled={busy}
+            onClick={onApply}
+          >
+            {t('manualEdit.applyContent')}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

@@ -55,11 +55,35 @@ describe('ManualEditPanel', () => {
     Reflect.deleteProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT');
   });
 
-  it('renders the style inspector without the advanced editor entry', () => {
+  it('renders the content editor with the style inspector', () => {
     renderPanel();
 
+    expect(host.textContent).toContain('Content');
+    expect(host.textContent).toContain('Apply Content');
     expect(host.textContent).toContain('TYPOGRAPHY');
     expect(host.textContent).not.toContain('Advanced');
+  });
+
+  it('applies selected text edits from the content editor', () => {
+    const onDraftChange = vi.fn();
+    const onApplyPatch = vi.fn();
+    renderPanel({ onDraftChange, onApplyPatch, draftText: 'Updated headline' });
+
+    const textArea = host.querySelector('.manual-edit-content-editor textarea') as HTMLTextAreaElement | null;
+    const apply = host.querySelector('.manual-edit-apply-content') as HTMLButtonElement | null;
+    if (!textArea || !apply) throw new Error('Content editor controls not found');
+
+    act(() => {
+      textArea.value = 'Edited again';
+      Simulate.change(textArea);
+      apply.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+    });
+
+    expect(onDraftChange).toHaveBeenCalledWith(expect.objectContaining({ text: 'Edited again' }));
+    expect(onApplyPatch).toHaveBeenCalledWith(
+      { id: 'hero-title', kind: 'set-text', value: 'Updated headline' },
+      'Content: Hero Title',
+    );
   });
 
   it('shows a readable selected element name in the titlebar', () => {
@@ -498,6 +522,7 @@ describe('ManualEditPanel', () => {
     attributesText = '{}',
     selectedTarget = target,
     styles = emptyManualEditStyles(),
+    draftText = 'Updated copy',
     pageStylesEnabled = true,
     floatingStyle,
     onFloatingPositionChange,
@@ -513,13 +538,14 @@ describe('ManualEditPanel', () => {
     attributesText?: string;
     selectedTarget?: ManualEditTarget | null;
     styles?: ReturnType<typeof emptyManualEditStyles>;
+    draftText?: string;
     pageStylesEnabled?: boolean;
     floatingStyle?: CSSProperties;
     onFloatingPositionChange?: (position: { left: number; top: number }) => void;
   } = {}) {
     const draft = {
       ...emptyManualEditDraft('<html></html>'),
-      text: 'Updated copy',
+      text: draftText,
       attributesText,
       styles,
       outerHtml: target.outerHtml,
