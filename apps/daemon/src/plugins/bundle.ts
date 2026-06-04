@@ -304,10 +304,11 @@ function readSkillMetadata(folder: string, fallbackId: string): { title?: string
   try {
     const raw = fs.readFileSync(path.join(folder, 'SKILL.md'), 'utf8');
     const adapted = adaptAgentSkill(raw, { folderId: fallbackId });
-    return {
+    const metadata: { title?: string; description?: string } = {
       title: adapted.manifest.title ?? adapted.manifest.name ?? fallbackId,
-      description: adapted.manifest.description,
     };
+    if (adapted.manifest.description) metadata.description = adapted.manifest.description;
+    return metadata;
   } catch {
     return { title: fallbackId };
   }
