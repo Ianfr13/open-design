@@ -1775,6 +1775,9 @@ export function DesignSystemDetailView({
             initialDraft={chatSeed?.text}
             conversations={conversations}
             activeConversationId={activeConversationId}
+            // `chatMessages` here tracks `activeConversationId`, so keep the live
+            // count authoritative for the active row (preserves prior behavior).
+            messagesConversationId={activeConversationId}
             onSelectConversation={setActiveConversationId}
             onDeleteConversation={() => {}}
             onNewConversation={createProjectChatConversation}
