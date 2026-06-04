@@ -447,21 +447,37 @@ export function HomeView({
         : 0,
     [active],
   );
-  const contextItemCount = useMemo(
-    () =>
+  // Plugin/MCP/connector contexts whose @mention pill is still in the prompt
+  // are already represented inline in the composer, so they must NOT also drive
+  // the active context row — otherwise selecting only an inline-mentioned
+  // connector mounts an empty row (count label, no visible children) above the
+  // editor. Count only contexts that have no inline representation here.
+  const contextItemCount = useMemo(() => {
+    const trimmed = prompt.trim();
+    const unreconciledPlugins = selectedPluginContexts.filter(
+      (item) => !mentionTokenPresent(trimmed, item.record.title),
+    ).length;
+    const unreconciledMcp = selectedMcpContexts.filter(
+      (item) => !mentionTokenPresent(trimmed, item.server.label || item.server.id),
+    ).length;
+    const unreconciledConnectors = selectedConnectorContexts.filter(
+      (item) => !mentionTokenPresent(trimmed, item.connector.name),
+    ).length;
+    return (
       activeContextItemCount +
-      selectedPluginContexts.length +
-      selectedMcpContexts.length +
-      selectedConnectorContexts.length +
-      stagedFiles.length,
-    [
-      activeContextItemCount,
-      selectedConnectorContexts.length,
-      selectedMcpContexts.length,
-      selectedPluginContexts.length,
-      stagedFiles.length,
-    ],
-  );
+      unreconciledPlugins +
+      unreconciledMcp +
+      unreconciledConnectors +
+      stagedFiles.length
+    );
+  }, [
+    activeContextItemCount,
+    prompt,
+    selectedConnectorContexts,
+    selectedMcpContexts,
+    selectedPluginContexts,
+    stagedFiles.length,
+  ]);
 
   // The Home chip rail and the Community grid share a mental
   // model — "Prototype" up top is the same artifact intent as the

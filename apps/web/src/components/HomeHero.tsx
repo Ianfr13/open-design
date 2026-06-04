@@ -551,6 +551,14 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
     };
   }, [plusMenuOpen]);
 
+  // The plugin and MCP flyouts share one `plusQuery`, but the query is scoped to
+  // whichever submenu is open. Reset it whenever the active submenu changes so a
+  // stale plugin search (e.g. "deck") never filters the MCP list — which would
+  // otherwise show "No MCP servers" even when servers exist.
+  useEffect(() => {
+    setPlusQuery('');
+  }, [plusSubmenu]);
+
   useEffect(() => {
     const urls = new Map<string, string>();
     if (typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
