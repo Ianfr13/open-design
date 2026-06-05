@@ -89,6 +89,7 @@ import type {
   AppTheme,
   AppVersionInfo,
   ConnectionTestResponse,
+  DesignSystemGenerationJob,
   OrbitRunSummary,
   OrbitStatusResponse,
   ExecMode,
@@ -244,6 +245,7 @@ interface Props {
   onSkillsChanged?: (affectedSkillId?: string) => void;
   /** Same channel for design-system registry mutations. */
   onDesignSystemsChanged?: (affectedDesignSystemId?: string) => void;
+  onDesignSystemImportRebuildJob?: (designSystemId: string, job: DesignSystemGenerationJob) => void;
   onProviderModelsCacheChange?: Dispatch<SetStateAction<ProviderModelsCache>>;
 }
 
@@ -992,6 +994,7 @@ export function SettingsDialog({
   onProjectsRefresh,
   onSkillsChanged,
   onDesignSystemsChanged,
+  onDesignSystemImportRebuildJob,
   providerModelsCache: sharedProviderModelsCache,
   onProviderModelsCacheChange,
 }: Props) {
@@ -4425,6 +4428,7 @@ export function SettingsDialog({
               cfg={cfg}
               setCfg={setCfg}
               onDesignSystemsChanged={onDesignSystemsChanged}
+              onDesignSystemImportRebuildJob={onDesignSystemImportRebuildJob}
             />
           ) : null}
 
