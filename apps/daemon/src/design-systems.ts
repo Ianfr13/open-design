@@ -85,6 +85,16 @@ export type DesignSystemPackageInfo = {
     snippetCount?: number;
     confidence?: Record<string, string | number>;
     evidenceExcerpt?: string;
+    tokenContract?: {
+      contract?: string;
+      grade?: 'excellent' | 'usable' | 'needs-review' | 'needs-rebuild';
+      score?: number;
+      recommendRebuild?: boolean;
+      sourceBackedA1?: number;
+      requiredA1?: number;
+      fallbackTokens?: number;
+      selfCheckOk?: boolean;
+    };
   };
 };
 
@@ -99,6 +109,13 @@ export type DesignSystemRevision = {
   updatedAt: string;
   sectionTitle?: string;
   jobId?: string;
+  fileChanges?: DesignSystemRevisionFileChange[];
+};
+
+export type DesignSystemRevisionFileChange = {
+  path: string;
+  baseContent: string;
+  proposedContent: string;
 };
 
 type ColorToken = { name: string; value: string };
@@ -136,6 +153,7 @@ type DesignSystemProjectManifest = {
     scanned?: string;
     evidence?: string;
     tokens?: string;
+    report?: string;
     snippets?: string;
   };
   importMode?: 'normalized' | 'hybrid' | 'verbatim';
@@ -214,6 +232,7 @@ export type UserDesignSystemRevisionInput = {
   proposedBody: string;
   sectionTitle?: string;
   jobId?: string;
+  fileChanges?: DesignSystemRevisionFileChange[];
 };
 
 export type DesignSystemListOptions = {
@@ -598,6 +617,7 @@ function buildDesignSystemPullIndex(
   add(manifest.sourceFiles?.scanned, 'scanned source file inventory');
   add(manifest.sourceFiles?.evidence, 'import evidence notes');
   add(manifest.sourceFiles?.tokens, 'source-token evidence');
+  add(manifest.sourceFiles?.report, 'token contract quality report');
   add(manifest.sourceFiles?.snippets, 'source snippet index');
 
   if (entries.length === 0) return undefined;
@@ -618,6 +638,7 @@ async function buildDesignSystemPullFileAllowlist(
   add(manifest.sourceFiles?.scanned);
   add(manifest.sourceFiles?.evidence);
   add(manifest.sourceFiles?.tokens);
+  add(manifest.sourceFiles?.report);
   add(manifest.sourceFiles?.snippets);
 
   if (manifest.assetsDir === 'assets') {
@@ -711,9 +732,10 @@ async function readDesignSystemSourceEvidence(
   brandRoot: string,
   manifest: DesignSystemProjectManifest,
 ): Promise<DesignSystemPackageInfo['sourceEvidence'] | undefined> {
-  const [scanned, tokens, snippets, evidence] = await Promise.all([
+  const [scanned, tokens, report, snippets, evidence] = await Promise.all([
     readManifestJsonOptional(brandRoot, manifest.sourceFiles?.scanned),
     readManifestJsonOptional(brandRoot, manifest.sourceFiles?.tokens),
+    readManifestJsonOptional(brandRoot, manifest.sourceFiles?.report),
     readManifestJsonOptional(brandRoot, manifest.sourceFiles?.snippets),
     readManifestFileOptional(brandRoot, manifest.sourceFiles?.evidence ?? ''),
   ]);
@@ -739,11 +761,47 @@ async function readDesignSystemSourceEvidence(
     const entries = (snippets as { snippets?: unknown }).snippets;
     if (Array.isArray(entries)) out.snippetCount = entries.length;
   }
+  const tokenContract = summarizeTokenContractReport(report);
+  if (tokenContract) out.tokenContract = tokenContract;
   if (typeof evidence === 'string' && evidence.trim().length > 0) {
     out.evidenceExcerpt = evidence.trim().split(/\r?\n/).filter(Boolean).slice(0, 5).join('\n');
   }
 
   return Object.keys(out).length > 0 ? out : undefined;
+}
+
+function summarizeTokenContractReport(
+  report: unknown,
+): NonNullable<NonNullable<DesignSystemPackageInfo['sourceEvidence']>['tokenContract']> | undefined {
+  if (!report || typeof report !== 'object' || Array.isArray(report)) return undefined;
+  const record = report as Record<string, unknown>;
+  const summary = record.summary;
+  if (!summary || typeof summary !== 'object' || Array.isArray(summary)) return undefined;
+  const summaryRecord = summary as Record<string, unknown>;
+  const selfCheck = record.selfCheck;
+  const selfCheckRecord =
+    selfCheck && typeof selfCheck === 'object' && !Array.isArray(selfCheck)
+      ? selfCheck as Record<string, unknown>
+      : undefined;
+  const grade = typeof summaryRecord.grade === 'string' && isTokenContractGrade(summaryRecord.grade)
+    ? summaryRecord.grade
+    : undefined;
+  const out: NonNullable<NonNullable<DesignSystemPackageInfo['sourceEvidence']>['tokenContract']> = {};
+  if (typeof record.contract === 'string') out.contract = record.contract;
+  if (grade) out.grade = grade;
+  if (typeof summaryRecord.score === 'number') out.score = summaryRecord.score;
+  if (typeof summaryRecord.recommendRebuild === 'boolean') out.recommendRebuild = summaryRecord.recommendRebuild;
+  if (typeof summaryRecord.sourceBackedA1 === 'number') out.sourceBackedA1 = summaryRecord.sourceBackedA1;
+  if (typeof summaryRecord.requiredA1 === 'number') out.requiredA1 = summaryRecord.requiredA1;
+  if (typeof summaryRecord.fallbackTokens === 'number') out.fallbackTokens = summaryRecord.fallbackTokens;
+  if (typeof selfCheckRecord?.ok === 'boolean') out.selfCheckOk = selfCheckRecord.ok;
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
+function isTokenContractGrade(
+  value: string,
+): value is 'excellent' | 'usable' | 'needs-review' | 'needs-rebuild' {
+  return value === 'excellent' || value === 'usable' || value === 'needs-review' || value === 'needs-rebuild';
 }
 
 async function readManifestJsonOptional(
@@ -918,6 +976,7 @@ export async function createUserDesignSystemRevision(
   const baseBody = normalizeBody(input.baseBody);
   const proposedBody = normalizeBody(input.proposedBody);
   if (!feedback || !baseBody || !proposedBody) return null;
+  const fileChanges = normalizeRevisionFileChanges(input.fileChanges);
   const now = new Date().toISOString();
   const revision: DesignSystemRevision = {
     id: randomUUID(),
@@ -930,6 +989,7 @@ export async function createUserDesignSystemRevision(
     updatedAt: now,
     ...(cleanText(input.sectionTitle) ? { sectionTitle: cleanText(input.sectionTitle) } : {}),
     ...(input.jobId ? { jobId: input.jobId } : {}),
+    ...(fileChanges.length > 0 ? { fileChanges } : {}),
   };
   await writeUserDesignSystemRevision(root, dirId, revision);
   return revision;
@@ -997,6 +1057,7 @@ export async function updateUserDesignSystemRevisionStatus(
       body: revision.proposedBody,
     });
     if (!updated) return null;
+    await applyRevisionFileChanges(root, dirId, revision.fileChanges);
   }
   const next: DesignSystemRevision = {
     ...revision,
@@ -1912,7 +1973,45 @@ function parseDesignSystemRevision(
     updatedAt: typeof value.updatedAt === 'string' ? value.updatedAt : new Date(0).toISOString(),
     ...(cleanText(value.sectionTitle) ? { sectionTitle: cleanText(value.sectionTitle) } : {}),
     ...(typeof value.jobId === 'string' ? { jobId: value.jobId } : {}),
+    ...(normalizeRevisionFileChanges(value.fileChanges).length > 0
+      ? { fileChanges: normalizeRevisionFileChanges(value.fileChanges) }
+      : {}),
   };
+}
+
+function normalizeRevisionFileChanges(raw: unknown): DesignSystemRevisionFileChange[] {
+  if (!Array.isArray(raw)) return [];
+  const out: DesignSystemRevisionFileChange[] = [];
+  const seen = new Set<string>();
+  for (const item of raw) {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) continue;
+    const record = item as Record<string, unknown>;
+    const cleanPath = typeof record.path === 'string' ? sanitizeRelativeFilePath(record.path) : null;
+    if (!cleanPath || seen.has(cleanPath)) continue;
+    const baseContent = typeof record.baseContent === 'string' ? record.baseContent : '';
+    const proposedContent = typeof record.proposedContent === 'string' ? record.proposedContent : '';
+    if (proposedContent.length > 200_000 || baseContent.length > 200_000) continue;
+    seen.add(cleanPath);
+    out.push({ path: cleanPath, baseContent, proposedContent });
+  }
+  return out;
+}
+
+async function applyRevisionFileChanges(
+  root: string,
+  dirId: string,
+  fileChanges: DesignSystemRevisionFileChange[] | undefined,
+): Promise<void> {
+  const changes = normalizeRevisionFileChanges(fileChanges);
+  if (changes.length === 0) return;
+  const base = path.join(root, dirId);
+  const resolvedBase = path.resolve(base);
+  for (const change of changes) {
+    const target = path.resolve(base, change.path);
+    if (target !== resolvedBase && !target.startsWith(`${resolvedBase}${path.sep}`)) continue;
+    await mkdir(path.dirname(target), { recursive: true });
+    await writeFile(target, change.proposedContent, 'utf8');
+  }
 }
 
 function sanitizeRevisionId(raw: string | undefined): string | null {
