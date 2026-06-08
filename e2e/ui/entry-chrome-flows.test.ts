@@ -534,8 +534,6 @@ test('[P2] home starters search and facet filters narrow the visible gallery', a
 
   await gotoEntryHome(page);
 
-  await expect(page.getByTestId('plugins-home-chip-saved')).toBeVisible();
-  await expect(page.getByTestId('plugins-home-chip-saved')).toContainText('0');
   await expect(page.getByTestId('plugins-home-pill-category-all')).toContainText('4');
 
   await page.getByTestId('plugins-home-pill-category-deck').click();
@@ -556,15 +554,7 @@ test('[P2] home starters search and facet filters narrow the visible gallery', a
   await expect(page.locator('[data-plugin-id="localized-plugin"]')).toHaveCount(0);
   await expect(page.locator('[data-plugin-id="hyperframes-video"]')).toHaveCount(0);
   await page.getByTestId('plugins-home-search-clear').click();
-
-  await page.getByTestId('plugins-home-save-localized-plugin').click();
-  await page.getByTestId('plugins-home-save-hyperframes-video').click();
-  await expect(page.getByTestId('plugins-home-chip-saved')).toContainText('2');
-  await page.getByTestId('plugins-home-chip-saved').click();
   await expect(page.locator('[data-plugin-id="localized-plugin"]')).toBeVisible();
-  await expect(page.locator('[data-plugin-id="hyperframes-video"]')).toBeVisible();
-  await expect(page.locator('[data-plugin-id="deck-writer"]')).toHaveCount(0);
-  await expect(page.locator('[data-plugin-id="figma-importer"]')).toHaveCount(0);
 });
 
 test('[P1] home starters can jump into plugin creation through the registry browse flow', async ({ page }) => {
@@ -666,21 +656,21 @@ test('[P2] home starters html details modal exposes header actions and closes fr
   await expect(dialog).toBeVisible();
   await expect(dialog).toContainText('HTML Details Plugin');
   await expect(page.getByTestId('plugin-details-use-html-details-plugin')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Plugin info', exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Fullscreen|全屏/i })).toBeVisible();
   await expect(page.getByRole('button', { name: /Share/i }).first()).toBeVisible();
-  await expect(page.getByTestId('plugin-share-html-details-plugin')).toBeVisible();
 
-  await page.getByRole('button', { name: 'Plugin info', exact: true }).click();
-  await expect(page.locator('.ds-modal-sidebar')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Plugin info', exact: true }).click();
-  await expect(page.locator('.ds-modal-sidebar')).toBeVisible();
+  // Designer-first redesign: the info sidebar starts collapsed and the
+  // preview owns the stage. The header "Plugin info" toggle and the inline
+  // "More" share menu were removed; the sidebar opens via the preview-edge
+  // handle.
+  await expect(dialog.locator('.ds-modal-sidebar')).toHaveCount(0);
+  await dialog.locator('.ds-modal-stage-handle.is-expand').click();
+  await expect(dialog.locator('.ds-modal-sidebar')).toBeVisible();
 
   await dialog.locator('.ds-modal-close').click();
   await expect(dialog).toHaveCount(0);
 });
 
-test('[P2] home starters html details modal shows metadata links, supports copy query, and opens the plugin share menu', async ({ page }) => {
+test('[P2] home starters html details modal shows metadata links and supports copy query', async ({ page }) => {
   const htmlPlugin = makeStarterPlugin({
     id: 'html-metadata-plugin',
     title: 'HTML Metadata Plugin',
@@ -740,6 +730,10 @@ test('[P2] home starters html details modal shows metadata links, supports copy 
 
   const dialog = page.getByRole('dialog', { name: /HTML Metadata Plugin preview/i });
   await expect(dialog).toBeVisible();
+  // The info sidebar starts collapsed in the redesign; open it via the
+  // preview-edge handle before inspecting the manifest metadata.
+  await dialog.locator('.ds-modal-stage-handle.is-expand').click();
+  await expect(dialog.locator('.ds-modal-sidebar')).toBeVisible();
   await expect(page.getByTestId('plugin-details-author')).toContainText('Open Design');
   await expect(page.getByTestId('plugin-details-author-profile')).toHaveAttribute(
     'href',
@@ -761,18 +755,8 @@ test('[P2] home starters html details modal shows metadata links, supports copy 
   await expect(dialog.getByRole('button', { name: /^Copied$/i })).toBeVisible();
   const copied = await page.evaluate(() => (window as typeof window & { __copiedTexts?: string[] }).__copiedTexts ?? []);
   expect(copied.at(-1)).toBe('Use the {{topic}} template for a polished launch deck.');
-
-  await page.getByTestId('plugin-share-html-metadata-plugin').getByRole('button', { name: /^More$/i }).click();
-  const shareMenu = page.locator('.plugin-share-popover[role="menu"]');
-  await expect(shareMenu).toBeVisible();
-  await expect(shareMenu.getByRole('menuitem', { name: /Copy install command/i })).toBeVisible();
-  await expect(shareMenu.getByRole('menuitem', { name: /Copy plugin ID/i })).toBeVisible();
-  // Bundled plugins now have a public open-design.ai detail page, so the
-  // README badge (which links to it) is offered.
-  await expect(shareMenu.getByRole('menuitem', { name: /Copy README badge/i })).toBeVisible();
-  await expect(shareMenu.getByRole('menuitem', { name: /Open source on GitHub/i })).toBeVisible();
-  await expect(shareMenu.getByRole('menuitem', { name: /Open homepage/i })).toBeVisible();
-  await expect(shareMenu.getByRole('menuitem', { name: /Open in marketplace/i })).toBeVisible();
+  // The inline "More" plugin-share menu was removed from the detail modal in
+  // the redesign; sharing is offered through the header Share menu instead.
 });
 
 test('[P1] home starters Use plugin from the details modal applies the plugin to the home hero', async ({ page }) => {

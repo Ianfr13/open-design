@@ -159,50 +159,10 @@
 }
 
 /* ============================================================
-   Faceted filter — a single combined bar. Saved / category
-   pills live on the left, the search field + result count +
-   clear-filters affordance live on the right. Folding the old
-   "mode strip + header search + category row" into one keeps the
-   eye on a single horizontal control surface.
+   Faceted filter — a single combined bar. Category pills live on
+   the left, the search field + result count + clear-filters
+   affordance live on the right.
    ============================================================ */
-.plugins-home__chip {
-  appearance: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 4px 10px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-pill);
-  background: var(--bg-panel);
-  color: var(--text-muted);
-  font-size: 12px;
-  cursor: pointer;
-  transition: border-color 120ms var(--ease-out), background-color 120ms var(--ease-out), color 120ms var(--ease-out);
-}
-.plugins-home__chip:hover {
-  border-color: var(--border-strong);
-  color: var(--text);
-}
-.plugins-home__chip-count {
-  font-size: 10.5px;
-  color: var(--text-faint);
-  font-variant-numeric: tabular-nums;
-}
-.plugins-home__chip--saved {
-  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
-  color: var(--accent);
-  background: var(--accent-tint);
-}
-.plugins-home__chip--saved.is-active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: white;
-}
-.plugins-home__chip--saved.is-active .plugins-home__chip-count {
-  color: white;
-  opacity: 0.85;
-}
-
 .plugins-home__linkbtn {
   appearance: none;
   background: none;
@@ -269,8 +229,7 @@
   flex-wrap: wrap;
   overflow: visible;
 }
-.plugins-home__facet-row--inline .plugins-home__pill,
-.plugins-home__facet-row--inline .plugins-home__chip {
+.plugins-home__facet-row--inline .plugins-home__pill {
   flex: 0 0 auto;
 }
 .plugins-home__facet-label {
@@ -478,12 +437,29 @@
 .plugins-home__gallery-name {
   flex: 1;
   min-width: 0;
+  /* Reset the <button> chrome — this is the accessible "open details"
+     control but reads as the tile's plain title. */
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+  cursor: pointer;
   font-size: 12.5px;
   font-weight: 600;
   color: var(--text-strong);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.plugins-home__gallery-name:hover {
+  color: var(--accent);
+}
+.plugins-home__gallery-name:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 .plugins-home__gallery-open {
   flex: 0 0 auto;
@@ -907,36 +883,6 @@
   padding: 10px 12px 10px;
   border-top: 1px solid var(--border-soft);
   background: var(--bg-panel);
-}
-.plugins-home__card-save {
-  position: relative;
-  z-index: 4;
-  appearance: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  flex: 0 0 22px;
-  border: 1px solid transparent;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: background-color 120ms var(--ease-out), border-color 120ms var(--ease-out),
-    color 120ms var(--ease-out);
-}
-.plugins-home__card-save:hover,
-.plugins-home__card-save:focus-visible {
-  background: var(--accent-tint);
-  border-color: color-mix(in srgb, var(--accent) 26%, transparent);
-  color: var(--accent);
-  outline: none;
-}
-.plugins-home__card-save.is-saved {
-  background: color-mix(in srgb, var(--accent) 16%, white);
-  border-color: color-mix(in srgb, var(--accent) 32%, transparent);
-  color: var(--accent);
 }
 .plugins-home__card-title {
   display: inline-flex;

@@ -13,7 +13,6 @@
 // needs to commit.
 
 import { useMemo, useState } from 'react';
-import { VisuallyHidden } from '@open-design/components';
 import type { InstalledPluginRecord } from '@open-design/contracts';
 import { useI18n } from '../../i18n';
 import type { PluginShareAction } from '../../state/projects';
@@ -31,10 +30,8 @@ interface Props {
   pendingAny: boolean;
   pendingShareAction?: { pluginId: string; action: PluginShareAction } | null;
   isFeatured: boolean;
-  isSaved: boolean;
   onUse: (record: InstalledPluginRecord, action: PluginUseAction) => void;
   onOpenDetails: (record: InstalledPluginRecord) => void;
-  onSave: (record: InstalledPluginRecord) => void;
   onShareAction?: (
     record: InstalledPluginRecord,
     action: PluginShareAction,
@@ -58,10 +55,8 @@ export function PluginCard({
   pendingAny,
   pendingShareAction = null,
   isFeatured,
-  isSaved,
   onUse,
   onOpenDetails,
-  onSave,
   onShareAction,
   layout = 'rich',
   onOpenExternal,
@@ -110,31 +105,29 @@ export function PluginCard({
         data-plugin-id={record.id}
         data-preview-kind={preview.kind}
         {...(isFeatured ? { 'data-featured': 'true' } : {})}
-        tabIndex={0}
-        aria-label={title}
+        // Mouse convenience: clicking anywhere on the tile opens details.
+        // Keyboard/AT users get a real, announced control via the title
+        // button below — the tile itself stays a non-interactive listitem
+        // so screen readers don't announce a bare "listitem" as actionable.
         onClick={() => onOpenDetails(record)}
-        onKeyDown={(event) => {
-          // Only act on keys aimed at the card itself. Without this guard,
-          // Enter/Space pressed on the nested ↗ external-link anchor bubbles
-          // here, gets preventDefault()'d, and opens the detail modal instead
-          // of the anchor's own page — blocking keyboard users from the
-          // open-in-new-tab control.
-          if (event.currentTarget !== event.target) return;
-          if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            onOpenDetails(record);
-          }
-        }}
-        // Equivalent test hook to the rich card's "Details" button: the
-        // whole gallery tile opens the detail modal, so e2e/visual flows
-        // that click `plugins-home-details-<id>` keep working.
-        data-testid={`plugins-home-details-${record.id}`}
       >
         <div className="plugins-home__gallery-bar">
           <span className="plugins-home__gallery-dot" aria-hidden />
-          <span className="plugins-home__gallery-name" title={title}>
+          <button
+            type="button"
+            className="plugins-home__gallery-name"
+            title={title}
+            aria-label={`Open ${title} details`}
+            onClick={(event) => {
+              event.stopPropagation();
+              onOpenDetails(record);
+            }}
+            // The accessible, focusable control that opens the detail modal;
+            // also the e2e/visual hook equivalent to the rich card's Details.
+            data-testid={`plugins-home-details-${record.id}`}
+          >
             {title}
-          </span>
+          </button>
           {previewSrc ? (
             <a
               className="plugins-home__gallery-open"
@@ -332,23 +325,6 @@ export function PluginCard({
       </div>
 
       <div className="plugins-home__card-foot">
-        <button
-          type="button"
-          className={[
-            'plugins-home__card-save',
-            isSaved ? 'is-saved' : '',
-          ]
-            .filter(Boolean)
-            .join(' ')}
-          onClick={() => onSave(record)}
-          aria-pressed={isSaved}
-          aria-label={`${isSaved ? 'Saved' : 'Save'} ${title}`}
-          title={isSaved ? 'Saved' : 'Save'}
-          data-testid={`plugins-home-save-${record.id}`}
-        >
-          <Icon name={isSaved ? 'check' : 'star'} size={12} />
-          <VisuallyHidden>{isSaved ? 'Saved' : 'Save'}</VisuallyHidden>
-        </button>
         <span className="plugins-home__card-title" title={title}>
           <span className="plugins-home__card-title-text">{title}</span>
         </span>

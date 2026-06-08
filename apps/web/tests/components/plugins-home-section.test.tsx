@@ -5,10 +5,9 @@
 // The section renders artifact-kind filters for the starter grid:
 // Prototype / Live Artifact / Slides / Image / Video / HyperFrames / Audio.
 // Prototype, Slides, Image, and Video expose a second row of scene buckets;
-// the smaller Live Artifact, HyperFrames, and Audio slices stay flat. Saved is an
-// orthogonal user collection override, and sparse buckets should fall
-// back to the normal empty-filter state rather than rendering synthetic
-// cards.
+// the smaller Live Artifact, HyperFrames, and Audio slices stay flat. Sparse
+// buckets should fall back to the normal empty-filter state rather than
+// rendering synthetic cards.
 
 import { describe, expect, it, afterEach, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
@@ -147,7 +146,6 @@ describe('PluginsHomeSection (category bar)', () => {
     renderSection();
 
     expect(screen.getByTestId('plugins-home-row-category')).toBeTruthy();
-    expect(screen.getByTestId('plugins-home-chip-saved').textContent).toContain('Saved');
     expect(screen.getByTestId('plugins-home-pill-category-all')).toBeTruthy();
     expect(screen.getByTestId('plugins-home-pill-category-prototype')).toBeTruthy();
     expect(screen.getByTestId('plugins-home-pill-category-live-artifact')).toBeTruthy();
@@ -204,20 +202,7 @@ describe('PluginsHomeSection (category bar)', () => {
     expect(screen.queryByText(/Contribute a/i)).toBeNull();
   });
 
-  it('saves a plugin, updates the Saved chip, and shows a toast', () => {
-    renderSection();
-
-    fireEvent.click(screen.getByTestId('plugins-home-save-prototype-dashboard'));
-
-    expect(screen.getByTestId('plugins-home-save-prototype-dashboard').textContent).toContain('Saved');
-    expect(screen.getByTestId('plugins-home-chip-saved').textContent).toContain('1');
-    expect(screen.getByRole('status').textContent).toContain('Saved prototype-dashboard.');
-
-    fireEvent.click(screen.getByTestId('plugins-home-chip-saved'));
-    expect(pluginIds()).toEqual(['prototype-dashboard']);
-  });
-
-  it('localizes plugin card titles, descriptions, search, and save toast', () => {
+  it('localizes plugin card titles, descriptions, and search', () => {
     renderSectionInChinese([
       makePlugin({
         id: 'localized-deck',
@@ -237,9 +222,6 @@ describe('PluginsHomeSection (category bar)', () => {
       target: { value: '瑞士' },
     });
     expect(pluginIds()).toEqual(['localized-deck']);
-
-    fireEvent.click(screen.getByTestId('plugins-home-save-localized-deck'));
-    expect(screen.getByRole('status').textContent).toContain('Saved 瑞士国际主义 Deck.');
   });
 
   it('shows the normal empty-filter state for planned empty buckets', () => {
@@ -286,42 +268,4 @@ describe('PluginsHomeSection (category bar)', () => {
     ]);
   });
 
-  it('Saved chip overrides the category selection and shows only saved plugins', () => {
-    renderSection();
-
-    fireEvent.click(screen.getByTestId('plugins-home-save-prototype-dashboard'));
-    fireEvent.click(screen.getByTestId('plugins-home-pill-category-video'));
-    fireEvent.click(screen.getByTestId('plugins-home-chip-saved'));
-
-    expect(pluginIds()).toEqual(['prototype-dashboard']);
-  });
-
-  it('Clear filters from the Saved empty state escapes Saved mode back to the full catalog', () => {
-    // Fresh browser, no saved plugins yet. Clicking Saved lands the
-    // user on the empty filter state — the recovery CTA must take
-    // them all the way back to the catalog, not just re-render the
-    // same Saved empty view.
-    renderSection();
-
-    fireEvent.click(screen.getByTestId('plugins-home-chip-saved'));
-    expect(screen.queryByRole('list')).toBeNull();
-
-    fireEvent.click(screen.getByRole('button', { name: /Clear filters/i }));
-
-    expect(pluginIds().sort()).toEqual([
-      'audio-voice',
-      'deck-pitch',
-      'example-live-artifact',
-      'example-live-dashboard',
-      'example-social-media-matrix-tracker-template',
-      'example-trading-analysis-dashboard-template',
-      'hyperframes-composition',
-      'image-logo',
-      'image-template-notion-team-dashboard-live-artifact',
-      'prototype-app',
-      'prototype-dashboard',
-      'video-cinematic',
-      'video-short',
-    ]);
-  });
 });
