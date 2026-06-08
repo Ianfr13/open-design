@@ -10,6 +10,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatePresence } from 'motion/react';
 import { createHtmlArtifactManifest, inferLegacyManifest } from '../artifacts/manifest';
 import { resolveHtmlPointerArtifactTarget } from '../artifacts/pointer';
@@ -5261,104 +5262,108 @@ export function ProjectView({
     />
   );
 
+  const projectInstructionsModal = instructionsMode !== 'closed' ? (
+    <div
+      className="project-instructions-modal-backdrop"
+      role="presentation"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          setInstructionsDraft(project.customInstructions ?? '');
+          setInstructionsMode('closed');
+        }
+      }}
+    >
+      <section
+        className="project-instructions-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="project-instructions-title"
+      >
+        <div className="project-instructions-modal-head">
+          <div className="project-instructions-modal-title-wrap">
+            <h2 id="project-instructions-title" className="project-instructions-modal-title">
+              {t('project.customInstructions')}
+            </h2>
+            {project.customInstructions?.trim() ? (
+              <span className="project-instructions-status">
+                <Icon name="check" size={12} />
+                {t('sketch.saved')}
+              </span>
+            ) : null}
+          </div>
+          <button
+            type="button"
+            className="project-instructions-modal-close"
+            aria-label={t('common.close')}
+            title={t('common.close')}
+            onClick={() => {
+              setInstructionsDraft(project.customInstructions ?? '');
+              setInstructionsMode('closed');
+            }}
+          >
+            <Icon name="close" size={16} />
+          </button>
+        </div>
+        {instructionsMode === 'edit' ? (
+          <>
+            <textarea
+              className="project-instructions-input"
+              data-testid="project-instructions-textarea"
+              value={instructionsDraft}
+              placeholder={t('project.customInstructionsPlaceholder')}
+              onChange={(event) => setInstructionsDraft(event.target.value)}
+            />
+            <div className="project-instructions-actions">
+              <button
+                type="button"
+                className="btn secondary"
+                onClick={() => {
+                  setInstructionsDraft(project.customInstructions ?? '');
+                  setInstructionsMode(project.customInstructions?.trim() ? 'review' : 'closed');
+                }}
+              >
+                {t('common.cancel')}
+              </button>
+              <button
+                type="button"
+                className="btn primary"
+                data-testid="project-instructions-save"
+                disabled={instructionsSaving}
+                onClick={() => void handleSaveProjectInstructions()}
+              >
+                {instructionsSaving ? t('sketch.saving') : t('common.save')}
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="project-instructions-preview" data-testid="project-instructions-preview">
+              {project.customInstructions}
+            </div>
+            <div className="project-instructions-actions">
+              <button
+                type="button"
+                className="btn secondary"
+                onClick={() => setInstructionsMode('edit')}
+              >
+                {t('common.edit')}
+              </button>
+            </div>
+          </>
+        )}
+      </section>
+    </div>
+  ) : null;
+
   return (
     <div className="app">
       <CritiqueTheaterMount
         projectId={project.id}
         enabled={critiqueTheaterEnabled}
       />
-      {instructionsMode !== 'closed' ? (
-        <div
-          className="project-instructions-modal-backdrop"
-          role="presentation"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) {
-              setInstructionsDraft(project.customInstructions ?? '');
-              setInstructionsMode('closed');
-            }
-          }}
-        >
-          <section
-            className="project-instructions-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="project-instructions-title"
-          >
-            <div className="project-instructions-modal-head">
-              <div className="project-instructions-modal-title-wrap">
-                <h2 id="project-instructions-title" className="project-instructions-modal-title">
-                  {t('project.customInstructions')}
-                </h2>
-                {project.customInstructions?.trim() ? (
-                  <span className="project-instructions-status">
-                    <Icon name="check" size={12} />
-                    {t('sketch.saved')}
-                  </span>
-                ) : null}
-              </div>
-              <button
-                type="button"
-                className="project-instructions-modal-close"
-                aria-label={t('common.close')}
-                title={t('common.close')}
-                onClick={() => {
-                  setInstructionsDraft(project.customInstructions ?? '');
-                  setInstructionsMode('closed');
-                }}
-              >
-                <Icon name="close" size={16} />
-              </button>
-            </div>
-            {instructionsMode === 'edit' ? (
-              <>
-                <textarea
-                  className="project-instructions-input"
-                  data-testid="project-instructions-textarea"
-                  value={instructionsDraft}
-                  placeholder={t('project.customInstructionsPlaceholder')}
-                  onChange={(event) => setInstructionsDraft(event.target.value)}
-                />
-                <div className="project-instructions-actions">
-                  <button
-                    type="button"
-                    className="btn secondary"
-                    onClick={() => {
-                      setInstructionsDraft(project.customInstructions ?? '');
-                      setInstructionsMode(project.customInstructions?.trim() ? 'review' : 'closed');
-                    }}
-                  >
-                    {t('common.cancel')}
-                  </button>
-                  <button
-                    type="button"
-                    className="btn primary"
-                    data-testid="project-instructions-save"
-                    disabled={instructionsSaving}
-                    onClick={() => void handleSaveProjectInstructions()}
-                  >
-                    {instructionsSaving ? t('sketch.saving') : t('common.save')}
-                  </button>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="project-instructions-preview" data-testid="project-instructions-preview">
-                  {project.customInstructions}
-                </div>
-                <div className="project-instructions-actions">
-                  <button
-                    type="button"
-                    className="btn secondary"
-                    onClick={() => setInstructionsMode('edit')}
-                  >
-                    {t('common.edit')}
-                  </button>
-                </div>
-              </>
-            )}
-          </section>
-        </div>
-      ) : null}
+      {projectInstructionsModal && typeof document !== 'undefined'
+        ? createPortal(projectInstructionsModal, document.body)
+        : projectInstructionsModal}
       {/* ProjectActionsToolbar removed per 00efdcba — hide finalize-design
           toolbar from project header. Restore from cf1cd9bb if product
           wants the Finalize + Continue-in-CLI buttons back in the chrome. */}
