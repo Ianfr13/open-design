@@ -27,6 +27,7 @@ import {
   type AttachmentManifestEntry,
   type EventsSummary,
   type FeedbackReportContext,
+  type InputTextSnapshotManifestEntry,
   type ObjectManifestCompleteness,
   type MessageSummary,
   type ReportContext,
@@ -89,6 +90,13 @@ interface TraceSafeManifestResult {
   completeness: ObjectManifestCompleteness;
 }
 
+interface FinalTraceSafeManifests {
+  attachmentManifest: AttachmentManifestEntry[];
+  artifactManifest: ArtifactManifestEntry[];
+  inputTextSnapshotManifest?: InputTextSnapshotManifestEntry[];
+  completeness: ObjectManifestCompleteness;
+}
+
 export interface ReportRunCompletedFromDaemonOpts {
   db: unknown;
   dataDir: string;
@@ -120,6 +128,44 @@ function getRuntimeInfo(appVersion?: AppVersionInfo | null): RuntimeInfo {
   }
   cachedRuntime = info;
   return info;
+}
+
+function deriveManifestCompleteness(
+  entries: Array<
+    AttachmentManifestEntry | ArtifactManifestEntry | InputTextSnapshotManifestEntry
+  >,
+  fallbackUnavailableSelected: boolean,
+): ObjectManifestCompleteness {
+  if (fallbackUnavailableSelected) return 'unavailable';
+  if (entries.length === 0) return 'unavailable';
+  if (entries.some((entry) => entry.status === 'unavailable')) return 'unavailable';
+  if (entries.some((entry) => entry.status === 'partial')) return 'partial';
+  return 'complete';
+}
+
+function mergeTraceSafeManifests(
+  fallback: TraceSafeManifestResult,
+  uploaded: Awaited<ReturnType<typeof buildTraceObjectManifests>>,
+): FinalTraceSafeManifests {
+  const attachmentManifest = uploaded?.attachmentManifest ?? fallback.attachmentManifest;
+  const artifactManifest = uploaded?.artifactManifest ?? fallback.artifactManifest;
+  const inputTextSnapshotManifest = uploaded?.inputTextSnapshotManifest;
+  const entries = [
+    ...attachmentManifest,
+    ...artifactManifest,
+    ...(inputTextSnapshotManifest ?? []),
+  ];
+  const selectedFallbackUnavailable =
+    fallback.completeness === 'unavailable' &&
+    (uploaded === undefined ||
+      (uploaded.attachmentManifest === undefined && fallback.attachmentManifest.length > 0) ||
+      (uploaded.artifactManifest === undefined && fallback.artifactManifest.length > 0));
+  return {
+    attachmentManifest,
+    artifactManifest,
+    ...(inputTextSnapshotManifest ? { inputTextSnapshotManifest } : {}),
+    completeness: deriveManifestCompleteness(entries, selectedFallbackUnavailable),
+  };
 }
 
 function turnInfoFromRun(
@@ -840,6 +886,7 @@ export async function reportRunCompletedFromDaemon(
       prefs,
       ...(opts.fetchImpl ? { fetchImpl: opts.fetchImpl } : {}),
     });
+    const finalManifests = mergeTraceSafeManifests(manifests, uploadedManifests);
     const ctx: ReportContext = {
       installationId,
       projectId: run.projectId ?? '',
@@ -868,12 +915,12 @@ export async function reportRunCompletedFromDaemon(
         ...(usage ? { usage } : {}),
       },
       artifacts,
-      attachmentManifest: uploadedManifests?.attachmentManifest ?? manifests.attachmentManifest,
-      artifactManifest: uploadedManifests?.artifactManifest ?? manifests.artifactManifest,
-      ...(uploadedManifests?.inputTextSnapshotManifest
-        ? { inputTextSnapshotManifest: uploadedManifests.inputTextSnapshotManifest }
+      attachmentManifest: finalManifests.attachmentManifest,
+      artifactManifest: finalManifests.artifactManifest,
+      ...(finalManifests.inputTextSnapshotManifest
+        ? { inputTextSnapshotManifest: finalManifests.inputTextSnapshotManifest }
         : {}),
-      manifestCompleteness: uploadedManifests?.completeness ?? manifests.completeness,
+      manifestCompleteness: finalManifests.completeness,
       tools: collectToolCalls(run.events, startedAt, endedAt),
       agentEvents: collectAgentEvents(run.events, startedAt, endedAt, run.agentId),
       eventsSummary: summarizeEvents(run.events, durationMs),
