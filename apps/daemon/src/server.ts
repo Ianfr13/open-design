@@ -14231,6 +14231,18 @@ export async function startServer({
             (id): id is string => typeof id === 'string',
           )
         : [];
+      // `skill_ids` is the full per-send skill context, so fold in the
+      // project-bound persistent `skillId` (also reported singularly as
+      // `skill_id`) alongside the staged one-turn skills — otherwise a normal
+      // project run with a persisted skill but no staged skills would emit
+      // `skill_ids=[]` and undercount in dashboards that read the array.
+      const runSkillIds = [
+        ...new Set(
+          [reqBody.skillId, ...runTurnSkillIds].filter(
+            (id): id is string => typeof id === 'string' && id.length > 0,
+          ),
+        ),
+      ];
       const baseProps: Record<string, unknown> = {
         page_name: isDesignSystemRun ? 'design_system_project' : 'chat_panel',
         area: isDesignSystemRun ? 'design_system_generation' : 'chat_composer',
@@ -14318,7 +14330,7 @@ export async function startServer({
             : null,
         mcp_ids: runMcpServerIds,
         mcp_id: runMcpServerIds[0] ?? null,
-        skill_ids: runTurnSkillIds,
+        skill_ids: runSkillIds,
         token_count_source: userQueryTokens > 0 ? 'estimated' : 'unknown',
       };
       design.analytics.capture({
