@@ -162,6 +162,13 @@ interface Props {
 
 type HomeMentionTab = 'all' | 'files' | 'plugins' | 'skills' | 'mcp' | 'connectors';
 
+// In the combined "All" overview, every surface is capped to a handful of top
+// matches so no single section floods the picker. The dedicated "Design files"
+// tab is exempt: staged files are the user's own finite content, so that tab
+// lists every match (the results panel scrolls) and its count reflects the true
+// total rather than the truncated preview.
+const HOME_MENTION_ALL_TAB_PREVIEW = 6;
+
 interface HomeMentionOption {
   id: string;
   icon: IconName;
@@ -295,7 +302,6 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
         ? stagedFiles
             .map((file, index) => ({ file, index }))
             .filter(({ file }) => fileMatchesQuery(file, mentionQuery))
-            .slice(0, 6)
         : [],
     [mentionActive, mentionQuery, stagedFiles],
   );
@@ -346,7 +352,7 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
       ? {
           id: 'files',
           label: t('chat.mentionSectionFiles'),
-          options: fileMatches.map(({ file, index }) => ({
+          options: (mentionTab === 'files' ? fileMatches : fileMatches.slice(0, HOME_MENTION_ALL_TAB_PREVIEW)).map(({ file, index }) => ({
             id: `file-${index}-${file.name}`,
             icon: isImageFile(file) ? 'image' : 'file',
             title: file.name,
