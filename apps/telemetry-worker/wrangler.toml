@@ -17,6 +17,10 @@ TRACE_OBJECT_BATCH_MAX_BYTES = "20971520"
 binding = "TRACE_OBJECT_BUCKET"
 bucket_name = "open-design-observability"
 
+[[kv_namespaces]]
+binding = "TRACE_OBJECT_SCOPE_KV"
+id = "71675171f1b74c6391ba9bbefaa09e2c"
+
 [[ratelimits]]
 name = "TELEMETRY_CLIENT_RATE_LIMITER"
 namespace_id = "1001"
