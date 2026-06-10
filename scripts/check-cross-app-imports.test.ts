@@ -1,0 +1,105 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+
+import {
+  type AppDirectoryRegistry,
+  collectCrossAppImportViolationsFromSource,
+} from "./check-cross-app-imports.ts";
+
+const registry: AppDirectoryRegistry = {
+  packageNameByDirectory: new Map([
+    ["daemon", "@open-design/daemon"],
+    ["web", "@open-design/web"],
+  ]),
+};
+
+test("cross-app import check rejects web importing daemon src via relative path", () => {
+  const violations = collectCrossAppImportViolationsFromSource(
+    "apps/web/src/providers/daemon.ts",
+    "import { spawnAgent } from '../../../daemon/src/server.ts';",
+    registry,
+  );
+
+  assert.equal(violations.length, 1);
+  assert.equal(violations[0]?.targetApp, "daemon");
+  assert.equal(violations[0]?.lineNumber, 1);
+});
+
+test("cross-app import check rejects another app's package name", () => {
+  const violations = collectCrossAppImportViolationsFromSource(
+    "apps/web/src/runtime/todos.ts",
+    [
+      "import type { RunRecord } from '@open-design/daemon/src/server.ts';",
+      "const mod = await import('@open-design/daemon');",
+      "const legacy = require('@open-design/daemon/dist/cli.js');",
+    ].join("\n"),
+    registry,
+  );
+
+  assert.deepEqual(
+    violations.map((violation) => violation.lineNumber),
+    [1, 2, 3],
+  );
+  assert.ok(violations.every((violation) => violation.targetApp === "daemon"));
+});
+
+test("cross-app import check rejects export-from and apps/ rooted specifiers", () => {
+  const violations = collectCrossAppImportViolationsFromSource(
+    "apps/daemon/src/index.ts",
+    ["export { FileViewer } from 'apps/web/src/components/FileViewer.tsx';", "import 'apps/web/src/index.css';"].join(
+      "\n",
+    ),
+    registry,
+  );
+
+  assert.deepEqual(
+    violations.map((violation) => violation.targetApp),
+    ["web", "web"],
+  );
+});
+
+test("cross-app import check allows packages, same-app relatives, and externals", () => {
+  const violations = collectCrossAppImportViolationsFromSource(
+    "apps/web/src/components/ChatPane.tsx",
+    [
+      "import { Button } from '@open-design/components';",
+      "import type { ChatRunEvent } from '@open-design/contracts';",
+      "import { latestTodoWriteInputFromMessages } from '../runtime/todos.ts';",
+      "import path from 'node:path';",
+      "import React from 'react';",
+    ].join("\n"),
+    registry,
+  );
+
+  assert.deepEqual(violations, []);
+});
+
+test("cross-app import check ignores relatives that escape apps/ without hitting a registered app", () => {
+  const violations = collectCrossAppImportViolationsFromSource(
+    "apps/daemon/tests/mcp-extract-refs.test.ts",
+    "const refs = extractRelativeRefs('@import \"../../shared.css\";', 'a/b/c/file.css', 'text/css');",
+    registry,
+  );
+
+  assert.deepEqual(violations, []);
+});
+
+test("cross-app import check allows allowlisted packaged -> desktop main export", () => {
+  const violations = collectCrossAppImportViolationsFromSource(
+    "apps/packaged/src/index.ts",
+    "import { applyOsLocaleSwitch, createSplashWindow } from '@open-design/desktop/main';",
+    { packageNameByDirectory: new Map([["packaged", "@open-design/packaged"], ["desktop", "@open-design/desktop"]]) },
+  );
+
+  assert.deepEqual(violations, []);
+});
+
+test("cross-app import check ignores files outside apps/", () => {
+  const violations = collectCrossAppImportViolationsFromSource(
+    "e2e/tests/dialog/stop-reconciles-message.test.ts",
+    "import { something } from '../../../apps/daemon/src/server.ts';",
+    registry,
+  );
+
+  assert.deepEqual(violations, []);
+});
