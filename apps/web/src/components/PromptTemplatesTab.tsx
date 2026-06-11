@@ -1,3 +1,4 @@
+import { Button, Input, Select } from '@open-design/components';
 import { useMemo, useState } from 'react';
 import { useI18n, useT } from '../i18n';
 import {
@@ -98,20 +99,20 @@ export function PromptTemplatesTab({ surface, templates, onPreview }: Props) {
   return (
     <div className="tab-panel prompt-templates-panel">
       <div className="tab-panel-toolbar">
-        <input
+        <Input
           placeholder={t('promptTemplates.searchPlaceholder')}
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
         />
-        <select value={category} onChange={(e) => setCategory(e.target.value)}>
+        <Select value={category} onChange={(e) => setCategory(e.target.value)}>
           {categories.map((c) => (
             <option key={c} value={c}>
               {c === 'All' ? t('common.all') : localizePromptTemplateCategory(locale, c)}
             </option>
           ))}
-        </select>
+        </Select>
         {sources.length > 2 ? (
-          <select
+          <Select
             value={source}
             onChange={(e) => setSource(e.target.value)}
             aria-label={t('promptTemplates.sourceFilterAria')}
@@ -121,7 +122,7 @@ export function PromptTemplatesTab({ surface, templates, onPreview }: Props) {
                 {s === 'All' ? t('promptTemplates.allSources') : s}
               </option>
             ))}
-          </select>
+          </Select>
         ) : null}
         <span className="prompt-templates-count">
           {t('promptTemplates.countLabel', { n: filtered.length })}
@@ -164,8 +165,7 @@ function PromptTemplateCard({
     ? `${tpl.source.author} · ${tpl.source.repo.split('/').pop()}`
     : tpl.source.repo.split('/').pop();
   return (
-    <button
-      type="button"
+    <Button
       className="prompt-template-card"
       onClick={onPreview}
       title={t('promptTemplates.openPreviewTitle')}
@@ -212,6 +212,6 @@ function PromptTemplateCard({
           {t('promptTemplates.sourcePrefix')} {sourceLabel}
         </span>
       </span>
-    </button>
+    </Button>
   );
 }
