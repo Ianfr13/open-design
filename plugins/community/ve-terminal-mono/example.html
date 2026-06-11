@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>relay-ci 2.0 — Terminal Mono Deck</title>
+<title>Open Design — Terminal Mono Deck</title>
 <!--
   Terminal Mono — Open Design community deck plugin (ve-terminal-mono).
   Based on nicobailon/visual-explainer slide-deck.html, Terminal Mono aesthetic
@@ -642,11 +642,11 @@
       <line x1="0" y1="120" x2="40" y2="120" stroke="var(--accent)" stroke-width="1.5" opacity="0.25"/>
     </svg>
     <div class="reveal">
-      <p class="slide__subtitle" style="margin-bottom:clamp(16px,2vh,32px);">Release Review &mdash; 2026 Q2</p>
+      <p class="slide__subtitle" style="margin-bottom:clamp(16px,2vh,32px);">Apache-2.0 &middot; Runs Locally &middot; BYOK &middot; No Sign-up</p>
     </div>
-    <h1 class="slide__display reveal">relay-ci 2.0</h1>
+    <h1 class="slide__display reveal">Open Design</h1>
     <div class="reveal">
-      <p class="slide__subtitle" style="margin-top:clamp(16px,2vh,32px);">Content-addressed builds, zero queue time</p>
+      <p class="slide__subtitle" style="margin-top:clamp(16px,2vh,32px);">The open-source, local, agent-driven design platform</p>
     </div>
   </section>
 
@@ -654,8 +654,8 @@
   <section class="slide slide--divider">
     <span class="slide__number">01</span>
     <div>
-      <h2 class="slide__heading reveal">The Bottleneck</h2>
-      <p class="slide__subtitle reveal" style="margin-top:12px;">Why builds queue for 14 minutes</p>
+      <h2 class="slide__heading reveal">The Closed Frontier</h2>
+      <p class="slide__subtitle reveal" style="margin-top:12px;">Why frontier AI design stays locked away</p>
     </div>
   </section>
 
@@ -663,13 +663,13 @@
   <section class="slide slide--content">
     <div class="slide__inner">
       <div>
-        <p class="slide__label reveal">Current State</p>
-        <h2 class="slide__heading reveal">One Runner Pool, One Queue</h2>
+        <p class="slide__label reveal">April 2026</p>
+        <h2 class="slide__heading reveal">Closed, Paid, Cloud-Only</h2>
         <ul class="slide__bullets">
-          <li class="reveal">Every commit rebuilds the full dependency graph</li>
-          <li class="reveal">Cache keys are branch-scoped &mdash; forks always miss</li>
-          <li class="reveal">Peak-hour queue time P95 hit 14 minutes in May</li>
-          <li class="reveal">Flaky integration suite retries burn 31% of runner hours</li>
+          <li class="reveal">Claude Design proved an LLM can truly design &mdash; real artifacts, not prose</li>
+          <li class="reveal">But it is closed-source, paid, and runs only in the cloud</li>
+          <li class="reveal">Locked to one model &mdash; no agent choice, no self-hosting</li>
+          <li class="reveal">No BYOK &mdash; your keys and your machine stay out of the loop</li>
         </ul>
       </div>
       <div class="slide__aside reveal">
@@ -677,7 +677,7 @@
           <rect x="20" y="20" width="120" height="120" fill="none" stroke="var(--accent)" stroke-width="1" opacity="0.3"/>
           <rect x="40" y="40" width="80" height="80" fill="none" stroke="var(--accent)" stroke-width="1" opacity="0.2" stroke-dasharray="4 4"/>
           <rect x="74" y="74" width="12" height="12" fill="var(--accent)" opacity="0.5"/>
-          <text x="80" y="150" text-anchor="middle" font-family="Geist Mono, monospace" font-size="10" letter-spacing="1" fill="var(--text-dim)">SINGLE QUEUE</text>
+          <text x="80" y="150" text-anchor="middle" font-family="Geist Mono, monospace" font-size="10" letter-spacing="1" fill="var(--text-dim)">CLOUD-ONLY</text>
         </svg>
       </div>
     </div>
@@ -687,23 +687,23 @@
   <section class="slide slide--split">
     <div class="slide__panels">
       <div class="slide__panel slide__panel--primary">
-        <p class="slide__label reveal" style="color:var(--text-dim);">Before &mdash; v1</p>
-        <h2 class="slide__heading reveal" style="font-size:clamp(20px,3vw,32px);">Queue-Scheduled Runners</h2>
+        <p class="slide__label reveal" style="color:var(--text-dim);">Closed &mdash; Cloud</p>
+        <h2 class="slide__heading reveal" style="font-size:clamp(20px,3vw,32px);">One Model, One Vendor</h2>
         <ul class="slide__bullets" style="margin-top:16px;">
-          <li class="reveal">FIFO queue across all repos</li>
-          <li class="reveal">Branch-scoped tarball cache</li>
-          <li class="reveal">Full rebuild on lockfile change</li>
-          <li class="reveal">Manual retry on flake</li>
+          <li class="reveal">Locked to a single model</li>
+          <li class="reveal">Cloud-only, no self-hosting</li>
+          <li class="reveal">$500 per month, fixed</li>
+          <li class="reveal">Your work lives on their servers</li>
         </ul>
       </div>
       <div class="slide__panel slide__panel--secondary">
-        <p class="slide__label reveal">After &mdash; v2</p>
-        <h2 class="slide__heading reveal" style="font-size:clamp(20px,3vw,32px);">Content-Addressed Graph</h2>
+        <p class="slide__label reveal">Open &mdash; Local</p>
+        <h2 class="slide__heading reveal" style="font-size:clamp(20px,3vw,32px);">Any Agent, Your Machine</h2>
         <ul class="slide__bullets" style="margin-top:16px;">
-          <li class="reveal">Per-target hash of inputs, not branches</li>
-          <li class="reveal">Global remote cache, fork-safe</li>
-          <li class="reveal">Only dirty subgraph rebuilds</li>
-          <li class="reveal">Deterministic retries, quarantined flakes</li>
+          <li class="reveal">21 coding agents, auto-detected from PATH</li>
+          <li class="reveal">Runs locally &mdash; Apache-2.0, fork and self-host</li>
+          <li class="reveal">BYOK &mdash; ~$73 per month, -80%</li>
+          <li class="reveal">Local files, Figma exports, repos readable in place</li>
         </ul>
       </div>
     </div>
@@ -713,104 +713,105 @@
   <section class="slide slide--divider">
     <span class="slide__number">02</span>
     <div>
-      <h2 class="slide__heading reveal">Architecture</h2>
-      <p class="slide__subtitle reveal" style="margin-top:12px;">How a commit becomes an artifact</p>
+      <h2 class="slide__heading reveal">The Workflow</h2>
+      <p class="slide__subtitle reveal" style="margin-top:12px;">From idea to delivery in five steps</p>
     </div>
   </section>
 
   <!-- SLIDE 6: DIAGRAM (pure CSS/SVG pipeline — no mermaid, no external JS) -->
   <section class="slide slide--diagram">
-    <h2 class="slide__heading reveal">Build Pipeline</h2>
+    <h2 class="slide__heading reveal">From Idea to Artifact</h2>
     <div class="pipeline-wrap reveal">
       <div class="pipeline-row">
         <div class="pipe-node">
-          <div class="pipe-node__name">commit</div>
-          <div class="pipe-node__meta">git push</div>
+          <div class="pipe-node__name">idea</div>
+          <div class="pipe-node__meta">one sentence</div>
         </div>
         <div class="pipe-link"><div class="pipe-link__line"></div></div>
         <div class="pipe-node">
-          <div class="pipe-node__name">hash</div>
-          <div class="pipe-node__meta">input graph</div>
+          <div class="pipe-node__name">direction</div>
+          <div class="pipe-node__meta">palette &middot; type</div>
         </div>
-        <div class="pipe-link"><div class="pipe-link__line"><span class="pipe-link__label">per target</span></div></div>
+        <div class="pipe-link"><div class="pipe-link__line"><span class="pipe-link__label">design system</span></div></div>
         <div class="pipe-node pipe-node--accent">
-          <div class="pipe-node__name">cache</div>
-          <div class="pipe-node__meta">global CAS</div>
+          <div class="pipe-node__name">agent</div>
+          <div class="pipe-node__meta">full context</div>
         </div>
-        <div class="pipe-link"><div class="pipe-link__line"><span class="pipe-link__label">hit 87%</span></div></div>
+        <div class="pipe-link"><div class="pipe-link__line"><span class="pipe-link__label">sandbox</span></div></div>
         <div class="pipe-node">
-          <div class="pipe-node__name">restore</div>
-          <div class="pipe-node__meta">artifacts</div>
+          <div class="pipe-node__name">artifact</div>
+          <div class="pipe-node__meta">runnable files</div>
         </div>
       </div>
       <div class="pipeline-row">
         <div class="pipe-node">
-          <div class="pipe-node__name">build</div>
-          <div class="pipe-node__meta">dirty subgraph</div>
+          <div class="pipe-node__name">ship</div>
+          <div class="pipe-node__meta">hand off</div>
         </div>
-        <div class="pipe-link pipe-link--dashed"><div class="pipe-link__line"><span class="pipe-link__label">on miss</span></div></div>
+        <div class="pipe-link pipe-link--dashed"><div class="pipe-link__line"><span class="pipe-link__label">or film it</span></div></div>
         <div class="pipe-node">
-          <div class="pipe-node__name">test</div>
-          <div class="pipe-node__meta">sharded x16</div>
+          <div class="pipe-node__name">hyperframes</div>
+          <div class="pipe-node__meta">html &rarr; mp4</div>
         </div>
         <div class="pipe-link"><div class="pipe-link__line"></div></div>
         <div class="pipe-node pipe-node--accent">
-          <div class="pipe-node__name">publish</div>
-          <div class="pipe-node__meta">seed cache</div>
+          <div class="pipe-node__name">memory</div>
+          <div class="pipe-node__meta">preferences</div>
         </div>
         <div class="pipe-link"><div class="pipe-link__line"></div></div>
         <div class="pipe-node">
-          <div class="pipe-node__name">deploy</div>
-          <div class="pipe-node__meta">canary 5%</div>
+          <div class="pipe-node__name">next run</div>
+          <div class="pipe-node__meta">more precise</div>
         </div>
       </div>
       <div class="pipeline-legend">
-        <span><span class="key key--accent"></span>cache boundary</span>
-        <span><span class="key key--plain"></span>compute stage</span>
+        <span><span class="key key--accent"></span>learns your taste</span>
+        <span><span class="key key--plain"></span>workflow stage</span>
       </div>
     </div>
   </section>
 
   <!-- SLIDE 7: DASHBOARD -->
   <section class="slide slide--dashboard">
-    <h2 class="slide__heading reveal">Sixty Days In Production</h2>
+    <h2 class="slide__heading reveal">An Open Community</h2>
     <div class="slide__kpis">
       <div class="slide__kpi reveal">
-        <div class="slide__kpi-val" style="color:var(--accent);">48s</div>
-        <div class="slide__kpi-label">Median Build</div>
-        <div class="slide__kpi-trend">down from 9m 20s</div>
+        <div class="slide__kpi-val" style="color:var(--accent);">60K+</div>
+        <div class="slide__kpi-label">GitHub Stars</div>
+        <div class="slide__kpi-trend">Apache-2.0 open source</div>
       </div>
       <div class="slide__kpi reveal">
-        <div class="slide__kpi-val" style="color:var(--accent);">87%</div>
-        <div class="slide__kpi-label">Cache Hit Rate</div>
-        <div class="slide__kpi-trend">fork-safe, global</div>
+        <div class="slide__kpi-val" style="color:var(--accent);">300+</div>
+        <div class="slide__kpi-label">Contributors</div>
+        <div class="slide__kpi-trend">and counting</div>
       </div>
       <div class="slide__kpi reveal">
-        <div class="slide__kpi-val">0s</div>
-        <div class="slide__kpi-label">P95 Queue Time</div>
-        <div class="slide__kpi-trend">down from 14m</div>
+        <div class="slide__kpi-val">217+</div>
+        <div class="slide__kpi-label">Plugins</div>
+        <div class="slide__kpi-trend">community + official</div>
       </div>
       <div class="slide__kpi reveal">
-        <div class="slide__kpi-val">-62%</div>
-        <div class="slide__kpi-label">Runner Spend</div>
-        <div class="slide__kpi-trend">same workload</div>
+        <div class="slide__kpi-val">-80%</div>
+        <div class="slide__kpi-label">Monthly Cost</div>
+        <div class="slide__kpi-trend">$500 &rarr; ~$73 vs Claude Design</div>
       </div>
     </div>
   </section>
 
   <!-- SLIDE 8: TABLE -->
   <section class="slide slide--table">
-    <h2 class="slide__heading reveal">Rollout Phases</h2>
+    <h2 class="slide__heading reveal">Core Capabilities</h2>
     <div class="table-wrap reveal" style="flex:1; min-height:0; margin-top:clamp(8px,1.5vh,20px);">
       <div class="table-scroll">
         <table class="data-table">
-          <thead><tr><th>Phase</th><th>Scope</th><th>Timeline</th><th>Status</th></tr></thead>
+          <thead><tr><th>Capability</th><th>Detail</th><th>Surface</th><th>Status</th></tr></thead>
           <tbody>
-            <tr><td>1. Shadow hash</td><td>Compute graph hashes, compare against v1 cache keys</td><td>Week 1&ndash;2</td><td style="color:var(--accent);">done</td></tr>
-            <tr><td>2. Read-through</td><td>Serve <code>restore</code> from CAS, write nothing</td><td>Week 3</td><td style="color:var(--accent);">done</td></tr>
-            <tr><td>3. Write path</td><td>Green builds seed the global cache</td><td>Week 4&ndash;5</td><td style="color:var(--accent);">done</td></tr>
-            <tr><td>4. Fork traffic</td><td>External PRs hit the shared cache read-only</td><td>Week 6</td><td style="color:var(--accent);">done</td></tr>
-            <tr><td>5. Decommission</td><td>Retire v1 queue and branch caches</td><td>Week 8</td><td style="color:var(--text-dim);">in progress</td></tr>
+            <tr><td>Desktop-first</td><td>Local files, Figma exports, and code repos readable in place</td><td><code>local</code></td><td style="color:var(--accent);">shipped</td></tr>
+            <tr><td>21 coding agents</td><td>Auto-detected from PATH, zero config</td><td><code>agents</code></td><td style="color:var(--accent);">shipped</td></tr>
+            <tr><td>129 design systems</td><td>Import from GitHub, Figma, or local</td><td><code>design.md</code></td><td style="color:var(--accent);">shipped</td></tr>
+            <tr><td>HTML video pipeline</td><td>Programmatic video via HyperFrames</td><td><code>hyperframes</code></td><td style="color:var(--accent);">shipped</td></tr>
+            <tr><td>Full-stack BYOK</td><td>Anthropic / OpenAI / Azure / Google + 14 media providers</td><td><code>byok</code></td><td style="color:var(--accent);">shipped</td></tr>
+            <tr><td>Design memory</td><td>Remembers preferences and color lineage across runs</td><td><code>memory</code></td><td style="color:var(--text-dim);">evolving</td></tr>
           </tbody>
         </table>
       </div>
@@ -819,17 +820,17 @@
 
   <!-- SLIDE 9: CODE -->
   <section class="slide slide--code">
-    <h2 class="slide__heading reveal" style="text-align:center;">One Block To Opt In</h2>
+    <h2 class="slide__heading reveal" style="text-align:center;">Your Agents, Your Keys</h2>
     <div class="slide__code-block reveal" style="margin-top:clamp(12px,2vh,24px);">
-      <span class="slide__code-filename">relay.toml</span>
-      <pre><code><span class="hl">[cache]</span>
-mode     = <span class="hl">"content-addressed"</span>
-scope    = <span class="hl">"global"</span>      <span class="cm"># fork-safe, read-only for PRs</span>
-<span class="hl">[graph]</span>
-targets  = <span class="hl">"auto"</span>        <span class="cm"># inferred from workspace manifests</span>
-rebuild  = <span class="hl">"dirty-only"</span>  <span class="cm"># clean subgraph restores from CAS</span>
-<span class="hl">[retry]</span>
-flaky    = <span class="hl">"quarantine"</span>  <span class="cm"># deterministic retries, no blind reruns</span></code></pre>
+      <span class="slide__code-filename">open-design.toml</span>
+      <pre><code><span class="hl">[agents]</span>
+detect   = <span class="hl">"auto"</span>        <span class="cm"># 21 coding agents found on PATH, zero config</span>
+roster   = <span class="hl">"claude-code, codex, cursor-agent, gemini, ..."</span>
+<span class="hl">[providers]</span>
+byok     = <span class="hl">"anthropic | openai | azure | google"</span>
+media    = <span class="hl">"14 providers"</span> <span class="cm"># image, video, audio</span>
+<span class="hl">[license]</span>
+type     = <span class="hl">"Apache-2.0"</span>  <span class="cm"># fork, self-host, commercial use — all allowed</span></code></pre>
     </div>
   </section>
 
@@ -837,9 +838,9 @@ flaky    = <span class="hl">"quarantine"</span>  <span class="cm"># deterministi
   <section class="slide slide--quote">
     <div class="slide__quote-mark reveal">&gt;</div>
     <blockquote class="reveal">
-      The fastest build is the one you can prove you already ran.
+      File-system semantics plus git-diffable design artifacts &mdash; design is finally under version control.
     </blockquote>
-    <cite class="reveal">&mdash; relay-ci design doc, &sect;1</cite>
+    <cite class="reveal">&mdash; Indie developer</cite>
   </section>
 
   <!-- SLIDE 11: CLOSING -->
@@ -848,9 +849,9 @@ flaky    = <span class="hl">"quarantine"</span>  <span class="cm"># deterministi
       <line x1="120" y1="0" x2="120" y2="40" stroke="var(--accent)" stroke-width="1.5" opacity="0.25"/>
       <line x1="80" y1="0" x2="120" y2="0" stroke="var(--accent)" stroke-width="1.5" opacity="0.25"/>
     </svg>
-    <p class="slide__label reveal">Next</p>
-    <h2 class="slide__display reveal">Retire the queue.<br><em>Ship on green.</em></h2>
-    <p class="slide__subtitle reveal" style="margin-top:clamp(16px,2vh,32px);">v1 decommission completes end of Q2 &mdash; docs at relay.dev/v2</p>
+    <p class="slide__label reveal">Open &middot; Local &middot; Agent-native</p>
+    <h2 class="slide__display reveal">Frontier AI design,<br><em>back on your desk.</em></h2>
+    <p class="slide__subtitle reveal" style="margin-top:clamp(16px,2vh,32px);">Download for macOS / Windows &mdash; Star on GitHub &mdash; github.com/nexu-io/open-design</p>
   </section>
 
 </div><!-- /deck -->

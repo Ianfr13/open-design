@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>HTML PPT Studio · Theme × Layout Demo Deck</title>
+<title>Open Design · The Open-Source, Local, Agent-Driven Design Platform</title>
 <style>
 /* html-ppt-studio :: webfonts (Google Fonts @import only — no other external deps) */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800;900&display=swap');
@@ -267,164 +267,164 @@ code,kbd,pre,samp{font-family:var(--font-mono)}
 </head>
 <body>
 
-<div class="deck-header"><span>HTML PPT Studio</span><span class="theme-chip" id="theme-chip">aurora</span></div>
+<div class="deck-header"><span>Open Design</span><span class="theme-chip" id="theme-chip">aurora</span></div>
 
 <div class="deck" id="deck">
 
   <!-- 1 · layout: cover -->
   <section class="slide" data-title="Cover">
-    <p class="kicker">Community plugin · lewislulu/html-ppt-skill</p>
-    <h1 class="h1 anim-rise-in">Decks built like a<br><span class="gradient-text">design studio</span></h1>
-    <p class="lede">36 themes × 31 layouts × 27 animations. One token sheet drives every skin — swap the whole look without touching a single slide.</p>
+    <p class="kicker">The open-source, local, agent-driven design platform</p>
+    <h1 class="h1 anim-rise-in">Open<br><span class="gradient-text">Design</span></h1>
+    <p class="lede">From idea to prototypes, web pages, slides, and HTML video — the full product-design workflow, on your own machine.</p>
     <div class="row wrap mt-l" style="gap:8px">
-      <span class="pill pill-accent">token-driven</span>
-      <span class="pill">zero build</span>
-      <span class="pill">keyboard first</span>
-      <span class="pill">press T to restyle</span>
+      <span class="pill pill-accent">Apache-2.0</span>
+      <span class="pill">Runs Locally</span>
+      <span class="pill">BYOK</span>
+      <span class="pill">No Sign-up</span>
     </div>
-    <div class="notes">Welcome! This demo deck is itself authored with HTML PPT Studio. Press T at any point — the entire deck changes its skin because every color, radius and font is a token.</div>
+    <div class="notes">Welcome! This is the Open Design story: an open-source, local, agent-driven design platform. github.com/nexu-io/open-design. Press T at any point to restyle the deck.</div>
   </section>
 
   <!-- 2 · layout: toc -->
   <section class="slide" data-title="Agenda">
     <p class="kicker">Agenda</p>
-    <h2 class="h2">Three ideas in ten minutes</h2>
+    <h2 class="h2">The story in three parts</h2>
     <div class="grid g3 mt-l anim-stagger-list">
-      <div class="card card-accent"><h4 class="h4">① Tokens, not styles</h4><p class="dim">A deck is a design system wearing a story — themes only override variables.</p></div>
-      <div class="card card-accent"><h4 class="h4">② A layout catalog</h4><p class="dim">31 page types with realistic demo data: charts, timelines, diagrams, quotes.</p></div>
-      <div class="card card-accent"><h4 class="h4">③ Keyboard runtime</h4><p class="dim">Arrows to navigate, T to restyle, hash routes for deep links. No framework.</p></div>
+      <div class="card card-accent"><h4 class="h4">① Why open</h4><p class="dim">AI can truly design now — but the proof is closed, paid, and cloud-only. Open Design sets it free.</p></div>
+      <div class="card card-accent"><h4 class="h4">② How it works</h4><p class="dim">Pick a start, set the direction, generate, ship — with the coding agents already on your machine.</p></div>
+      <div class="card card-accent"><h4 class="h4">③ What you get</h4><p class="dim">Prototypes, slides, dashboards, HTML video — and a community building it all in the open.</p></div>
     </div>
-    <div class="notes">The agenda mirrors the three layers of the system: tokens, layouts, runtime.</div>
+    <div class="notes">The agenda mirrors the narrative: why the platform exists, how the workflow runs, what it produces.</div>
   </section>
 
   <!-- 3 · layout: section-divider -->
-  <section class="slide" data-title="Section · Tokens">
+  <section class="slide" data-title="Section · Why">
     <span class="section-num">01</span>
     <p class="eyebrow">Section one</p>
-    <h2 class="h2">One token sheet,<br>thirty-six skins</h2>
+    <h2 class="h2">Frontier AI design,<br>back on every desk</h2>
     <div class="divider-accent mt-m"></div>
-    <div class="notes">Section divider layout — the oversized number anchors the page.</div>
+    <div class="notes">Section divider — the thesis of the whole deck in one line.</div>
   </section>
 
   <!-- 4 · layout: two-column -->
-  <section class="slide" data-title="Token sheet">
-    <p class="kicker">Tokens</p>
-    <h2 class="h2">Same HTML, different soul</h2>
+  <section class="slide" data-title="The problem">
+    <p class="kicker">Why open</p>
+    <h2 class="h2">The proof is real. The access isn't.</h2>
     <div class="grid g2 mt-l">
       <div>
-        <p class="lede">Every theme defines exactly the same variables. Switching themes never edits a slide — it swaps the sheet.</p>
+        <p class="lede">In April 2026, Claude Design proved an LLM can truly design — real artifacts, not essays about design. But it is closed-source, paid, and cloud-only.</p>
         <ul class="check mt-m">
-          <li>Colors: bg, surface, text-1/2/3, accent ×3</li>
-          <li>Semantics: good / warn / bad, grad / grad-soft</li>
-          <li>Shape: radius ×3, shadow ×2</li>
-          <li>Type: font-sans / display / serif / mono</li>
+          <li>Locked to a single model vendor</li>
+          <li>No agent choice, no self-hosting</li>
+          <li>No BYOK, no local files</li>
+          <li>Open Design sets that capability free</li>
         </ul>
       </div>
       <div class="card card-soft">
-<pre class="token-sheet">:root {
-  <b>--bg</b>        <b>--surface</b>   <b>--surface-2</b>
-  <b>--text-1</b>    <b>--text-2</b>    <b>--text-3</b>
-  <b>--accent</b>    <b>--accent-2</b>  <b>--accent-3</b>
-  <b>--good</b>      <b>--warn</b>      <b>--bad</b>
-  <b>--grad</b>      <b>--radius</b>    <b>--shadow</b>
-  <b>--font-sans</b> <b>--font-display</b>
-}</pre>
+<pre class="token-sheet">$ od status
+  <b>license</b>         Apache-2.0
+  <b>runs</b>            locally
+  <b>coding-agents</b>   21
+  <b>plugins</b>         217+
+  <b>design-systems</b>  129
+  <b>byok</b>            full-stack
+  <b>sign-up</b>         none</pre>
       </div>
     </div>
-    <div class="notes">Two-column layout: claim on the left, evidence on the right. The mono card lists the actual contract every theme implements.</div>
+    <div class="notes">Two-column layout: the problem on the left, the open answer on the right. The mono card is the platform at a glance.</div>
   </section>
 
   <!-- 5 · layout: kpi-grid -->
-  <section class="slide" data-title="Catalog KPIs">
-    <p class="kicker">The catalog</p>
-    <h2 class="h2">What ships in the box</h2>
+  <section class="slide" data-title="Community KPIs">
+    <p class="kicker">Built in the open</p>
+    <h2 class="h2">An ecosystem, in numbers</h2>
     <div class="grid g4 mt-l anim-stagger-list">
-      <div class="card kpi"><div class="num gradient-text">36</div><div class="lbl">themes — from minimal-white to cyberpunk-neon</div></div>
-      <div class="card kpi"><div class="num gradient-text">31</div><div class="lbl">layouts — cover, charts, timelines, diagrams</div></div>
-      <div class="card kpi"><div class="num gradient-text">27</div><div class="lbl">entry animations via one class name</div></div>
-      <div class="card kpi"><div class="num gradient-text">0</div><div class="lbl">build steps — pure static HTML/CSS/JS</div></div>
+      <div class="card kpi"><div class="num gradient-text">60K+</div><div class="lbl">GitHub Stars — open source under Apache-2.0</div></div>
+      <div class="card kpi"><div class="num gradient-text">300+</div><div class="lbl">contributors shipping the platform together</div></div>
+      <div class="card kpi"><div class="num gradient-text">217+</div><div class="lbl">plugins — prototypes, slides, posters, dashboards</div></div>
+      <div class="card kpi"><div class="num gradient-text">129</div><div class="lbl">design systems — from GitHub, Figma, or local</div></div>
     </div>
-    <div class="notes">KPI grid layout: four numbers, one line of context each. Numbers use the gradient token so they restyle with the theme.</div>
+    <div class="notes">KPI grid: four community numbers, one line of context each. Numbers use the gradient token so they restyle with the theme.</div>
   </section>
 
   <!-- 6 · layout: stat-highlight -->
-  <section class="slide center" data-title="Combinations">
-    <p class="kicker">36 themes × 31 layouts</p>
-    <p class="stat-big gradient-text anim-rise-in">1,116</p>
-    <p class="lede mt-m" style="max-width:46ch">distinct page designs before you write a single line of custom CSS.</p>
+  <section class="slide center" data-title="Stars">
+    <p class="kicker">GitHub Stars</p>
+    <p class="stat-big gradient-text anim-rise-in">60K+</p>
+    <p class="lede mt-m" style="max-width:46ch">open source under Apache-2.0 — fork, self-host, commercial use all allowed.</p>
     <div class="notes">Stat-highlight layout: one giant number carries the whole slide.</div>
   </section>
 
   <!-- 7 · layout: chart-bar (CSS bars — no chart library) -->
-  <section class="slide" data-title="Time saved">
-    <p class="kicker">Why it matters</p>
-    <h2 class="h2">Where deck-building hours go</h2>
+  <section class="slide" data-title="Plugins by type">
+    <p class="kicker">What people build</p>
+    <h2 class="h2">217+ plugins, by artifact type</h2>
     <div class="bar-chart">
-      <div class="bar" style="height:88%"><em>42%</em><span>restyling</span></div>
-      <div class="bar" style="height:60%"><em>29%</em><span>layout fiddling</span></div>
-      <div class="bar" style="height:38%"><em>18%</em><span>content</span></div>
-      <div class="bar" style="height:23%"><em>11%</em><span>rehearsal</span></div>
+      <div class="bar" style="height:88%"><em>34%</em><span>prototypes</span></div>
+      <div class="bar" style="height:70%"><em>27%</em><span>slides</span></div>
+      <div class="bar" style="height:56%"><em>22%</em><span>dashboards</span></div>
+      <div class="bar" style="height:44%"><em>17%</em><span>video</span></div>
     </div>
-    <p class="dim2 mt-l" style="margin-top:56px">Tokens + a layout catalog reclaim the first two bars for the last two.</p>
-    <div class="notes">Bar chart layout rebuilt with pure CSS — the seed never loads a chart library, so it works in any sandboxed iframe.</div>
+    <p class="dim2 mt-l" style="margin-top:56px">Illustrative split of the 217+ community plugins — demo data, real categories.</p>
+    <div class="notes">Bar chart rebuilt with pure CSS — no chart library. The split is illustrative; the 217+ total and the categories are real.</div>
   </section>
 
   <!-- 8 · layout: process-steps -->
   <section class="slide" data-title="Workflow">
     <p class="kicker">Workflow</p>
-    <h2 class="h2">Brief to deck in four moves</h2>
+    <h2 class="h2">Idea to delivery in four moves</h2>
     <div class="grid g4 mt-l steps anim-stagger-list">
-      <div class="card"><h4 class="h4">Brief</h4><p class="dim">Topic, audience, page count — confirm before authoring.</p></div>
-      <div class="card"><h4 class="h4">Theme</h4><p class="dim">Pick one of 36 token sheets to match the tone.</p></div>
-      <div class="card"><h4 class="h4">Compose</h4><p class="dim">Chain layouts: cover → divider → content → closer.</p></div>
-      <div class="card"><h4 class="h4">Present</h4><p class="dim">Arrows, T, hash links. Print to PDF when done.</p></div>
+      <div class="card"><h4 class="h4">Start</h4><p class="dim">Describe your goal in one sentence, or pick a template or plugin.</p></div>
+      <div class="card"><h4 class="h4">Direct</h4><p class="dim">Set the visual direction — palette, type, and spacing flow into generation.</p></div>
+      <div class="card"><h4 class="h4">Generate</h4><p class="dim">The agent reads full context and produces real runnable files in a sandbox.</p></div>
+      <div class="card"><h4 class="h4">Ship</h4><p class="dim">Hand off to engineering, or film it with HyperFrames. Memory compounds.</p></div>
     </div>
-    <div class="notes">Process-steps layout: the counter pseudo-element numbers each card automatically.</div>
+    <div class="notes">Process-steps layout: every choice you make becomes context for the next run — the platform learns your taste.</div>
   </section>
 
   <!-- 9 · layout: comparison -->
-  <section class="slide" data-title="Before / After">
+  <section class="slide" data-title="Closed vs Open">
     <p class="kicker">Comparison</p>
-    <h2 class="h2">Hand-rolled vs studio</h2>
+    <h2 class="h2">Cloud-locked vs open</h2>
     <div class="grid g2 mt-l">
       <div class="card card-soft">
-        <p class="eyebrow" style="color:var(--bad)">Before</p>
-        <h3 class="h3">One-off CSS per deck</h3>
-        <ul class="check"><li>Restyle = rewrite every slide</li><li>Each chart imports another library</li><li>No shared vocabulary across decks</li></ul>
+        <p class="eyebrow" style="color:var(--bad)">Closed</p>
+        <h3 class="h3">One vendor's cloud</h3>
+        <ul class="check"><li>Locked to a single model</li><li>No self-hosting, no BYOK</li><li>$500 a month, per seat</li></ul>
       </div>
       <div class="card card-accent">
-        <p class="eyebrow" style="color:var(--good)">After</p>
-        <h3 class="h3">Tokens + layout catalog</h3>
-        <ul class="check"><li>Restyle = one attribute, press T</li><li>Charts are CSS, zero dependencies</li><li>Every deck speaks the same classes</li></ul>
+        <p class="eyebrow" style="color:var(--good)">Open</p>
+        <h3 class="h3">Your machine, your agents</h3>
+        <ul class="check"><li>Any of 21 coding agents</li><li>Full-stack BYOK, runs locally</li><li>~$73 a month — 80% less</li></ul>
       </div>
     </div>
-    <div class="notes">Comparison layout: two cards, red eyebrow vs green eyebrow. Semantic tokens good/bad recolor per theme.</div>
+    <div class="notes">Comparison layout: closed cloud vs Open Design. The cost story: $500 to ~$73 a month, an over-80% drop.</div>
   </section>
 
   <!-- 10 · layout: big-quote -->
   <section class="slide center" data-title="Quote">
-    <p class="quote serif anim-fade-up">“A presentation is a <span class="gradient-text">design system</span> wearing a story.”</p>
-    <p class="eyebrow mt-l">— the html-ppt authoring principle</p>
+    <p class="quote serif anim-fade-up">“Markdown design systems stop <span class="gradient-text">token drift</span> — brand consistency is finally enforceable.”</p>
+    <p class="eyebrow mt-l">— a designer, Open Design community</p>
     <div class="notes">Big-quote layout: serif pull quote, nothing else competing on the page.</div>
   </section>
 
   <!-- 11 · layout: thanks / cta -->
-  <section class="slide center" data-title="Thanks">
-    <p class="kicker">Try it live</p>
-    <h1 class="h1">Press <span class="gradient-text">T</span> — restyle this deck</h1>
-    <p class="lede mt-m" style="max-width:52ch">aurora → minimal-white → editorial-serif → tokyo-night → neo-brutalism → pitch-deck-vc</p>
+  <section class="slide center" data-title="CTA">
+    <p class="kicker">Get started</p>
+    <h1 class="h1">Open · Local · <span class="gradient-text">Agent-native</span></h1>
+    <p class="lede mt-m" style="max-width:52ch">Frontier AI design, back on every creator's desk. Download for macOS or Windows — or star the repo.</p>
     <div class="row wrap mt-l" style="gap:8px;justify-content:center">
-      <span class="pill pill-accent">← → navigate</span>
-      <span class="pill">Space next</span>
-      <span class="pill">T theme</span>
-      <span class="pill">#/7 deep link</span>
+      <span class="pill pill-accent">Download Open Design</span>
+      <span class="pill">github.com/nexu-io/open-design</span>
+      <span class="pill">discord.gg/qhbcCH8Am4</span>
+      <span class="pill">x.com/nexudotio</span>
     </div>
-    <div class="notes">Closer: end on the interactive hook. Theme order matches the embedded blocks above.</div>
+    <div class="notes">Closer: the CTA. Download Open Design for macOS or Windows, star github.com/nexu-io/open-design, join the Discord.</div>
   </section>
 
 </div>
 
-<div class="deck-footer"><span>html-ppt-studio · MIT · lewislulu</span><span id="counter">1 / 11</span></div>
+<div class="deck-footer"><span>Open Design · Apache-2.0 · github.com/nexu-io/open-design</span><span id="counter">1 / 11</span></div>
 <div class="progress-bar"><span id="bar"></span></div>
 
 <script>

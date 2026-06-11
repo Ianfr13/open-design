@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Loomtrace · Catppuccin Mocha deck</title>
+<title>Open Design · Catppuccin Mocha deck</title>
 <style>
 /* hps-catppuccin-mocha :: webfonts (Google Fonts @import only — no other external deps) */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800;900&display=swap');
@@ -180,158 +180,158 @@ code,kbd,pre,samp{font-family:var(--font-mono)}
 </head>
 <body>
 
-<div class="deck-header"><span>Loomtrace · Engineering Guild</span><span class="theme-chip">catppuccin-mocha</span></div>
+<div class="deck-header"><span>Open Design · Product Story</span><span class="theme-chip">catppuccin-mocha</span></div>
 
 <div class="deck" id="deck">
 
   <!-- 1 · layout: cover -->
   <section class="slide" data-title="Cover">
-    <p class="kicker">Engineering Guild · Tech sharing · Q2 2026</p>
-    <h1 class="h1 anim-rise-in">See every request,<br><span class="gradient-text">end to end</span></h1>
-    <p class="lede">Loomtrace is our open-source distributed-tracing toolkit. Thirty minutes on why latency hides between services — and how we made it visible without touching application code.</p>
+    <p class="kicker">github.com/nexu-io/open-design</p>
+    <h1 class="h1 anim-rise-in">Open <span class="gradient-text">Design</span></h1>
+    <p class="lede">The open-source, local, agent-driven design platform. From idea to prototypes, web pages, slides, and HTML video — the full product-design workflow, on your own machine.</p>
     <div class="row wrap mt-l" style="gap:8px">
-      <span class="pill pill-accent">distributed tracing</span>
-      <span class="pill">zero-code instrumentation</span>
-      <span class="pill">38 services live</span>
-      <span class="pill">OSS · MIT</span>
+      <span class="pill pill-accent">Apache-2.0</span>
+      <span class="pill">Runs Locally</span>
+      <span class="pill">BYOK</span>
+      <span class="pill">No Sign-up</span>
     </div>
-    <div class="notes">Open with the one-liner: latency hides between services, not inside them. This deck is the internal tech-sharing version — assume engineers, skip the sales tone.</div>
+    <div class="notes">Open with the one-liner: the full product-design workflow, on your own machine. Open source, local, and driven by the coding agents people already have.</div>
   </section>
 
   <!-- 2 · layout: toc -->
   <section class="slide" data-title="Agenda">
     <p class="kicker">Agenda</p>
-    <h2 class="h2">Three parts, thirty minutes</h2>
+    <h2 class="h2">Three parts, one story</h2>
     <div class="grid g3 mt-l anim-stagger-list">
-      <div class="card card-accent"><h4 class="h4">① The invisible 400ms</h4><p class="dim">Why per-service dashboards can all be green while the checkout flow is slow.</p></div>
-      <div class="card card-accent"><h4 class="h4">② How Loomtrace works</h4><p class="dim">Span model, eBPF auto-instrumentation, tail-based sampling, the correlate step.</p></div>
-      <div class="card card-accent"><h4 class="h4">③ Rollout &amp; on-call wins</h4><p class="dim">What changed for incident response after 38 services went live.</p></div>
+      <div class="card card-accent"><h4 class="h4">① Why open</h4><p class="dim">Claude Design proved an LLM can truly design — and why that capability can't stay closed.</p></div>
+      <div class="card card-accent"><h4 class="h4">② By the numbers</h4><p class="dim">Stars, contributors, plugins, agents — and an 80% cut in monthly cost.</p></div>
+      <div class="card card-accent"><h4 class="h4">③ How it works</h4><p class="dim">From idea to delivery in four moves, with the coding agents you already have.</p></div>
     </div>
-    <div class="notes">Set expectations: part two is the technical core; part three is the proof it was worth it.</div>
+    <div class="notes">Set expectations: part one is the why, part two is the proof, part three is the workflow.</div>
   </section>
 
   <!-- 3 · layout: section-divider -->
-  <section class="slide" data-title="Section · Problem">
+  <section class="slide" data-title="Section · Why open">
     <span class="section-num">01</span>
     <p class="eyebrow">Part one</p>
-    <h2 class="h2">The invisible<br>400 milliseconds</h2>
+    <h2 class="h2">The case<br>for open</h2>
     <div class="divider-accent mt-m"></div>
-    <div class="notes">Section divider. Pause here — ask who has debugged a cross-service latency issue with only per-service logs.</div>
+    <div class="notes">Section divider. Pause here — ask who has tried an AI design tool and hit the wall of one model, one cloud, one bill.</div>
   </section>
 
   <!-- 4 · layout: two-column (claim + terminal) -->
-  <section class="slide" data-title="Where latency hides">
+  <section class="slide" data-title="The problem">
     <p class="kicker">The problem</p>
-    <h2 class="h2">Every dashboard green.<br>Checkout still slow.</h2>
+    <h2 class="h2">Frontier design,<br>locked in the cloud.</h2>
     <div class="grid g2 mt-l">
       <div>
-        <p class="lede">A single checkout touches nine services. Each one reports a healthy p99 — but queueing, retries and serialization between them add up to 400ms nobody owns.</p>
+        <p class="lede">In April 2026, Claude Design proved an LLM can truly design — produce real design artifacts, not write about design. Yet it shipped closed-source, paid, and cloud-only. Open Design sets that capability free.</p>
         <ul class="check mt-m">
-          <li>Per-service metrics can't see inter-service wait time</li>
-          <li>Log correlation by timestamp breaks under retries</li>
-          <li>On-call pages route to the wrong team 4 times out of 10</li>
+          <li>Locked to one model vendor — no agent choice</li>
+          <li>No self-hosting, no local files, no repo context</li>
+          <li>No BYOK — your keys and endpoints don't apply</li>
         </ul>
       </div>
       <div class="terminal">
-        <div class="bar-top"><i></i><i></i><i></i><em>loomtrace query · trace 9f3a</em></div>
-<pre><span class="tk-b">$</span> loomtrace spans --trace <span class="tk-p">9f3a</span> --slowest
-<span class="tk-a">gateway</span>        ████░░░░░░░░░░░░  <span class="tk-g">41ms</span>
-<span class="tk-a">cart-svc</span>       ██░░░░░░░░░░░░░░  <span class="tk-g">18ms</span>
-<span class="tk-a">pricing-svc</span>    ███░░░░░░░░░░░░░  <span class="tk-g">26ms</span>
-<span class="tk-a">inventory-svc</span>  █████████████░░░  <span class="tk-r">212ms</span> <span class="tk-w">← retry x3</span>
-<span class="tk-a">payment-svc</span>    ██████░░░░░░░░░░  <span class="tk-w">94ms</span>
-<span class="tk-b">total</span>          <span class="tk-r">417ms</span>  (budget 250ms)</pre>
+        <div class="bar-top"><i></i><i></i><i></i><em>od · agent detection</em></div>
+<pre><span class="tk-b">$</span> od agent list <span class="tk-p">--detected</span>
+<span class="tk-a">claude-code</span>    <span class="tk-g">✓ on PATH</span>
+<span class="tk-a">codex</span>          <span class="tk-g">✓ on PATH</span>
+<span class="tk-a">cursor-agent</span>   <span class="tk-g">✓ on PATH</span>
+<span class="tk-a">gemini</span>         <span class="tk-g">✓ on PATH</span>
+<span class="tk-a">openclaw</span>       <span class="tk-w">○ not installed</span>
+<span class="tk-b">21 agents supported</span>  <span class="tk-p">BYOK ready · zero config</span></pre>
       </div>
     </div>
-    <div class="notes">The terminal card is the money shot: one trace shows inventory-svc retrying three times — invisible in every per-service dashboard.</div>
+    <div class="notes">The terminal card is the counterpoint: Open Design auto-detects the coding agents already on your PATH — no lock-in, no sign-up, your keys.</div>
   </section>
 
   <!-- 5 · layout: kpi-grid -->
-  <section class="slide" data-title="Rollout KPIs">
-    <p class="kicker">Part two · How it works in numbers</p>
-    <h2 class="h2">Instrumentation without the rewrite</h2>
+  <section class="slide" data-title="By the numbers">
+    <p class="kicker">Part two · By the numbers</p>
+    <h2 class="h2">An open ecosystem, growing fast</h2>
     <div class="grid g4 mt-l anim-stagger-list">
-      <div class="card kpi"><div class="num gradient-text">38</div><div class="lbl">services auto-instrumented via eBPF — zero app-code changes</div></div>
-      <div class="card kpi"><div class="num gradient-text">1.2ms</div><div class="lbl">median overhead added per traced request</div></div>
-      <div class="card kpi"><div class="num gradient-text">100%</div><div class="lbl">of error traces kept by tail-based sampling (0.8% of healthy ones)</div></div>
-      <div class="card kpi"><div class="num gradient-text">14d</div><div class="lbl">from first deploy to full production coverage</div></div>
+      <div class="card kpi"><div class="num gradient-text">60K+</div><div class="lbl">GitHub Stars — open source under Apache-2.0</div></div>
+      <div class="card kpi"><div class="num gradient-text">300+</div><div class="lbl">contributors building the platform together</div></div>
+      <div class="card kpi"><div class="num gradient-text">217+</div><div class="lbl">plugins — prototypes, slides, posters, dashboards</div></div>
+      <div class="card kpi"><div class="num gradient-text">21</div><div class="lbl">coding agents — auto-detected from PATH, zero config</div></div>
     </div>
-    <div class="notes">Emphasize "zero app-code changes" — the eBPF agent attaches at the kernel boundary, so Go, Java and Node services all came along for free.</div>
+    <div class="notes">Emphasize "zero config" — agents already installed on PATH just work. Also worth a mention: 129 design systems importable from GitHub, Figma, or local.</div>
   </section>
 
   <!-- 6 · layout: stat-highlight -->
   <section class="slide center" data-title="Headline stat">
-    <p class="kicker">Mean time to root cause</p>
-    <p class="stat-big gradient-text anim-rise-in">−78%</p>
-    <p class="lede mt-m" style="max-width:46ch">from 67 minutes of grep archaeology to 15 minutes of following one trace, measured across 23 incidents this quarter.</p>
-    <div class="notes">One number carries the slide. 67 → 15 minutes, n=23 incidents — be ready to share the incident list in the appendix doc.</div>
+    <p class="kicker">Monthly cost vs Claude Design</p>
+    <p class="stat-big gradient-text anim-rise-in">−80%</p>
+    <p class="lede mt-m" style="max-width:46ch">from $500 a month on Claude Design to ~$73 with Open Design and BYOK — the same frontier capability, on your own keys.</p>
+    <div class="notes">One number carries the slide. $500 → ~$73 per month — BYOK means you pay the model provider directly, nothing on top.</div>
   </section>
 
   <!-- 7 · layout: chart-bar (pure CSS — no chart library) -->
-  <section class="slide" data-title="On-call hours">
-    <p class="kicker">Part three · Rollout wins</p>
-    <h2 class="h2">Where on-call hours went, before Loomtrace</h2>
+  <section class="slide" data-title="Plugin ecosystem">
+    <p class="kicker">Part two · Plugin ecosystem</p>
+    <h2 class="h2">What the 217+ plugins build</h2>
     <div class="bar-chart">
-      <div class="bar" style="height:90%"><em>44%</em><span>locating the failing hop</span></div>
-      <div class="bar" style="height:58%"><em>28%</em><span>correlating logs</span></div>
-      <div class="bar" style="height:35%"><em>17%</em><span>actual fix</span></div>
-      <div class="bar" style="height:22%"><em>11%</em><span>writeup</span></div>
+      <div class="bar" style="height:90%"><em>44%</em><span>prototypes &amp; web</span></div>
+      <div class="bar" style="height:58%"><em>28%</em><span>slides &amp; decks</span></div>
+      <div class="bar" style="height:35%"><em>17%</em><span>posters &amp; images</span></div>
+      <div class="bar" style="height:22%"><em>11%</em><span>dashboards &amp; video</span></div>
     </div>
-    <p class="dim2 mt-l" style="margin-top:56px">Tracing collapses the first two bars — 72% of every incident was spent finding the problem, not fixing it.</p>
-    <div class="notes">Bars are pure CSS on the gradient token — no chart library anywhere in this file. The story: most on-call time was search, not repair.</div>
+    <p class="dim2 mt-l" style="margin-top:56px">Illustrative split of the 217+ community plugins by artifact type — prototypes and decks lead, HTML video is the fastest-growing.</p>
+    <div class="notes">Bars are pure CSS on the gradient token — no chart library anywhere in this file. The split is illustrative; the point is the breadth: one platform, many artifact types.</div>
   </section>
 
   <!-- 8 · layout: process-steps -->
-  <section class="slide" data-title="Pipeline">
-    <p class="kicker">Architecture</p>
-    <h2 class="h2">Four stages, one pipeline</h2>
+  <section class="slide" data-title="Workflow">
+    <p class="kicker">Part three · Workflow</p>
+    <h2 class="h2">From idea to delivery</h2>
     <div class="grid g4 mt-l steps anim-stagger-list">
-      <div class="card"><h4 class="h4">Instrument</h4><p class="dim">eBPF agent per node captures spans at the socket layer — no SDK required.</p></div>
-      <div class="card"><h4 class="h4">Collect</h4><p class="dim">OTLP-compatible collectors batch and compress; 4MB/s per node ceiling.</p></div>
-      <div class="card"><h4 class="h4">Correlate</h4><p class="dim">Trace IDs propagate via W3C traceparent; retries fold into one tree.</p></div>
-      <div class="card"><h4 class="h4">Alert</h4><p class="dim">SLO burn alerts link straight to the slowest exemplar trace.</p></div>
+      <div class="card"><h4 class="h4">Start</h4><p class="dim">Describe your goal in one sentence, or start from a template or plugin.</p></div>
+      <div class="card"><h4 class="h4">Direct</h4><p class="dim">Set the visual direction — palette, type, and spacing flow into generation.</p></div>
+      <div class="card"><h4 class="h4">Generate</h4><p class="dim">The agent reads full context and produces real runnable files, previewed in a sandbox.</p></div>
+      <div class="card"><h4 class="h4">Ship</h4><p class="dim">Hand off to engineering, or turn it into a marketing video with HyperFrames.</p></div>
     </div>
-    <div class="notes">The counter pseudo-element numbers the cards automatically. If anyone asks: OTLP-compatible means existing OpenTelemetry SDK spans merge into the same trace tree.</div>
+    <div class="notes">The counter pseudo-element numbers the cards automatically. If anyone asks: every choice also becomes memory — context for the next run, so it gets closer each time.</div>
   </section>
 
   <!-- 9 · layout: comparison -->
-  <section class="slide" data-title="Before / After">
+  <section class="slide" data-title="Closed vs open">
     <p class="kicker">Comparison</p>
-    <h2 class="h2">Grep-driven vs trace-driven</h2>
+    <h2 class="h2">Closed cloud vs open desktop</h2>
     <div class="grid g2 mt-l">
       <div class="card card-soft">
-        <p class="eyebrow" style="color:var(--bad)">Before</p>
-        <h3 class="h3">Log archaeology</h3>
-        <ul class="check"><li>Nine ssh sessions, nine log formats</li><li>Timestamp correlation breaks on retries</li><li>Page bounces between four teams</li></ul>
+        <p class="eyebrow" style="color:var(--bad)">Closed &amp; cloud</p>
+        <h3 class="h3">Rented capability</h3>
+        <ul class="check"><li>Locked to one vendor's model</li><li>No local files, no repo context</li><li>~$500 a month, no BYOK</li></ul>
       </div>
       <div class="card card-accent">
-        <p class="eyebrow" style="color:var(--good)">After</p>
-        <h3 class="h3">One trace, one owner</h3>
-        <ul class="check"><li>Single waterfall for the whole request</li><li>Retries and queue time explicit per hop</li><li>Alert links to the exact slow span</li></ul>
+        <p class="eyebrow" style="color:var(--good)">Open &amp; local</p>
+        <h3 class="h3">Owned workflow</h3>
+        <ul class="check"><li>21 coding agents, detected from PATH</li><li>Local files, Figma, repos readable in place</li><li>Apache-2.0 — fork, self-host, BYOK</li></ul>
       </div>
     </div>
-    <div class="notes">Red eyebrow vs green eyebrow on the semantic tokens. The "page bounces between four teams" line lands hardest with on-call folks.</div>
+    <div class="notes">Red eyebrow vs green eyebrow on the semantic tokens. The "repos readable in place" line lands hardest with engineers — the agent sees real context.</div>
   </section>
 
   <!-- 10 · layout: big-quote -->
   <section class="slide center" data-title="Quote">
-    <p class="quote serif anim-fade-up">“You can't fix the latency you can't <span class="gradient-text">see</span>.”</p>
-    <p class="eyebrow mt-l">— SRE handbook, incident review 2026-04</p>
-    <div class="notes">Big serif pull quote, nothing else competing. Let it sit for a beat before the closer.</div>
+    <p class="quote serif anim-fade-up">“Design is finally under <span class="gradient-text">version control</span>.”</p>
+    <p class="eyebrow mt-l">— Indie developer, on git-diffable design artifacts</p>
+    <div class="notes">Big serif pull quote, nothing else competing. File-system semantics plus git-diffable artifacts — let it sit for a beat before the closer.</div>
   </section>
 
   <!-- 11 · layout: thanks / cta -->
   <section class="slide center" data-title="Thanks">
     <p class="kicker">Get involved</p>
-    <h1 class="h1">Trace your service <span class="gradient-text">this sprint</span></h1>
-    <p class="lede mt-m" style="max-width:52ch">The agent rolls out per-namespace. File a `#loomtrace` request and you'll have waterfalls by Friday.</p>
+    <h1 class="h1">Open. Local. <span class="gradient-text">Agent-native.</span></h1>
+    <p class="lede mt-m" style="max-width:52ch">Frontier AI design, back on every creator's desk. Download Open Design for macOS or Windows — or star the repo and join the community.</p>
     <div class="row wrap mt-l" style="gap:8px;justify-content:center">
-      <span class="pill pill-accent">← → navigate</span>
-      <span class="pill">Space next</span>
-      <span class="pill">#/6 deep link</span>
-      <span class="pill">print → PDF</span>
+      <span class="pill pill-accent">Download · macOS / Windows</span>
+      <span class="pill">Star on GitHub</span>
+      <span class="pill">github.com/nexu-io/open-design</span>
+      <span class="pill">discord.gg/qhbcCH8Am4</span>
     </div>
-    <div class="notes">Close on the concrete ask: one Slack request, waterfalls by Friday. Q&amp;A from here.</div>
+    <div class="notes">Close on the concrete ask: download the app or star the repo. Q&amp;A from here.</div>
   </section>
 
 </div>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MERIDIAN GRID · System Architecture — True Blueprint deck</title>
+<title>OPEN DESIGN · The Blueprint — True Blueprint deck</title>
 <style>
 /* hps-true-blueprint :: webfonts (Google Fonts @import only — no other external deps) */
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;0,800;1,400&display=swap');
@@ -177,22 +177,22 @@ code,kbd,pre,samp{font-family:var(--font-mono)}
 </head>
 <body>
 
-<div class="deck-header"><span>Meridian Grid · Drawing Set MG-2026</span><span class="theme-chip">theme: true-blueprint [locked]</span></div>
+<div class="deck-header"><span>Open Design · Drawing Set OD-2026</span><span class="theme-chip">theme: true-blueprint [locked]</span></div>
 
 <div class="deck" id="deck">
 
   <!-- 1 · layout: cover (drawing sheet with title block) -->
   <section class="slide" data-title="Cover">
-    <p class="kicker">// System architecture review</p>
-    <h1 class="h1 anim-rise-in">Meridian Grid<br><span class="gradient-text">Control Plane v3</span></h1>
-    <p class="lede">A working blueprint for the next revision of our edge-orchestration platform: one control plane, three failure domains, zero shared state.</p>
+    <p class="kicker">// The open-source, local, agent-driven design platform</p>
+    <h1 class="h1 anim-rise-in">Open Design<br><span class="gradient-text">The Blueprint</span></h1>
+    <p class="lede">From idea to prototypes, web pages, slides, and HTML video — the full product-design workflow, drawn on your own machine.</p>
     <div class="title-block mt-l anim-fade-up">
-      <div>DWG NO.<b>MG-CP3-001</b></div>
-      <div>REV.<b class="annot">C</b></div>
-      <div>SCALE<b>1 : 1</b></div>
+      <div>DWG NO.<b>OD-2026-001</b></div>
+      <div>LICENSE<b class="annot">APACHE-2.0</b></div>
+      <div>KEYS<b>BYOK</b></div>
       <div>DATE<b>2026-06-11</b></div>
     </div>
-    <div class="notes">Cover styled as a drawing sheet: title block bottom-left carries drawing number, revision, scale and date. The whole deck is one engineering document.</div>
+    <div class="notes">Cover styled as a drawing sheet: title block bottom-left carries drawing number, license, key policy and date. The whole deck is one engineering document — github.com/nexu-io/open-design.</div>
   </section>
 
   <!-- 2 · layout: toc (drawing index) -->
@@ -200,18 +200,18 @@ code,kbd,pre,samp{font-family:var(--font-mono)}
     <p class="kicker">// Sheet index</p>
     <h2 class="h2">Three sheets in this set</h2>
     <div class="grid g3 mt-l anim-stagger-list">
-      <div class="card card-accent"><h4 class="h4">SHT 01 · Topology</h4><p class="dim">Where the control plane sits, what it talks to, and the three failure domains it must survive.</p></div>
-      <div class="card card-accent"><h4 class="h4">SHT 02 · Load &amp; limits</h4><p class="dim">Measured throughput, latency budgets, and the bottleneck we are redrawing in rev C.</p></div>
-      <div class="card card-accent"><h4 class="h4">SHT 03 · Migration</h4><p class="dim">A four-phase cutover plan with rollback lines drawn before we move a single byte.</p></div>
+      <div class="card card-accent"><h4 class="h4">SHT 01 · Why open</h4><p class="dim">Why frontier AI design needed opening, and how one desktop plane wires agents to artifacts.</p></div>
+      <div class="card card-accent"><h4 class="h4">SHT 02 · Numbers</h4><p class="dim">Stars, contributors, plugins, and design systems — community figures, open to audit.</p></div>
+      <div class="card card-accent"><h4 class="h4">SHT 03 · Workflow</h4><p class="dim">From idea to delivery in four phases, and the delta against the closed cloud alternative.</p></div>
     </div>
     <div class="notes">Table of contents framed as a sheet index — each card is one section of the drawing set.</div>
   </section>
 
   <!-- 3 · layout: section-divider -->
-  <section class="slide" data-title="Sheet 01 · Topology">
+  <section class="slide" data-title="Sheet 01 · Why open">
     <span class="section-num">01</span>
     <p class="eyebrow">Sheet one</p>
-    <h2 class="h2">Topology,<br>drawn to survive</h2>
+    <h2 class="h2">Open by design,<br>local by default</h2>
     <div class="divider-accent mt-m"></div>
     <div class="notes">Section divider: outline-stroked giant number bottom-right, drawn with text-stroke in the ink color so it reads as a construction line.</div>
   </section>
@@ -219,33 +219,33 @@ code,kbd,pre,samp{font-family:var(--font-mono)}
   <!-- 4 · layout: arch-diagram (inline SVG schematic — no libraries) -->
   <section class="slide" data-title="Architecture">
     <p class="kicker">// SHT 01 · system schematic</p>
-    <h2 class="h2">One plane, three domains</h2>
-    <svg class="mt-m" viewBox="0 0 980 330" width="100%" style="max-width:980px" role="img" aria-label="Control plane schematic: gateway feeding the Meridian control plane, fanning out to three edge domains over a replicated log">
+    <h2 class="h2">One desktop, three domains</h2>
+    <svg class="mt-m" viewBox="0 0 980 330" width="100%" style="max-width:980px" role="img" aria-label="Open Design schematic: your idea feeding the Open Design desktop plane, fanning out to prototypes, slides and pages, and HTML video over design memory">
       <defs>
         <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
           <path d="M0 0L10 5L0 10z" fill="#aee1ff"/>
         </marker>
       </defs>
       <g font-family="'JetBrains Mono',monospace" font-size="13" letter-spacing="1">
-        <!-- gateway -->
+        <!-- input -->
         <rect x="20" y="125" width="170" height="80" fill="rgba(255,255,255,.05)" stroke="#aee1ff" stroke-width="1.5" stroke-dasharray="6 4" rx="2"/>
-        <text x="105" y="160" fill="#e8f3ff" text-anchor="middle" font-weight="700">API GATEWAY</text>
-        <text x="105" y="182" fill="#7da8cf" text-anchor="middle" font-size="11">mTLS · 42k rps</text>
-        <!-- control plane -->
+        <text x="105" y="160" fill="#e8f3ff" text-anchor="middle" font-weight="700">YOUR IDEA</text>
+        <text x="105" y="182" fill="#7da8cf" text-anchor="middle" font-size="11">one sentence · BYOK</text>
+        <!-- open design plane -->
         <rect x="300" y="100" width="240" height="130" fill="rgba(255,255,255,.07)" stroke="#ffffff" stroke-width="2" rx="2"/>
-        <text x="420" y="145" fill="#ffffff" text-anchor="middle" font-weight="800" font-size="16">CONTROL PLANE</text>
-        <text x="420" y="170" fill="#b8d4f0" text-anchor="middle" font-size="11">scheduler · placement · policy</text>
-        <text x="420" y="192" fill="#ffd27a" text-anchor="middle" font-size="11">raft ×5 · stateless workers</text>
+        <text x="420" y="145" fill="#ffffff" text-anchor="middle" font-weight="800" font-size="16">OPEN DESIGN</text>
+        <text x="420" y="170" fill="#b8d4f0" text-anchor="middle" font-size="11">desktop · daemon · sandbox</text>
+        <text x="420" y="192" fill="#ffd27a" text-anchor="middle" font-size="11">21 agents · 129 design systems</text>
         <!-- domains -->
         <rect x="700" y="20"  width="180" height="74" fill="rgba(255,255,255,.05)" stroke="#aee1ff" stroke-width="1.5" stroke-dasharray="6 4" rx="2"/>
-        <text x="790" y="50" fill="#e8f3ff" text-anchor="middle" font-weight="700">DOMAIN A</text>
-        <text x="790" y="72" fill="#7da8cf" text-anchor="middle" font-size="11">eu-west · 38 nodes</text>
+        <text x="790" y="50" fill="#e8f3ff" text-anchor="middle" font-weight="700">PROTOTYPES</text>
+        <text x="790" y="72" fill="#7da8cf" text-anchor="middle" font-size="11">mobile &amp; web · hi-fi</text>
         <rect x="700" y="128" width="180" height="74" fill="rgba(255,255,255,.05)" stroke="#aee1ff" stroke-width="1.5" stroke-dasharray="6 4" rx="2"/>
-        <text x="790" y="158" fill="#e8f3ff" text-anchor="middle" font-weight="700">DOMAIN B</text>
-        <text x="790" y="180" fill="#7da8cf" text-anchor="middle" font-size="11">us-east · 41 nodes</text>
+        <text x="790" y="158" fill="#e8f3ff" text-anchor="middle" font-weight="700">SLIDES &amp; PAGES</text>
+        <text x="790" y="180" fill="#7da8cf" text-anchor="middle" font-size="11">decks · live artifacts</text>
         <rect x="700" y="236" width="180" height="74" fill="rgba(255,255,255,.05)" stroke="#aee1ff" stroke-width="1.5" stroke-dasharray="6 4" rx="2"/>
-        <text x="790" y="266" fill="#e8f3ff" text-anchor="middle" font-weight="700">DOMAIN C</text>
-        <text x="790" y="288" fill="#7da8cf" text-anchor="middle" font-size="11">ap-south · 27 nodes</text>
+        <text x="790" y="266" fill="#e8f3ff" text-anchor="middle" font-weight="700">HTML VIDEO</text>
+        <text x="790" y="288" fill="#7da8cf" text-anchor="middle" font-size="11">HyperFrames · MP4</text>
         <!-- connectors -->
         <path d="M190 165 H292" stroke="#aee1ff" stroke-width="1.5" fill="none" marker-end="url(#arr)"/>
         <path d="M540 140 C620 130 630 70 692 60"  stroke="#aee1ff" stroke-width="1.5" stroke-dasharray="2 5" fill="none" marker-end="url(#arr)"/>
@@ -253,7 +253,7 @@ code,kbd,pre,samp{font-family:var(--font-mono)}
         <path d="M540 195 C620 205 630 263 692 272" stroke="#aee1ff" stroke-width="1.5" stroke-dasharray="2 5" fill="none" marker-end="url(#arr)"/>
         <!-- annotation / dimension line -->
         <path d="M560 250 V300 H640" stroke="#ffd27a" stroke-width="1" fill="none"/>
-        <text x="648" y="304" fill="#ffd27a" font-size="11">replicated log — only state on the wire</text>
+        <text x="648" y="304" fill="#ffd27a" font-size="11">design memory — every choice compounds</text>
       </g>
     </svg>
     <div class="notes">Architecture schematic drawn as pure inline SVG: dashed component boxes, ice-blue connector lines with arrowheads, one amber annotation as the dimension line. No diagram libraries.</div>
@@ -265,20 +265,20 @@ code,kbd,pre,samp{font-family:var(--font-mono)}
     <h2 class="h2">General notes</h2>
     <div class="grid g2 mt-l">
       <div>
-        <p class="lede">Every component on this sheet obeys four construction rules. Anything that cannot is redrawn until it can.</p>
+        <p class="lede">Every capability on this sheet obeys four construction rules. Anything that cannot is redrawn until it can.</p>
         <ul class="check mt-m">
-          <li>Workers are stateless — kill any of them at any time</li>
-          <li>All cross-domain traffic rides the replicated log</li>
-          <li>Policy is data, not code — hot-reload, never redeploy</li>
-          <li>Each domain runs degraded-but-alive on its own</li>
+          <li>Desktop-native — local files, Figma, and repos readable in place</li>
+          <li>Plug in agents, don't rebuild them — your CLIs already work</li>
+          <li>It learns your taste — every choice becomes design memory</li>
+          <li>Open all the way down — fork, self-host, ship commercially</li>
         </ul>
       </div>
       <div class="card card-soft">
         <table class="spec-table">
-          <tr><td>Consensus</td><td><b>Raft ×5</b> — survives two voter losses</td></tr>
-          <tr><td>Placement</td><td><b>Rendezvous hash</b> — no rebalance storms</td></tr>
-          <tr><td>Transport</td><td><b>gRPC + mTLS</b> — certs rotate every 24h</td></tr>
-          <tr><td>State</td><td><b>Log only</b> — snapshots every 5 min</td></tr>
+          <tr><td>Agents</td><td><b>21 coding agents</b> — auto-detected from PATH</td></tr>
+          <tr><td>Systems</td><td><b>129 design systems</b> — GitHub, Figma, or local</td></tr>
+          <tr><td>Keys</td><td><b>Full-stack BYOK</b> — plus 14 media providers</td></tr>
+          <tr><td>License</td><td><b>Apache-2.0</b> — commercial use allowed</td></tr>
         </table>
       </div>
     </div>
@@ -286,83 +286,83 @@ code,kbd,pre,samp{font-family:var(--font-mono)}
   </section>
 
   <!-- 6 · layout: section-divider -->
-  <section class="slide" data-title="Sheet 02 · Load">
+  <section class="slide" data-title="Sheet 02 · Numbers">
     <span class="section-num">02</span>
     <p class="eyebrow">Sheet two</p>
-    <h2 class="h2">Load &amp; limits,<br>measured not guessed</h2>
+    <h2 class="h2">Numbers,<br>open to audit</h2>
     <div class="divider-accent mt-m"></div>
     <div class="notes">Second divider. Same construction-line number device.</div>
   </section>
 
   <!-- 7 · layout: kpi-grid -->
-  <section class="slide" data-title="Operating figures">
-    <p class="kicker">// SHT 02 · operating figures, 30-day window</p>
+  <section class="slide" data-title="Community figures">
+    <p class="kicker">// SHT 02 · community figures, open to audit</p>
     <h2 class="h2">The numbers on the plate</h2>
     <div class="grid g4 mt-l anim-stagger-list">
-      <div class="card kpi"><div class="num">42k</div><div class="lbl">requests / second sustained at the gateway</div></div>
-      <div class="card kpi"><div class="num">11ms</div><div class="lbl">p99 placement decision, target ≤ 25ms</div></div>
-      <div class="card kpi"><div class="num annot">99.97%</div><div class="lbl">control-plane availability — rev C targets 99.99%</div></div>
-      <div class="card kpi"><div class="num">106</div><div class="lbl">edge nodes under management across 3 domains</div></div>
+      <div class="card kpi"><div class="num annot">60K+</div><div class="lbl">GitHub stars — open source under Apache-2.0</div></div>
+      <div class="card kpi"><div class="num">300+</div><div class="lbl">contributors building the platform together</div></div>
+      <div class="card kpi"><div class="num">217+</div><div class="lbl">plugins in the community catalog</div></div>
+      <div class="card kpi"><div class="num">129</div><div class="lbl">design systems ready to import and reuse</div></div>
     </div>
-    <div class="notes">KPI grid: four measured figures. The amber number marks the one rev C exists to move.</div>
+    <div class="notes">KPI grid: four community figures. The amber number marks the headline — 60K+ GitHub stars on an Apache-2.0 codebase.</div>
   </section>
 
   <!-- 8 · layout: chart-bar (hatched CSS bars — no chart library) -->
-  <section class="slide" data-title="Bottleneck">
-    <p class="kicker">// SHT 02 · p99 latency budget by stage (ms)</p>
-    <h2 class="h2">Where the 11ms goes</h2>
+  <section class="slide" data-title="Plugin catalog">
+    <p class="kicker">// SHT 02 · plugins by artifact type (demo split of 217+)</p>
+    <h2 class="h2">Where the plugins go</h2>
     <div class="bar-chart">
-      <div class="bar" style="height:22%"><em>1.4</em><span>admit</span></div>
-      <div class="bar" style="height:30%"><em>2.1</em><span>policy eval</span></div>
-      <div class="bar hot" style="height:88%"><em>5.8</em><span>log append</span></div>
-      <div class="bar" style="height:26%"><em>1.7</em><span>fan-out</span></div>
+      <div class="bar hot" style="height:88%"><em>84</em><span>slides</span></div>
+      <div class="bar" style="height:60%"><em>56</em><span>prototypes</span></div>
+      <div class="bar" style="height:48%"><em>43</em><span>posters</span></div>
+      <div class="bar" style="height:38%"><em>34</em><span>video</span></div>
     </div>
-    <p class="dim2 mt-l" style="margin-top:60px">Log append is 53% of the budget. Rev C batches appends per domain — bench says <span class="annot">5.8ms → 2.3ms</span>.</p>
-    <div class="notes">Bar chart rebuilt with hatched CSS bars — cross-hatching is the blueprint way to fill an area. The amber hatched bar is the bottleneck.</div>
+    <p class="dim2 mt-l" style="margin-top:60px">Demo split of the 217+ plugin catalog. Slides lead — and every type ships as <span class="annot">real, runnable files</span>.</p>
+    <div class="notes">Bar chart rebuilt with hatched CSS bars — cross-hatching is the blueprint way to fill an area. The amber hatched bar is the largest artifact type. Values are an illustrative demo split of the 217+ catalog.</div>
   </section>
 
   <!-- 9 · layout: section-divider + process-steps combined sheet -->
-  <section class="slide" data-title="Sheet 03 · Migration">
-    <p class="kicker">// SHT 03 · cutover sequence</p>
-    <h2 class="h2">Four phases, rollback lines drawn first</h2>
+  <section class="slide" data-title="Sheet 03 · Workflow">
+    <p class="kicker">// SHT 03 · from idea to delivery</p>
+    <h2 class="h2">Idea to delivery in four phases</h2>
     <div class="grid g4 mt-l steps anim-stagger-list">
-      <div class="card"><h4 class="h4">Shadow</h4><p class="dim">Rev C runs beside rev B, replaying the live log. Two weeks, zero traffic.</p></div>
-      <div class="card"><h4 class="h4">Mirror</h4><p class="dim">Reads served by C, writes still land on B. Diffs alarmed at 0.01%.</p></div>
-      <div class="card"><h4 class="h4">Cutover</h4><p class="dim">Domain by domain, smallest first. One command back to B at any point.</p></div>
-      <div class="card"><h4 class="h4">Retire</h4><p class="dim">B kept warm for 30 days, then decommissioned with its snapshots archived.</p></div>
+      <div class="card"><h4 class="h4">Start</h4><p class="dim">Describe your goal in one sentence, or start from a template or plugin.</p></div>
+      <div class="card"><h4 class="h4">Direct</h4><p class="dim">Pick the visual direction — palette, type, and spacing flow into generation.</p></div>
+      <div class="card"><h4 class="h4">Generate</h4><p class="dim">The agent reads full context and produces real runnable files in a sandbox.</p></div>
+      <div class="card"><h4 class="h4">Ship</h4><p class="dim">Hand off to engineering, or film it with HyperFrames. Every choice becomes memory.</p></div>
     </div>
-    <div class="notes">Process steps with bracketed [01]–[04] counters, like detail callouts on a drawing. The rollback path is stated inside every phase.</div>
+    <div class="notes">Process steps with bracketed [01]–[04] counters, like detail callouts on a drawing. The memory phase folds into Ship: every choice becomes context for the next run.</div>
   </section>
 
   <!-- 10 · layout: comparison -->
-  <section class="slide" data-title="Rev B vs Rev C">
+  <section class="slide" data-title="Closed vs open">
     <p class="kicker">// SHT 03 · revision delta</p>
-    <h2 class="h2">Rev B vs Rev C</h2>
+    <h2 class="h2">Closed cloud vs Open Design</h2>
     <div class="grid g2 mt-l">
       <div class="card card-soft">
-        <p class="eyebrow" style="color:var(--bad)">Rev B — as built</p>
-        <h3 class="h3">Chatty &amp; coupled</h3>
-        <ul class="check"><li>Per-request appends to the log</li><li>Policy compiled into the scheduler binary</li><li>Domain failure pages a human at 3am</li></ul>
+        <p class="eyebrow" style="color:var(--bad)">Claude Design — closed cloud</p>
+        <h3 class="h3">Locked &amp; metered</h3>
+        <ul class="check"><li>One model, no agent choice</li><li>No self-hosting, no BYOK</li><li>~$500 a month, cloud-only</li></ul>
       </div>
       <div class="card card-accent">
-        <p class="eyebrow" style="color:var(--good)">Rev C — this drawing</p>
-        <h3 class="h3">Batched &amp; autonomous</h3>
-        <ul class="check"><li>Appends batched per domain, 2.5× headroom</li><li>Policy as hot-reloaded data</li><li>Domains degrade alone, recover alone</li></ul>
+        <p class="eyebrow" style="color:var(--good)">Open Design — this drawing</p>
+        <h3 class="h3">Open &amp; local</h3>
+        <ul class="check"><li>21 coding agents, BYOK throughout</li><li>Runs on your machine, Apache-2.0</li><li>~$73 a month — over 80% less</li></ul>
       </div>
     </div>
-    <div class="notes">Comparison: as-built vs proposed revision. Semantic good/bad tokens stay within the locked palette — coral and mint read as redline annotations.</div>
+    <div class="notes">Comparison: the closed cloud incumbent vs Open Design. April 2026: Claude Design proved an LLM can truly design — Open Design sets that capability free. Semantic good/bad tokens stay within the locked palette — coral and mint read as redline annotations.</div>
   </section>
 
   <!-- 11 · layout: big-quote + thanks -->
   <section class="slide center" data-title="Sign-off">
-    <p class="quote anim-fade-up">"A system you can't draw on one sheet<br>is a system <span class="annot">you don't understand yet.</span>"</p>
-    <p class="eyebrow mt-l">— meridian platform team, design review notes</p>
+    <p class="quote anim-fade-up">"Frontier AI design,<br>back on <span class="annot">every creator's desk.</span>"</p>
+    <p class="eyebrow mt-l">— open · local · agent-native</p>
     <div class="row wrap mt-l" style="gap:8px;justify-content:center">
-      <span class="pill pill-accent">approved for rev C</span>
+      <span class="pill pill-accent">github.com/nexu-io/open-design</span>
+      <span class="pill">download · macOS / Windows</span>
       <span class="pill">← → navigate</span>
-      <span class="pill">#/4 deep link</span>
     </div>
-    <div class="notes">Closer doubles as the sign-off block: the engineering principle as a pull quote, approval stamp as an amber pill.</div>
+    <div class="notes">Closer doubles as the sign-off block: the mission as a pull quote, the GitHub CTA stamped as an amber pill. Star the repo, download for macOS or Windows.</div>
   </section>
 
 </div>
