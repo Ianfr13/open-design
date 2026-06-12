@@ -709,22 +709,22 @@ export default function Page({
                 {([
                   {
                     label: 'Prototype',
-                    href: href('/skills/mode/prototype/'),
+                    href: href('/plugins/templates/prototype/'),
                     preview: '/lab-cards/prototype.webp?v=5',
                   },
                   {
                     label: 'Live Artifact',
-                    href: href('/skills/'),
+                    href: href('/plugins/templates/live-artifact/'),
                     preview: '/lab-cards/live-artifact.webp?v=3',
                   },
                   {
                     label: 'Slides',
-                    href: href('/skills/mode/deck/'),
+                    href: href('/plugins/templates/deck/'),
                     preview: '/lab-cards/slides.png?v=5',
                   },
-                  { label: tt('图片', 'Image'), href: href('/skills/'), preview: '/lab-cards/quest.webp?v=1', wide: true },
-                  { label: 'HyperFrames', href: href('/skills/'), video: '/lab-hyperframes.mp4' },
-                  { label: tt('视频', 'Video'), href: href('/skills/'), video: '/lab-video.mp4' },
+                  { label: tt('图片', 'Image'), href: href('/plugins/templates/image/'), preview: '/lab-cards/quest.webp?v=1', wide: true },
+                  { label: 'HyperFrames', href: href('/plugins/templates/hyperframes/'), video: '/lab-hyperframes.mp4' },
+                  { label: tt('视频', 'Video'), href: href('/plugins/templates/video/'), video: '/lab-video.mp4' },
                 ] as ReadonlyArray<{
                   label: string;
                   href: string;
@@ -852,7 +852,7 @@ export default function Page({
                   { src: 'card-1.webp', num: '52K+', to: '52', suffix: 'K+', alt: 'GitHub Stars', href: REPO },
                   { src: 'card-2.webp', num: '280+', to: '280', suffix: '+', alt: tt('贡献者', 'Contributors'), href: `${REPO}/graphs/contributors` },
                   { src: 'card-3.webp', num: '217+', to: '217', suffix: '+', alt: 'Plugins', href: href('/plugins/') },
-                  { src: 'card-4.webp', num: '129+', to: '129', suffix: '+', alt: 'Design Systems', href: href('/systems/') },
+                  { src: 'card-4.webp', num: '129+', to: '129', suffix: '+', alt: 'Design Systems', href: href('/plugins/systems/') },
                   { src: 'card-5.webp', num: '21', to: '21', suffix: '', alt: tt('Coding Agent 支持', 'Coding Agents'), href: REPO },
                   { src: 'card-6.webp', num: null, to: null, suffix: '', alt: 'Star us', href: REPO, cta: true },
                 ].map((item, index) => (
