@@ -45,13 +45,13 @@
 
 .ghost {
   background: transparent;
-  border-color: var(--border);
+  border-color: transparent;
   color: var(--text);
 }
 
 .ghost:hover:not(:disabled) {
   background: var(--bg-subtle);
-  border-color: var(--border-strong);
+  border-color: transparent;
 }
 
 .subtle {

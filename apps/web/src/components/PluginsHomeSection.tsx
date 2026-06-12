@@ -499,6 +499,7 @@ function SearchInput({ value, onChange }: SearchInputProps) {
       />
       {value ? (
         <Button
+          variant="subtle"
           className="plugins-home__search-clear"
           onClick={() => onChange('')}
           aria-label={t('pluginsHome.clearSearch')}

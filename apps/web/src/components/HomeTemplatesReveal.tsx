@@ -79,6 +79,7 @@ export function HomeTemplatesReveal({ enabled, children }: Props) {
 
       {revealed ? (
         <Button
+          variant="subtle"
           className="home-templates-reveal__collapse"
           onClick={() => setRevealed(false)}
         >
@@ -87,6 +88,7 @@ export function HomeTemplatesReveal({ enabled, children }: Props) {
         </Button>
       ) : (
         <Button
+          variant="ghost"
           className="home-templates-reveal__hint"
           onClick={() => setRevealed(true)}
           data-testid="home-templates-hint"
