@@ -1017,12 +1017,20 @@ jobs:
     needs:
       - metadata
       - verify
+      - build_mac
+      - build_mac_intel
+      - build_win
+      - build_linux
     if: >-
       ${{
         needs.metadata.outputs.dry_run != 'true' &&
         needs.metadata.outputs.github_release_enabled == 'true' &&
         needs.metadata.result == 'success' &&
-        needs.verify.result == 'success'
+        needs.verify.result == 'success' &&
+        needs.build_mac.result == 'success' &&
+        needs.build_mac_intel.result == 'success' &&
+        needs.build_win.result == 'success' &&
+        (needs.build_linux.result == 'success' || needs.build_linux.result == 'skipped')
       }}
     permissions:
       contents: read
@@ -1056,7 +1064,10 @@ jobs:
         needs.build_mac_intel.result == 'success' &&
         needs.build_win.result == 'success' &&
         (needs.build_linux.result == 'success' || needs.build_linux.result == 'skipped') &&
-        needs.publish_docker_image.result == 'success'
+        (
+          needs.metadata.outputs.github_release_enabled != 'true' ||
+          needs.publish_docker_image.result == 'success'
+        )
       }}
     runs-on: ubuntu-latest
     outputs:
