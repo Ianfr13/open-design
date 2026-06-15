@@ -412,34 +412,188 @@ jobs:
         with:
           node-version: 24
 
+      - name: Compute mac_arm64 tools-pack cache key
+        id: mac_arm64_tools_pack_cache_key
+        env:
+          MAC_TOOLS_PACK_ORIGIN_KEY: ${{ hashFiles('package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'apps/daemon/**', 'apps/web/**', 'apps/desktop/**', 'apps/packaged/**', 'packages/agui-adapter/**', 'packages/contracts/**', 'packages/plugin-runtime/**', 'packages/sidecar-proto/**', 'packages/sidecar/**', 'packages/platform/**', 'tools/pack/bin/**', 'tools/pack/package.json', 'tools/pack/resources/**', 'tools/pack/src/**', 'tools/pack/tsconfig.json', 'assets/community-pets/**', 'assets/frames/**', 'craft/**', 'design-systems/**', 'design-templates/**', 'plugins/_official/**', 'plugins/registry/**', 'prompt-templates/**', 'skills/**', '.github/workflows/release-beta.yml', '.github/scripts/release/cache/mac.sh') }}
+        run: |
+          set -euo pipefail
+          if [ -z "$MAC_TOOLS_PACK_ORIGIN_KEY" ]; then
+            echo "mac_arm64 tools-pack cache origin key is empty" >&2
+            exit 1
+          fi
+          prefix="tools-pack-mac-v1-beta-${RUNNER_OS}-arm64-"
+          {
+            echo "origin=$MAC_TOOLS_PACK_ORIGIN_KEY"
+            echo "prefix=$prefix"
+            echo "key=$prefix$MAC_TOOLS_PACK_ORIGIN_KEY"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Restore mac_arm64 tools-pack cache
+        id: mac_arm64_tools_pack_cache_restore
+        uses: actions/cache/restore@v5
+        continue-on-error: true
+        with:
+          path: ${{ runner.temp }}/tools-pack-cache
+          key: ${{ steps.mac_arm64_tools_pack_cache_key.outputs.key }}
+          restore-keys: |
+            ${{ steps.mac_arm64_tools_pack_cache_key.outputs.prefix }}
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Prepare mac_arm64 signing certificate
+        if: ${{ inputs.mac_arm64_sign_mode != 'no' }}
+        env:
+          APPLE_SIGNING_CERTIFICATE_BASE64: ${{ secrets.APPLE_SIGNING_CERTIFICATE_BASE64 }}
+          APPLE_SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_SIGNING_CERTIFICATE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          cert_path="$RUNNER_TEMP/open-design-signing.p12"
+          if ! printf '%s' "$APPLE_SIGNING_CERTIFICATE_BASE64" | base64 --decode > "$cert_path" 2>/dev/null; then
+            printf '%s' "$APPLE_SIGNING_CERTIFICATE_BASE64" | base64 -D > "$cert_path"
+          fi
+          {
+            echo "CSC_LINK=$cert_path"
+            echo "CSC_KEY_PASSWORD=$APPLE_SIGNING_CERTIFICATE_PASSWORD"
+          } >> "$GITHUB_ENV"
+
       - name: Build beta mac_arm64
+        id: mac_arm64_tools_pack_build
+        continue-on-error: true
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_SIGNING_CERTIFICATE_BASE64: ${{ secrets.APPLE_SIGNING_CERTIFICATE_BASE64 }}
-          APPLE_SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_SIGNING_CERTIFICATE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          BUILD_JSON_PATH: ${{ runner.temp }}/release-build/mac_arm64/build.json
-          BUILD_LOG_PATH: ${{ runner.temp }}/release-build/mac_arm64/build.log
-          MAC_COMPRESSION: normal
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/release-build/mac_arm64"
+          rm -rf "$RUNNER_TEMP/tools-pack"
+          : > "$RUNNER_TEMP/release-build/mac_arm64/build.log"
+          build_args=(
+            exec tools-pack mac build
+            --dir "$RUNNER_TEMP/tools-pack"
+            --cache-dir "$RUNNER_TEMP/tools-pack-cache"
+            --namespace release-beta
+            --portable
+            --app-version "${{ needs.metadata.outputs.beta_version }}"
+            --mac-compression normal
+            --to "${{ inputs.mac_arm64_target }}"
+            --json
+            --require-vela-cli
+          )
+          case "${{ inputs.mac_arm64_sign_mode }}" in
+            no) ;;
+            sign-only) build_args+=(--signed) ;;
+            notarize) build_args+=(--signed --notarize) ;;
+            *) echo "unsupported mac_arm64_sign_mode: ${{ inputs.mac_arm64_sign_mode }}" >&2; exit 1 ;;
+          esac
+          if build_output="$(pnpm "${build_args[@]}" 2> >(tee -a "$RUNNER_TEMP/release-build/mac_arm64/build.log" >&2))"; then
+            printf '%s\n' "$build_output" | tee "$RUNNER_TEMP/release-build/mac_arm64/build.json"
+          else
+            build_status=$?
+            printf '%s\n' "$build_output"
+            exit "$build_status"
+          fi
+
+      - name: Retry beta mac_arm64 without restored cache
+        if: ${{ steps.mac_arm64_tools_pack_build.outcome == 'failure' }}
+        run: |
+          set -euo pipefail
+          rm -rf "$RUNNER_TEMP/tools-pack-cache"
+          mkdir -p "$RUNNER_TEMP/release-build/mac_arm64"
+          pnpm exec tools-pack mac cleanup --dir "$RUNNER_TEMP/tools-pack" --namespace release-beta --json
+          : > "$RUNNER_TEMP/release-build/mac_arm64/build.log"
+          build_args=(
+            exec tools-pack mac build
+            --dir "$RUNNER_TEMP/tools-pack"
+            --cache-dir "$RUNNER_TEMP/tools-pack-cache"
+            --namespace release-beta
+            --portable
+            --app-version "${{ needs.metadata.outputs.beta_version }}"
+            --mac-compression normal
+            --to "${{ inputs.mac_arm64_target }}"
+            --json
+            --require-vela-cli
+          )
+          case "${{ inputs.mac_arm64_sign_mode }}" in
+            no) ;;
+            sign-only) build_args+=(--signed) ;;
+            notarize) build_args+=(--signed --notarize) ;;
+            *) echo "unsupported mac_arm64_sign_mode: ${{ inputs.mac_arm64_sign_mode }}" >&2; exit 1 ;;
+          esac
+          if build_output="$(pnpm "${build_args[@]}" 2> >(tee -a "$RUNNER_TEMP/release-build/mac_arm64/build.log" >&2))"; then
+            printf '%s\n' "$build_output" | tee "$RUNNER_TEMP/release-build/mac_arm64/build.json"
+          else
+            build_status=$?
+            printf '%s\n' "$build_output"
+            exit "$build_status"
+          fi
+
+      - name: Delete failed mac_arm64 tools-pack cache
+        if: ${{ steps.mac_arm64_tools_pack_build.outcome == 'failure' && steps.mac_arm64_tools_pack_cache_restore.outputs.cache-matched-key != '' }}
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          matched_key="${{ steps.mac_arm64_tools_pack_cache_restore.outputs.cache-matched-key }}"
+          cache_ids="$(gh cache list --key "$matched_key" --limit 100 --json id,key,ref --jq ".[] | select(.key == \"$matched_key\") | .id")"
+          count=0
+          while IFS= read -r cache_id; do
+            if [ -n "$cache_id" ]; then
+              gh cache delete "$cache_id"
+              count=$((count + 1))
+            fi
+          done <<< "$cache_ids"
+          echo "deletedFailedCacheKey=$matched_key count=$count"
+
+      - name: Build beta mac_arm64 update fixture
+        id: mac_arm64_update_fixture
+        if: ${{ inputs.mac_arm64_smoke_mode == 'full' && inputs.mac_arm64_update_metadata_url == '' && inputs.mac_arm64_update_target_version == '' }}
+        run: |
+          set -euo pipefail
+          version="${{ needs.metadata.outputs.beta_version }}"
+          if [[ "$version" =~ ^([0-9]+\.[0-9]+\.[0-9]+)-beta\.([0-9]+)$ ]]; then
+            update_version="${BASH_REMATCH[1]}-beta.$((BASH_REMATCH[2] + 1))"
+          else
+            echo "full mac_arm64 smoke requires counted beta version x.y.z-beta.N; got $version" >&2
+            exit 1
+          fi
+          update_build_json_path="$RUNNER_TEMP/release-work/mac_arm64/mac-tools-pack-update-build.json"
+          mkdir -p "$(dirname "$update_build_json_path")"
+          update_output="$(pnpm exec tools-pack mac build \
+            --dir "$RUNNER_TEMP/release-work/mac_arm64/tools-pack-update-fixture" \
+            --cache-dir "$RUNNER_TEMP/tools-pack-cache" \
+            --namespace release-beta \
+            --portable \
+            --app-version "$update_version" \
+            --mac-compression normal \
+            --to dmg \
+            --json)"
+          printf '%s\n' "$update_output" > "$update_build_json_path"
+          {
+            echo "update_build_json_path=$update_build_json_path"
+            echo "update_version=$update_version"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Smoke beta mac_arm64 packaged runtime
+        if: ${{ inputs.mac_arm64_smoke_mode != 'skip' }}
+        working-directory: e2e
+        env:
+          OD_PACKAGED_E2E_BUILD_JSON_PATH: ${{ runner.temp }}/release-build/mac_arm64/build.json
+          OD_PACKAGED_E2E_BUILD_LOG_PATH: ${{ runner.temp }}/release-build/mac_arm64/build.log
+          OD_PACKAGED_E2E_MAC: "1"
+          OD_PACKAGED_E2E_MAC_UPDATE_BUILD_JSON_PATH: ${{ steps.mac_arm64_update_fixture.outputs.update_build_json_path }}
           OD_PACKAGED_E2E_MAC_UPDATE_METADATA_URL: ${{ inputs.mac_arm64_update_metadata_url }}
-          OD_PACKAGED_E2E_MAC_UPDATE_VERSION: ${{ inputs.mac_arm64_update_target_version }}
-          RELEASE_BUILD_TARGET: ${{ inputs.mac_arm64_target }}
-          RELEASE_NAMESPACE: release-beta
-          RELEASE_OUTPUTS_PATH: ${{ runner.temp }}/release-build/mac_arm64/outputs.json
-          RELEASE_REPORT_DIR: ${{ runner.temp }}/release-report/mac_arm64
-          RELEASE_SIGN_MODE: ${{ inputs.mac_arm64_sign_mode }}
-          RELEASE_SMOKE_MODE: ${{ inputs.mac_arm64_smoke_mode }}
-          RELEASE_TARGET: mac_arm64
-          RELEASE_VERSION: ${{ needs.metadata.outputs.beta_version }}
-          RELEASE_WORK_DIR: ${{ runner.temp }}/release-work/mac_arm64
-          REQUIRE_VELA_CLI: "true"
-          TOOLS_PACK_CACHE_DIR: ${{ runner.temp }}/tools-pack-cache
-          TOOLS_PACK_DIR: ${{ runner.temp }}/tools-pack
-        run: bash tools/release/scripts/build-platform.sh
+          OD_PACKAGED_E2E_MAC_UPDATE_VERSION: ${{ inputs.mac_arm64_update_target_version != '' && inputs.mac_arm64_update_target_version || steps.mac_arm64_update_fixture.outputs.update_version }}
+          OD_PACKAGED_E2E_MAC_SMOKE_PROFILE: ${{ inputs.mac_arm64_smoke_mode }}
+          OD_PACKAGED_E2E_NAMESPACE: release-beta
+          OD_PACKAGED_E2E_RELEASE_CHANNEL: beta
+          OD_PACKAGED_E2E_RELEASE_VERSION: ${{ needs.metadata.outputs.beta_version }}
+          OD_PACKAGED_E2E_REPORT_DIR: ${{ runner.temp }}/release-report/mac_arm64
+          OD_PACKAGED_E2E_TOOLS_PACK_DIR: ${{ runner.temp }}/tools-pack
+        run: pnpm exec tsx scripts/release-smoke.ts mac specs/mac.spec.ts
 
       - name: Write mac_arm64 release report
         if: ${{ always() }}
@@ -461,6 +615,37 @@ jobs:
       - name: Publish mac_arm64 report summary
         if: ${{ always() }}
         run: cat "${{ runner.temp }}/release-report/mac_arm64/summary.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Prune mac_arm64 tools-pack cache
+        continue-on-error: true
+        run: bash .github/scripts/release/cache/mac.sh
+
+      - name: Save mac_arm64 tools-pack cache
+        if: ${{ success() && (steps.mac_arm64_tools_pack_cache_restore.outputs.cache-hit != 'true' || steps.mac_arm64_tools_pack_build.outcome == 'failure') }}
+        uses: actions/cache/save@v5
+        continue-on-error: true
+        with:
+          path: ${{ runner.temp }}/tools-pack-cache
+          key: ${{ steps.mac_arm64_tools_pack_cache_key.outputs.key }}
+
+      - name: Retain recent mac_arm64 tools-pack caches
+        if: ${{ success() }}
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          prefix="${{ steps.mac_arm64_tools_pack_cache_key.outputs.prefix }}"
+          keep=3
+          cache_ids="$(gh cache list --key "$prefix" --sort created_at --order desc --limit 100 --json id,key,createdAt --jq ".[$keep:] | .[].id")"
+          count=0
+          while IFS= read -r cache_id; do
+            if [ -n "$cache_id" ]; then
+              gh cache delete "$cache_id"
+              count=$((count + 1))
+            fi
+          done <<< "$cache_ids"
+          echo "actionsCachePrefix=$prefix deleted=$count"
 
       - name: Prepare mac_arm64 assets
         if: ${{ inputs.publish }}
@@ -531,30 +716,154 @@ jobs:
         with:
           node-version: 24
 
+      - name: Compute mac_x64 tools-pack cache key
+        id: mac_x64_tools_pack_cache_key
+        env:
+          MAC_TOOLS_PACK_ORIGIN_KEY: ${{ hashFiles('package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'apps/daemon/**', 'apps/web/**', 'apps/desktop/**', 'apps/packaged/**', 'packages/agui-adapter/**', 'packages/contracts/**', 'packages/plugin-runtime/**', 'packages/sidecar-proto/**', 'packages/sidecar/**', 'packages/platform/**', 'tools/pack/bin/**', 'tools/pack/package.json', 'tools/pack/resources/**', 'tools/pack/src/**', 'tools/pack/tsconfig.json', 'assets/community-pets/**', 'assets/frames/**', 'craft/**', 'design-systems/**', 'design-templates/**', 'plugins/_official/**', 'plugins/registry/**', 'prompt-templates/**', 'skills/**', '.github/workflows/release-beta.yml', '.github/scripts/release/cache/mac.sh') }}
+        run: |
+          set -euo pipefail
+          if [ -z "$MAC_TOOLS_PACK_ORIGIN_KEY" ]; then
+            echo "mac_x64 tools-pack cache origin key is empty" >&2
+            exit 1
+          fi
+          prefix="tools-pack-mac-v1-beta-${RUNNER_OS}-x64-"
+          {
+            echo "origin=$MAC_TOOLS_PACK_ORIGIN_KEY"
+            echo "prefix=$prefix"
+            echo "key=$prefix$MAC_TOOLS_PACK_ORIGIN_KEY"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Restore mac_x64 tools-pack cache
+        id: mac_x64_tools_pack_cache_restore
+        uses: actions/cache/restore@v5
+        continue-on-error: true
+        with:
+          path: ${{ runner.temp }}/tools-pack-cache
+          key: ${{ steps.mac_x64_tools_pack_cache_key.outputs.key }}
+          restore-keys: |
+            ${{ steps.mac_x64_tools_pack_cache_key.outputs.prefix }}
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Prepare mac_x64 signing certificate
+        if: ${{ inputs.mac_x64_sign_mode != 'no' }}
+        env:
+          APPLE_SIGNING_CERTIFICATE_BASE64: ${{ secrets.APPLE_SIGNING_CERTIFICATE_BASE64 }}
+          APPLE_SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_SIGNING_CERTIFICATE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          cert_path="$RUNNER_TEMP/open-design-signing.p12"
+          if ! printf '%s' "$APPLE_SIGNING_CERTIFICATE_BASE64" | base64 --decode > "$cert_path" 2>/dev/null; then
+            printf '%s' "$APPLE_SIGNING_CERTIFICATE_BASE64" | base64 -D > "$cert_path"
+          fi
+          {
+            echo "CSC_LINK=$cert_path"
+            echo "CSC_KEY_PASSWORD=$APPLE_SIGNING_CERTIFICATE_PASSWORD"
+          } >> "$GITHUB_ENV"
+
       - name: Build beta mac_x64
+        id: mac_x64_tools_pack_build
+        continue-on-error: true
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_SIGNING_CERTIFICATE_BASE64: ${{ secrets.APPLE_SIGNING_CERTIFICATE_BASE64 }}
-          APPLE_SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_SIGNING_CERTIFICATE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          BUILD_JSON_PATH: ${{ runner.temp }}/release-build/mac_x64/build.json
-          BUILD_LOG_PATH: ${{ runner.temp }}/release-build/mac_x64/build.log
-          RELEASE_BUILD_TARGET: ${{ inputs.mac_x64_target }}
-          RELEASE_NAMESPACE: release-beta-x64
-          RELEASE_OUTPUTS_PATH: ${{ runner.temp }}/release-build/mac_x64/outputs.json
-          RELEASE_REPORT_DIR: ${{ runner.temp }}/release-report/mac_x64
-          RELEASE_SIGN_MODE: ${{ inputs.mac_x64_sign_mode }}
-          RELEASE_SMOKE_MODE: ${{ inputs.mac_x64_smoke_mode }}
-          RELEASE_TARGET: mac_x64
-          RELEASE_VERSION: ${{ needs.metadata.outputs.beta_version }}
-          RELEASE_WORK_DIR: ${{ runner.temp }}/release-work/mac_x64
-          TOOLS_PACK_CACHE_DIR: ${{ runner.temp }}/tools-pack-cache
-          TOOLS_PACK_DIR: ${{ runner.temp }}/tools-pack
-        run: bash tools/release/scripts/build-platform.sh
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/release-build/mac_x64"
+          rm -rf "$RUNNER_TEMP/tools-pack"
+          : > "$RUNNER_TEMP/release-build/mac_x64/build.log"
+          build_args=(
+            exec tools-pack mac build
+            --dir "$RUNNER_TEMP/tools-pack"
+            --cache-dir "$RUNNER_TEMP/tools-pack-cache"
+            --namespace release-beta-x64
+            --portable
+            --app-version "${{ needs.metadata.outputs.beta_version }}"
+            --mac-compression normal
+            --to "${{ inputs.mac_x64_target }}"
+            --json
+          )
+          case "${{ inputs.mac_x64_sign_mode }}" in
+            no) ;;
+            sign-only) build_args+=(--signed) ;;
+            notarize) build_args+=(--signed --notarize) ;;
+            *) echo "unsupported mac_x64_sign_mode: ${{ inputs.mac_x64_sign_mode }}" >&2; exit 1 ;;
+          esac
+          if build_output="$(pnpm "${build_args[@]}" 2> >(tee -a "$RUNNER_TEMP/release-build/mac_x64/build.log" >&2))"; then
+            printf '%s\n' "$build_output" | tee "$RUNNER_TEMP/release-build/mac_x64/build.json"
+          else
+            build_status=$?
+            printf '%s\n' "$build_output"
+            exit "$build_status"
+          fi
+
+      - name: Retry beta mac_x64 without restored cache
+        if: ${{ steps.mac_x64_tools_pack_build.outcome == 'failure' }}
+        run: |
+          set -euo pipefail
+          rm -rf "$RUNNER_TEMP/tools-pack-cache"
+          mkdir -p "$RUNNER_TEMP/release-build/mac_x64"
+          pnpm exec tools-pack mac cleanup --dir "$RUNNER_TEMP/tools-pack" --namespace release-beta-x64 --json
+          : > "$RUNNER_TEMP/release-build/mac_x64/build.log"
+          build_args=(
+            exec tools-pack mac build
+            --dir "$RUNNER_TEMP/tools-pack"
+            --cache-dir "$RUNNER_TEMP/tools-pack-cache"
+            --namespace release-beta-x64
+            --portable
+            --app-version "${{ needs.metadata.outputs.beta_version }}"
+            --mac-compression normal
+            --to "${{ inputs.mac_x64_target }}"
+            --json
+          )
+          case "${{ inputs.mac_x64_sign_mode }}" in
+            no) ;;
+            sign-only) build_args+=(--signed) ;;
+            notarize) build_args+=(--signed --notarize) ;;
+            *) echo "unsupported mac_x64_sign_mode: ${{ inputs.mac_x64_sign_mode }}" >&2; exit 1 ;;
+          esac
+          if build_output="$(pnpm "${build_args[@]}" 2> >(tee -a "$RUNNER_TEMP/release-build/mac_x64/build.log" >&2))"; then
+            printf '%s\n' "$build_output" | tee "$RUNNER_TEMP/release-build/mac_x64/build.json"
+          else
+            build_status=$?
+            printf '%s\n' "$build_output"
+            exit "$build_status"
+          fi
+
+      - name: Delete failed mac_x64 tools-pack cache
+        if: ${{ steps.mac_x64_tools_pack_build.outcome == 'failure' && steps.mac_x64_tools_pack_cache_restore.outputs.cache-matched-key != '' }}
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          matched_key="${{ steps.mac_x64_tools_pack_cache_restore.outputs.cache-matched-key }}"
+          cache_ids="$(gh cache list --key "$matched_key" --limit 100 --json id,key,ref --jq ".[] | select(.key == \"$matched_key\") | .id")"
+          count=0
+          while IFS= read -r cache_id; do
+            if [ -n "$cache_id" ]; then
+              gh cache delete "$cache_id"
+              count=$((count + 1))
+            fi
+          done <<< "$cache_ids"
+          echo "deletedFailedCacheKey=$matched_key count=$count"
+
+      - name: Smoke beta mac_x64 packaged runtime
+        if: ${{ inputs.mac_x64_smoke_mode != 'skip' }}
+        working-directory: e2e
+        env:
+          OD_PACKAGED_E2E_BUILD_JSON_PATH: ${{ runner.temp }}/release-build/mac_x64/build.json
+          OD_PACKAGED_E2E_BUILD_LOG_PATH: ${{ runner.temp }}/release-build/mac_x64/build.log
+          OD_PACKAGED_E2E_MAC: "1"
+          OD_PACKAGED_E2E_MAC_SMOKE_PROFILE: ${{ inputs.mac_x64_smoke_mode }}
+          OD_PACKAGED_E2E_NAMESPACE: release-beta-x64
+          OD_PACKAGED_E2E_RELEASE_CHANNEL: beta
+          OD_PACKAGED_E2E_RELEASE_VERSION: ${{ needs.metadata.outputs.beta_version }}
+          OD_PACKAGED_E2E_REPORT_DIR: ${{ runner.temp }}/release-report/mac_x64
+          OD_PACKAGED_E2E_TOOLS_PACK_DIR: ${{ runner.temp }}/tools-pack
+        run: pnpm exec tsx scripts/release-smoke.ts mac specs/mac.spec.ts
 
       - name: Write mac_x64 release report
         if: ${{ always() }}
@@ -576,6 +885,37 @@ jobs:
       - name: Publish mac_x64 report summary
         if: ${{ always() }}
         run: cat "${{ runner.temp }}/release-report/mac_x64/summary.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Prune mac_x64 tools-pack cache
+        continue-on-error: true
+        run: bash .github/scripts/release/cache/mac.sh
+
+      - name: Save mac_x64 tools-pack cache
+        if: ${{ success() && (steps.mac_x64_tools_pack_cache_restore.outputs.cache-hit != 'true' || steps.mac_x64_tools_pack_build.outcome == 'failure') }}
+        uses: actions/cache/save@v5
+        continue-on-error: true
+        with:
+          path: ${{ runner.temp }}/tools-pack-cache
+          key: ${{ steps.mac_x64_tools_pack_cache_key.outputs.key }}
+
+      - name: Retain recent mac_x64 tools-pack caches
+        if: ${{ success() }}
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          prefix="${{ steps.mac_x64_tools_pack_cache_key.outputs.prefix }}"
+          keep=3
+          cache_ids="$(gh cache list --key "$prefix" --sort created_at --order desc --limit 100 --json id,key,createdAt --jq ".[$keep:] | .[].id")"
+          count=0
+          while IFS= read -r cache_id; do
+            if [ -n "$cache_id" ]; then
+              gh cache delete "$cache_id"
+              count=$((count + 1))
+            fi
+          done <<< "$cache_ids"
+          echo "actionsCachePrefix=$prefix deleted=$count"
 
       - name: Prepare mac_x64 assets
         if: ${{ inputs.publish }}
