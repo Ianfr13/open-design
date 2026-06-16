@@ -12,7 +12,7 @@ jobs:
   metrics:
     name: Generate issue and PR activity SVG
     if: github.repository == 'nexu-io/open-design'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - name: Generate Open Design bot token
         id: open-design-bot-token

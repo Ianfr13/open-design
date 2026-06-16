@@ -34,7 +34,7 @@ jobs:
   resolve:
     name: Resolve active release branch
     if: github.repository == 'nexu-io/open-design'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     outputs:
       ref: ${{ steps.pick.outputs.ref }}
     steps:
@@ -80,7 +80,7 @@ jobs:
       - resolve
       - build
     if: ${{ !cancelled() && needs.build.outputs.beta_version != '' }}
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - name: Checkout built ref
         uses: actions/checkout@v6.0.2

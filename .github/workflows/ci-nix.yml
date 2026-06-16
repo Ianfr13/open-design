@@ -42,7 +42,7 @@ permissions:
 jobs:
   validate:
     name: Validate Nix flake
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 45
 
     steps:

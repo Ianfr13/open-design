@@ -141,7 +141,7 @@ jobs:
   metadata:
     name: Prepare release metadata
     if: github.repository == 'nexu-io/open-design'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     env:
       GH_TOKEN: ${{ github.token }}
       GITHUB_REPOSITORY: ${{ github.repository }}
@@ -226,7 +226,7 @@ jobs:
     name: Verify build (typecheck + tests)
     needs: metadata
     if: ${{ needs.metadata.outputs.dry_run != 'true' }}
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.2
@@ -278,7 +278,7 @@ jobs:
   build_mac:
     name: Build release mac arm64
     needs: [metadata, verify]
-    runs-on: macos-14
+    runs-on: blacksmith-6vcpu-macos-15
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
@@ -531,7 +531,7 @@ jobs:
   build_mac_intel:
     name: Build release mac intel x64
     needs: [metadata, verify]
-    runs-on: macos-15-intel
+    runs-on: blacksmith-6vcpu-macos-15
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
@@ -642,7 +642,7 @@ jobs:
   build_win:
     name: Build release win x64
     needs: [metadata, verify]
-    runs-on: windows-latest
+    runs-on: blacksmith-4vcpu-windows-2025
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
@@ -870,7 +870,7 @@ jobs:
     # Keep the job definition in place so the Linux lane can be re-enabled once
     # the containerized pnpm bootstrap is fixed and reviewed.
     if: ${{ vars.ENABLE_STABLE_LINUX == 'true' }}
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
@@ -1032,7 +1032,7 @@ jobs:
         needs.build_win.result == 'success' &&
         (needs.build_linux.result == 'success' || needs.build_linux.result == 'skipped')
       }}
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     outputs:
       version_metadata_url: ${{ steps.outputs.outputs.version_metadata_url }}
       mac_arm64_url: ${{ steps.outputs.outputs.mac_arm64_dmg_url }}
@@ -1293,7 +1293,7 @@ jobs:
       - build_linux
       - publish
     if: ${{ always() && needs.metadata.outputs.dry_run != 'true' && needs.publish.result != 'success' }}
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     env:
       GH_TOKEN: ${{ github.token }}
     steps:

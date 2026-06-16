@@ -26,7 +26,7 @@ permissions:
 jobs:
   remind:
     name: Summarize E2E coverage follow-up
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     if: ${{ github.repository == 'nexu-io/open-design' }}
     steps:
       - name: Send 24h E2E coverage reminder

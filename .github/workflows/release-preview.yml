@@ -30,7 +30,7 @@ env:
 jobs:
   metadata:
     name: Prepare preview metadata
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     env:
       OPEN_DESIGN_PREVIEW_METADATA_URL: ${{ vars.CLOUDFLARE_R2_RELEASES_PUBLIC_ORIGIN }}/preview/latest/metadata.json
     outputs:
@@ -76,7 +76,7 @@ jobs:
   verify:
     name: Verify build (typecheck + tests)
     needs: metadata
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.2
@@ -110,7 +110,7 @@ jobs:
   build_mac:
     name: Build preview mac arm64
     needs: [metadata, verify]
-    runs-on: macos-14
+    runs-on: blacksmith-6vcpu-macos-15
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
@@ -345,7 +345,7 @@ jobs:
   build_mac_intel:
     name: Build preview mac intel x64
     needs: [metadata, verify]
-    runs-on: macos-15-intel
+    runs-on: blacksmith-6vcpu-macos-15
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
@@ -442,7 +442,7 @@ jobs:
   build_win:
     name: Build preview win x64
     needs: [metadata, verify]
-    runs-on: windows-latest
+    runs-on: blacksmith-4vcpu-windows-2025
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
@@ -655,7 +655,7 @@ jobs:
     name: Build preview linux x64
     needs: [metadata, verify]
     if: ${{ vars.ENABLE_STABLE_LINUX == 'true' }}
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
@@ -747,7 +747,7 @@ jobs:
         needs.build_win.result == 'success' &&
         (needs.build_linux.result == 'success' || needs.build_linux.result == 'skipped')
       }}
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     env:
       GH_TOKEN: ${{ github.token }}
       AWS_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_RELEASES_AK }}
@@ -881,7 +881,7 @@ jobs:
       - build_linux
       - publish
     if: ${{ always() && needs.publish.result != 'success' }}
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     env:
       GH_TOKEN: ${{ github.token }}
     steps:

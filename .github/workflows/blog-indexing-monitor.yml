@@ -39,7 +39,7 @@ jobs:
   monitor:
     name: Monitor recent blog URLs
     if: github.repository == 'nexu-io/open-design'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 15
 
     steps:

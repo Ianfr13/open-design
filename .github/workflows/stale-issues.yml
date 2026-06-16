@@ -31,7 +31,7 @@ concurrency:
 jobs:
   stale:
     if: github.repository == 'nexu-io/open-design'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - name: Exempt org-member issues from staling
         uses: actions/github-script@v7

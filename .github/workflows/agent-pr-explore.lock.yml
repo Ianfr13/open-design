@@ -31,6 +31,6 @@ jobs:
   placeholder:
     name: Placeholder
     if: ${{ github.event_name == 'agent_pr_explore_placeholder_never' }}
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - run: echo "agent-pr-explore placeholder only"

@@ -18,7 +18,7 @@ jobs:
   publish:
     name: Publish prompt-template preview assets to repository-assets R2
     if: github.repository == 'nexu-io/open-design'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - name: Checkout
         uses: actions/checkout@v4

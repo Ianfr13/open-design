@@ -71,7 +71,7 @@ jobs:
     name: Notify Feishu (release)
     needs: build
     if: ${{ !cancelled() && needs.build.outputs.release_version != '' }}
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - name: Checkout built ref
         uses: actions/checkout@v6.0.2

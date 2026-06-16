@@ -13,7 +13,7 @@ permissions:
 jobs:
   autofix:
     if: ${{ github.repository == 'nexu-io/open-design' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'failure' }}
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
 
     steps:
       - name: Check for Nix hash refresh artifact

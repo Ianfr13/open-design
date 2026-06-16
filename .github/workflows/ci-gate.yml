@@ -48,7 +48,7 @@ jobs:
     # merge_group. Keep the manual path usable so operators can still run the
     # parked stack on demand while deeper ci-gate redesign work is in flight.
     name: Validate workspace gate
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 90
     env:
       GITHUB_TOKEN: ${{ github.token }}

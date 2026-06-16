@@ -308,7 +308,7 @@ jobs:
   metadata:
     name: Prepare beta metadata
     if: github.repository == 'nexu-io/open-design'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     env:
       RELEASE_PUBLIC_ORIGIN: ${{ inputs.release_public_origin != '' && inputs.release_public_origin || vars.CLOUDFLARE_R2_RELEASES_PUBLIC_ORIGIN }}
       OPEN_DESIGN_BETA_METADATA_URL: ${{ inputs.release_public_origin != '' && inputs.release_public_origin || vars.CLOUDFLARE_R2_RELEASES_PUBLIC_ORIGIN }}/beta/latest/metadata.json
@@ -385,7 +385,7 @@ jobs:
     name: Build beta mac_arm64
     needs: metadata
     if: ${{ inputs.enable_mac_arm64 }}
-    runs-on: macos-14
+    runs-on: blacksmith-6vcpu-macos-15
     env:
       RELEASE_COMMIT: ${{ needs.metadata.outputs.commit }}
     steps:
@@ -504,7 +504,7 @@ jobs:
     name: Build beta mac_x64
     needs: metadata
     if: ${{ inputs.enable_mac_x64 }}
-    runs-on: macos-15-intel
+    runs-on: blacksmith-6vcpu-macos-15
     env:
       RELEASE_COMMIT: ${{ needs.metadata.outputs.commit }}
     steps:
@@ -615,7 +615,7 @@ jobs:
     name: Build beta win_x64
     needs: metadata
     if: ${{ inputs.enable_win_x64 }}
-    runs-on: windows-latest
+    runs-on: blacksmith-4vcpu-windows-2025
     env:
       RELEASE_COMMIT: ${{ needs.metadata.outputs.commit }}
     steps:
@@ -752,7 +752,7 @@ jobs:
     name: Build beta linux_x64
     needs: metadata
     if: ${{ inputs.enable_linux_x64 }}
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     env:
       RELEASE_COMMIT: ${{ needs.metadata.outputs.commit }}
     steps:
@@ -881,7 +881,7 @@ jobs:
         (!inputs.enable_mac_x64 || needs.build_mac_x64.result == 'success') &&
         (!inputs.enable_linux_x64 || needs.build_linux_x64.result == 'success')
       }}
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     outputs:
       release_state: ${{ steps.outputs.outputs.release_state }}
       version_metadata_url: ${{ steps.outputs.outputs.version_metadata_url }}

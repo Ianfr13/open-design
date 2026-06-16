@@ -36,7 +36,7 @@ jobs:
     # (no deploy) instead of recording a non-main production run — which would
     # also dodge blog-indexing's `workflow_run` `branches: [main]` filter.
     if: github.repository == 'nexu-io/open-design' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 20
     environment:
       name: production
