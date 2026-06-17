@@ -2,12 +2,12 @@ name: visual-pr-comment
 
 on:
   workflow_run:
-    workflows: [visual-pr-capture]
+    workflows: [ci]
     types: [completed]
   workflow_dispatch:
     inputs:
       capture_run_id:
-        description: GitHub Actions run id for the Visual PR capture workflow to comment on.
+        description: GitHub Actions run id for the CI workflow that uploaded a visual PR capture artifact.
         required: true
         type: string
       pr_number:
@@ -30,7 +30,7 @@ jobs:
     # Fork PR capture artifacts are untrusted. Always validate the live PR state
     # and only execute trusted base-repository code before publishing comments
     # or reports.
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' || github.event.workflow_run.conclusion == 'failure' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
 
@@ -54,15 +54,48 @@ jobs:
           node-version: 24
           package-manager-cache: false
 
+      - name: Resolve PR visual artifact
+        id: artifact
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id || inputs.capture_run_id }}
+          WORKFLOW_PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number || inputs.pr_number }}
+        run: |
+          set -euo pipefail
+          artifacts_json="$RUNNER_TEMP/artifacts.json"
+          gh api --paginate "repos/$GITHUB_REPOSITORY/actions/runs/$WORKFLOW_RUN_ID/artifacts" > "$artifacts_json"
+          if [ -n "$WORKFLOW_PR_NUMBER" ]; then
+            name_prefix="visual-pr-capture-${WORKFLOW_PR_NUMBER}-${WORKFLOW_RUN_ID}"
+          else
+            name_prefix="visual-pr-capture-"
+          fi
+          artifact_name="$(jq -r --arg prefix "$name_prefix" '.artifacts[]? | select(.expired == false and (.name | startswith($prefix))) | .name' "$artifacts_json" | head -n 1)"
+          if [ -z "$artifact_name" ]; then
+            if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+              echo "No visual PR artifact found for run $WORKFLOW_RUN_ID." >&2
+              exit 1
+            fi
+            echo "No visual PR artifact found for run $WORKFLOW_RUN_ID; skipping visual comment."
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          {
+            echo "found=true"
+            echo "name=$artifact_name"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Download PR visual artifact
+        if: ${{ steps.artifact.outputs.found == 'true' }}
         uses: actions/download-artifact@v8
         with:
+          name: ${{ steps.artifact.outputs.name }}
           run-id: ${{ github.event.workflow_run.id || inputs.capture_run_id }}
           path: ${{ runner.temp }}/visual-artifact
-          merge-multiple: true
           github-token: ${{ github.token }}
 
       - name: Read capture manifest
+        if: ${{ steps.artifact.outputs.found == 'true' }}
         id: manifest
         shell: bash
         env:
@@ -185,6 +218,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Validate live PR state for trusted checkout
+        if: ${{ steps.artifact.outputs.found == 'true' }}
         id: trusted-pr
         shell: bash
         env:
@@ -243,7 +277,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Checkout trusted base revision
-        if: ${{ steps.trusted-pr.outputs.stale != 'true' && (github.event_name == 'workflow_dispatch' || github.event.workflow_run.head_repository.full_name != github.repository) }}
+        if: ${{ steps.artifact.outputs.found == 'true' && steps.trusted-pr.outputs.stale != 'true' && (github.event_name == 'workflow_dispatch' || github.event.workflow_run.head_repository.full_name != github.repository) }}
         uses: actions/checkout@v6.0.2
         with:
           fetch-depth: 0
@@ -251,24 +285,24 @@ jobs:
           ref: ${{ steps.trusted-pr.outputs.base_sha }}
 
       - name: Resolve pnpm store path
-        if: ${{ steps.trusted-pr.outputs.stale != 'true' }}
+        if: ${{ steps.artifact.outputs.found == 'true' && steps.trusted-pr.outputs.stale != 'true' }}
         id: pnpm-store
         shell: bash
         run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
 
       - name: Restore pnpm store cache
-        if: ${{ steps.trusted-pr.outputs.stale != 'true' }}
+        if: ${{ steps.artifact.outputs.found == 'true' && steps.trusted-pr.outputs.stale != 'true' }}
         uses: actions/cache/restore@v5.0.5
         with:
           path: ${{ steps.pnpm-store.outputs.path }}
           key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
       - name: Install dependencies
-        if: ${{ steps.trusted-pr.outputs.stale != 'true' }}
+        if: ${{ steps.artifact.outputs.found == 'true' && steps.trusted-pr.outputs.stale != 'true' }}
         run: pnpm install --frozen-lockfile
 
       - name: Stop stale visual runs
-        if: ${{ steps.trusted-pr.outputs.stale != 'true' }}
+        if: ${{ steps.artifact.outputs.found == 'true' && steps.trusted-pr.outputs.stale != 'true' }}
         id: stale
         env:
           GH_TOKEN: ${{ github.token }}
@@ -305,7 +339,7 @@ jobs:
           echo "stale=false" >> "$GITHUB_OUTPUT"
 
       - name: Build visual diff report
-        if: ${{ steps.trusted-pr.outputs.stale != 'true' && steps.stale.outputs.stale != 'true' }}
+        if: ${{ steps.artifact.outputs.found == 'true' && steps.trusted-pr.outputs.stale != 'true' && steps.stale.outputs.stale != 'true' }}
         env:
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
@@ -329,7 +363,7 @@ jobs:
             --manifest-out ui/reports/visual-report/report-manifest.json
 
       - name: Upsert PR comment
-        if: ${{ steps.trusted-pr.outputs.stale != 'true' && steps.stale.outputs.stale != 'true' }}
+        if: ${{ steps.artifact.outputs.found == 'true' && steps.trusted-pr.outputs.stale != 'true' && steps.stale.outputs.stale != 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ steps.manifest.outputs.pr_number }}
@@ -369,7 +403,7 @@ jobs:
           fi
 
       - name: Upload visual report artifact
-        if: ${{ always() && steps.trusted-pr.outputs.stale != 'true' && steps.stale.outputs.stale != 'true' }}
+        if: ${{ always() && steps.artifact.outputs.found == 'true' && steps.trusted-pr.outputs.stale != 'true' && steps.stale.outputs.stale != 'true' }}
         uses: actions/upload-artifact@v7
         with:
           name: visual-pr-report-${{ steps.manifest.outputs.pr_number }}-${{ steps.manifest.outputs.run_id }}
