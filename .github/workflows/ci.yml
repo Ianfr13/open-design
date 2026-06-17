@@ -476,7 +476,7 @@ jobs:
   ui_p0_smoke:
     name: UI P0 smoke
     needs: [change_scopes]
-    if: ${{ github.event_name == 'pull_request' && needs.change_scopes.outputs.ui_p0_pr_required == 'true' && !github.event.pull_request.draft }}
+    if: ${{ needs.change_scopes.outputs.ui_p0_pr_required == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && !github.event.pull_request.draft)) }}
     runs-on: blacksmith-8vcpu-ubuntu-2404
     timeout-minutes: 30
 
@@ -521,7 +521,7 @@ jobs:
   ui_p0:
     name: UI P0 (${{ matrix.name }})
     needs: [change_scopes]
-    if: ${{ github.event_name == 'pull_request' && needs.change_scopes.outputs.ui_p0_pr_required == 'true' && !github.event.pull_request.draft }}
+    if: ${{ needs.change_scopes.outputs.ui_p0_pr_required == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && !github.event.pull_request.draft)) }}
     runs-on: blacksmith-8vcpu-ubuntu-2404
     timeout-minutes: 45
     strategy:
@@ -580,7 +580,7 @@ jobs:
   playwright_visual:
     name: Playwright visual (${{ matrix.name }})
     needs: [change_scopes]
-    if: ${{ github.event_name == 'pull_request' && needs.change_scopes.outputs.visual_validation_required == 'true' && !github.event.pull_request.draft }}
+    if: ${{ needs.change_scopes.outputs.visual_validation_required == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && !github.event.pull_request.draft)) }}
     runs-on: blacksmith-8vcpu-ubuntu-2404
     timeout-minutes: 30
     strategy:
@@ -629,7 +629,7 @@ jobs:
           pnpm -C e2e exec playwright test -c playwright.visual.config.ts ${{ matrix.files }}
 
       - name: Write capture manifest
-        if: ${{ always() }}
+        if: ${{ always() && github.event_name == 'pull_request' }}
         run: |
           mkdir -p e2e/ui/reports/visual-report
           cat > e2e/ui/reports/visual-report/manifest.json <<'JSON'
@@ -644,7 +644,7 @@ jobs:
           JSON
 
       - name: Upload PR visual artifact
-        if: ${{ always() }}
+        if: ${{ always() && github.event_name == 'pull_request' }}
         uses: actions/upload-artifact@v7
         with:
           name: visual-pr-capture-${{ github.event.pull_request.number }}-${{ github.run_id }}-${{ matrix.name }}
@@ -655,6 +655,17 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+      - name: Upload manual visual artifact
+        if: ${{ always() && github.event_name == 'workflow_dispatch' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: visual-ci-${{ github.run_id }}-${{ matrix.name }}
+          path: |
+            e2e/ui/reports/visual-screenshots
+            e2e/ui/reports/visual-results.json
+          if-no-files-found: ignore
+          retention-days: 7
+
       - name: Fail when strict visual tests fail
         if: ${{ steps.visual.outcome != 'success' }}
         run: exit 1
@@ -662,7 +673,7 @@ jobs:
   docker_pr:
     name: Docker image build
     needs: [change_scopes]
-    if: ${{ github.event_name == 'pull_request' && needs.change_scopes.outputs.docker_validation_required == 'true' }}
+    if: ${{ needs.change_scopes.outputs.docker_validation_required == 'true' && (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch') }}
     runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 30
     permissions:
@@ -681,7 +692,9 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ github.repository_owner }}/od
-          tags: type=sha,prefix=pr-${{ github.event.pull_request.number }}-sha-,format=short
+          tags: |
+            type=sha,prefix=pr-${{ github.event.pull_request.number }}-sha-,format=short,enable=${{ github.event_name == 'pull_request' }}
+            type=sha,prefix=manual-sha-,format=short,enable=${{ github.event_name == 'workflow_dispatch' }}
 
       - name: Build Docker image
         uses: docker/build-push-action@v6

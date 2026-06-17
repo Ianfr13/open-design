@@ -64,6 +64,9 @@ if (eventName === "pull_request") {
   outputs.tools_dev_tests_required = true;
   outputs.tools_pack_tests_required = true;
   outputs.nix_validation_required = true;
+  if (eventName === "workflow_dispatch") {
+    outputs.ui_p0_pr_required = true;
+  }
   outputs.visual_validation_required = true;
   outputs.docker_validation_required = true;
   outputs.workspace_validation_required = true;
