@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { BrandSummary } from '@open-design/contracts';
@@ -12,6 +12,9 @@ const routerState = vi.hoisted(() => ({
   route: { kind: 'home', view: 'brands', brandId: undefined } as Record<string, unknown>,
 }));
 const fetchBrandsMock = vi.hoisted(() => vi.fn(async (): Promise<BrandSummary[]> => []));
+const brandIntentState = vi.hoisted(() => ({
+  pending: false,
+}));
 
 vi.mock('../../src/router', () => ({
   useRoute: () => routerState.route,
@@ -25,7 +28,11 @@ vi.mock('../../src/runtime/useBrandExtract', () => ({
 }));
 vi.mock('../../src/runtime/brand-intent', () => ({
   NEW_BRAND_KIT_INTENT_EVENT: 'od:new-brand-kit-intent',
-  consumePendingNewBrandKit: () => false,
+  consumePendingNewBrandKit: () => {
+    const wasPending = brandIntentState.pending;
+    brandIntentState.pending = false;
+    return wasPending;
+  },
 }));
 // Heavy children are out of scope for the refresh contract.
 vi.mock('../../src/components/BrandPreviewCard', () => ({
@@ -37,7 +44,8 @@ vi.mock('../../src/components/BrandReferencePicker', () => ({
   BrandReferencePicker: () => null,
 }));
 vi.mock('../../src/components/NewBrandModal', () => ({
-  NewBrandModal: () => null,
+  NewBrandModal: ({ open }: { open: boolean }) =>
+    open ? <div data-testid="new-brand-modal" /> : null,
 }));
 
 import { BrandsTab } from '../../src/components/BrandsTab';
@@ -66,6 +74,7 @@ function brandSummary(id: string, status: BrandSummary['meta']['status']): Brand
 describe('BrandsTab refresh reconciliation', () => {
   beforeEach(() => {
     routerState.route = { kind: 'home', view: 'brands', brandId: undefined };
+    brandIntentState.pending = false;
     fetchBrandsMock.mockReset();
     fetchBrandsMock.mockResolvedValue([]);
   });
@@ -95,6 +104,52 @@ describe('BrandsTab refresh reconciliation', () => {
     );
 
     await waitFor(() => expect(fetchBrandsMock).toHaveBeenCalledTimes(2));
+  });
+
+  it('does not open the New Brand Kit modal from an intent while Brands is hidden', async () => {
+    routerState.route = { kind: 'home', view: 'home' };
+    renderBrandsTab();
+
+    brandIntentState.pending = true;
+    window.dispatchEvent(new CustomEvent('od:new-brand-kit-intent'));
+
+    expect(screen.queryByTestId('new-brand-modal')).toBeNull();
+    expect(brandIntentState.pending).toBe(true);
+  });
+
+  it('consumes the pending New Brand Kit intent only on active Brands entry', async () => {
+    routerState.route = { kind: 'home', view: 'home' };
+    const { rerender } = renderBrandsTab();
+
+    brandIntentState.pending = true;
+    window.dispatchEvent(new CustomEvent('od:new-brand-kit-intent'));
+    expect(screen.queryByTestId('new-brand-modal')).toBeNull();
+
+    routerState.route = { kind: 'home', view: 'brands', brandId: undefined };
+    rerender(
+      <I18nProvider initial="en">
+        <BrandsTab />
+      </I18nProvider>,
+    );
+
+    expect(await screen.findByTestId('new-brand-modal')).toBeTruthy();
+    expect(brandIntentState.pending).toBe(false);
+
+    routerState.route = { kind: 'project', projectId: 'p1', conversationId: null, fileName: null };
+    rerender(
+      <I18nProvider initial="en">
+        <BrandsTab />
+      </I18nProvider>,
+    );
+    expect(screen.queryByTestId('new-brand-modal')).toBeNull();
+
+    routerState.route = { kind: 'home', view: 'brands', brandId: undefined };
+    rerender(
+      <I18nProvider initial="en">
+        <BrandsTab />
+      </I18nProvider>,
+    );
+    expect(screen.queryByTestId('new-brand-modal')).toBeNull();
   });
 
   it('polls while a brand is extracting and stops once it settles', async () => {

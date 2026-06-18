@@ -80,15 +80,27 @@ export function BrandsTab({ onApplyDesignSystem, onOpenProject }: BrandsTabProps
   }, [isBrandsView, hasExtracting, refresh]);
 
   // The "Create Brand Kit" home chip routes here and asks the tab to open its
-  // New Brand Kit modal. BrandsTab stays mounted across view switches, so we
-  // react to the intent event; a pending latch left before mount is drained
-  // once on first render as a fallback.
+  // New Brand Kit modal. EntryShell keeps BrandsTab mounted while hidden, so
+  // only consume the one-shot intent when the Brands view is actually active.
   useEffect(() => {
-    const openModal = () => setModalOpen(true);
-    if (consumePendingNewBrandKit()) openModal();
+    if (isBrandsView && consumePendingNewBrandKit()) setModalOpen(true);
+  }, [isBrandsView]);
+
+  useEffect(() => {
+    if (!isBrandsView) {
+      setModalOpen(false);
+    }
+  }, [isBrandsView]);
+
+  useEffect(() => {
+    const openModal = () => {
+      if (!isBrandsView) return;
+      consumePendingNewBrandKit();
+      setModalOpen(true);
+    };
     window.addEventListener(NEW_BRAND_KIT_INTENT_EVENT, openModal);
     return () => window.removeEventListener(NEW_BRAND_KIT_INTENT_EVENT, openModal);
-  }, []);
+  }, [isBrandsView]);
 
   const filtered = useMemo(() => {
     const list = brands ?? [];
