@@ -12,9 +12,6 @@ import os from 'node:os';
 import net from 'node:net';
 import {
   defaultScenarioPluginIdForProjectMetadata,
-  type OpenDesignDiscordPresenceResponse,
-  type OpenDesignGithubLatestReleaseResponse,
-  type OpenDesignGithubRepoResponse,
   PLUGIN_SHARE_ACTION_PLUGIN_IDS,
   RUN_RESULT_PACKAGE_SCHEMA,
 } from '@open-design/contracts';
@@ -500,7 +497,7 @@ import { registerLiveArtifactRoutes } from './routes/live-artifact.js';
 import { registerDesignSystemToolRoutes } from './routes/design-system-tool.js';
 import { registerDeployRoutes, registerDeploymentCheckRoutes } from './routes/deploy.js';
 import { registerMediaRoutes } from './routes/media.js';
-import { registerProjectRoutes, registerProjectArtifactRoutes, registerProjectFileRoutes, registerProjectUploadRoutes } from './project-routes.js';
+import { registerProjectRoutes, registerProjectArtifactRoutes, registerProjectFileRoutes, registerProjectUploadRoutes } from './routes/project/index.js';
 import { registerVelaRoutes } from './routes/vela.js';
 import { registerFinalizeRoutes, registerImportRoutes, registerProjectExportRoutes } from './import-export-routes.js';
 import { registerHandoffRoutes } from './routes/handoff.js';
@@ -510,6 +507,7 @@ import { registerChatRoutes } from './routes/chat.js';
 import { registerTerminalRoutes } from './routes/terminal.js';
 import { createTerminalService } from './terminals.js';
 import { registerSocialShareRoutes } from './routes/social-share.js';
+import { registerOpenDesignPublicMetadataRoutes } from './routes/open-design-public-metadata.js';
 import { registerMemoryRoutes } from './routes/memory.js';
 import { registerAtomRoutes, registerStaticResourceRoutes } from './routes/static-resource.js';
 import { registerRoutineRoutes, routineDbRowToContract } from './routes/routine.js';
@@ -546,6 +544,7 @@ import {
   isLocalSameOrigin,
 } from './origin-validation.js';
 import { apiTokenFromEnv, isApiAuthDisabled, isApiTokenMiddlewareEnabled } from './api-token-auth.js';
+import { createOpenDesignPublicMetadataService } from './services/open-design-public-metadata.js';
 
 /** @typedef {import('@open-design/contracts').ApiErrorCode} ApiErrorCode */
 /** @typedef {import('@open-design/contracts').ApiError} ApiError */
@@ -1671,7 +1670,7 @@ function emitLiveArtifactRefreshEvent(grant, payload) {
 
 // Broadcast an event to every SSE subscriber currently watching the given
 // project's `/api/projects/:id/events` stream. The payload's `type` field
-// becomes the SSE event name (see project-routes.ts). Used for live-artifact
+// becomes the SSE event name (see routes/project/index.ts). Used for live-artifact
 // events and `conversation-created` events emitted by routine runs (#1361).
 function emitProjectEvent(projectId, payload) {
   const sinks = activeProjectEventSinks.get(projectId);
@@ -3407,202 +3406,6 @@ function setLiveArtifactCodeHeaders(res) {
   res.setHeader('Referrer-Policy', 'no-referrer');
 }
 
-const OPEN_DESIGN_GITHUB_REPO_API = 'https://api.github.com/repos/nexu-io/open-design';
-const OPEN_DESIGN_GITHUB_RELEASE_LATEST_API = 'https://api.github.com/repos/nexu-io/open-design/releases/latest';
-const OPEN_DESIGN_GITHUB_CACHE_TTL_MS = 60 * 60 * 1000;
-const OPEN_DESIGN_GITHUB_TIMEOUT_MS = 4_000;
-const OPEN_DESIGN_DISCORD_INVITE_CODE = '9ptkbbqRu';
-const OPEN_DESIGN_DISCORD_INVITE_URL = `https://discord.gg/${OPEN_DESIGN_DISCORD_INVITE_CODE}`;
-const OPEN_DESIGN_DISCORD_INVITE_API = `https://discord.com/api/v10/invites/${OPEN_DESIGN_DISCORD_INVITE_CODE}?with_counts=true`;
-const OPEN_DESIGN_DISCORD_CACHE_TTL_MS = 5 * 60 * 1000;
-const OPEN_DESIGN_DISCORD_TIMEOUT_MS = 4_000;
-
-let openDesignGithubRepoCache = null;
-let openDesignGithubRepoInflight = null;
-let openDesignGithubLatestReleaseCache = null;
-let openDesignGithubLatestReleaseInflight = null;
-let openDesignDiscordPresenceCache = null;
-let openDesignDiscordPresenceInflight = null;
-
-async function readOpenDesignGithubRepoStats() {
-  const now = Date.now();
-  if (
-    openDesignGithubRepoCache &&
-    now - openDesignGithubRepoCache.fetchedAt < OPEN_DESIGN_GITHUB_CACHE_TTL_MS
-  ) {
-    return { ...openDesignGithubRepoCache, stale: false };
-  }
-
-  if (openDesignGithubRepoInflight) {
-    return openDesignGithubRepoInflight;
-  }
-
-  openDesignGithubRepoInflight = (async () => {
-    const ctrl = new AbortController();
-    const timeout = setTimeout(() => ctrl.abort(), OPEN_DESIGN_GITHUB_TIMEOUT_MS);
-    try {
-      const response = await fetch(OPEN_DESIGN_GITHUB_REPO_API, {
-        headers: {
-          accept: 'application/vnd.github+json',
-          'user-agent': 'open-design-daemon',
-        },
-        signal: ctrl.signal,
-      });
-      if (!response.ok) {
-        throw new Error(`GitHub repo metadata request failed with HTTP ${response.status}`);
-      }
-      const payload = await response.json();
-      const count = payload && typeof payload.stargazers_count === 'number'
-        ? payload.stargazers_count
-        : null;
-      if (!Number.isFinite(count) || count == null || count < 0) {
-        throw new Error('GitHub repo metadata did not include a numeric stargazers_count');
-      }
-      openDesignGithubRepoCache = {
-        stargazersCount: count,
-        fetchedAt: Date.now(),
-      };
-      return { ...openDesignGithubRepoCache, stale: false };
-    } catch (error) {
-      if (openDesignGithubRepoCache) {
-        return { ...openDesignGithubRepoCache, stale: true };
-      }
-      throw error;
-    } finally {
-      clearTimeout(timeout);
-      openDesignGithubRepoInflight = null;
-    }
-  })();
-
-  return openDesignGithubRepoInflight;
-}
-
-async function readOpenDesignLatestReleaseInfo() {
-  const now = Date.now();
-  if (
-    openDesignGithubLatestReleaseCache &&
-    now - openDesignGithubLatestReleaseCache.fetchedAt < OPEN_DESIGN_GITHUB_CACHE_TTL_MS
-  ) {
-    return { ...openDesignGithubLatestReleaseCache, stale: false };
-  }
-
-  if (openDesignGithubLatestReleaseInflight) {
-    return openDesignGithubLatestReleaseInflight;
-  }
-
-  openDesignGithubLatestReleaseInflight = (async () => {
-    const ctrl = new AbortController();
-    const timeout = setTimeout(() => ctrl.abort(), OPEN_DESIGN_GITHUB_TIMEOUT_MS);
-    try {
-      const response = await fetch(OPEN_DESIGN_GITHUB_RELEASE_LATEST_API, {
-        headers: {
-          accept: 'application/vnd.github+json',
-          'user-agent': 'open-design-daemon',
-        },
-        signal: ctrl.signal,
-      });
-      if (!response.ok) {
-        throw new Error(`GitHub latest release request failed with HTTP ${response.status}`);
-      }
-      const payload = await response.json();
-      const tagName = payload && typeof payload.tag_name === 'string' ? payload.tag_name : null;
-      const htmlUrl = payload && typeof payload.html_url === 'string' ? payload.html_url : null;
-      if (!tagName || !htmlUrl) {
-        throw new Error('GitHub latest release metadata did not include tag_name/html_url');
-      }
-      openDesignGithubLatestReleaseCache = {
-        tagName,
-        htmlUrl,
-        fetchedAt: Date.now(),
-      };
-      return { ...openDesignGithubLatestReleaseCache, stale: false };
-    } catch (error) {
-      if (openDesignGithubLatestReleaseCache) {
-        return { ...openDesignGithubLatestReleaseCache, stale: true };
-      }
-      throw error;
-    } finally {
-      clearTimeout(timeout);
-      openDesignGithubLatestReleaseInflight = null;
-    }
-  })();
-
-  return openDesignGithubLatestReleaseInflight;
-}
-
-async function readOpenDesignDiscordPresence() {
-  const now = Date.now();
-  if (
-    openDesignDiscordPresenceCache &&
-    now - openDesignDiscordPresenceCache.fetchedAt < OPEN_DESIGN_DISCORD_CACHE_TTL_MS
-  ) {
-    return { ...openDesignDiscordPresenceCache, stale: false };
-  }
-
-  if (openDesignDiscordPresenceInflight) {
-    return openDesignDiscordPresenceInflight;
-  }
-
-  openDesignDiscordPresenceInflight = (async () => {
-    const ctrl = new AbortController();
-    const timeout = setTimeout(() => ctrl.abort(), OPEN_DESIGN_DISCORD_TIMEOUT_MS);
-    try {
-      const response = await fetch(OPEN_DESIGN_DISCORD_INVITE_API, {
-        headers: {
-          accept: 'application/json',
-          'user-agent': 'open-design-daemon',
-        },
-        signal: ctrl.signal,
-      });
-      if (!response.ok) {
-        throw new Error(`Discord invite metadata request failed with HTTP ${response.status}`);
-      }
-      const payload = await response.json();
-      const profile = payload && typeof payload.profile === 'object' ? payload.profile : null;
-      const onlineCount =
-        typeof payload?.approximate_presence_count === 'number'
-          ? payload.approximate_presence_count
-          : typeof profile?.online_count === 'number'
-            ? profile.online_count
-            : null;
-      const memberCount =
-        typeof payload?.approximate_member_count === 'number'
-          ? payload.approximate_member_count
-          : typeof profile?.member_count === 'number'
-            ? profile.member_count
-            : null;
-
-      if (
-        !Number.isFinite(onlineCount) ||
-        onlineCount == null ||
-        onlineCount < 0 ||
-        !Number.isFinite(memberCount) ||
-        memberCount == null ||
-        memberCount < 0
-      ) {
-        throw new Error('Discord invite metadata did not include numeric member counts');
-      }
-
-      openDesignDiscordPresenceCache = {
-        onlineCount,
-        memberCount,
-        fetchedAt: Date.now(),
-      };
-      return { ...openDesignDiscordPresenceCache, stale: false };
-    } catch (error) {
-      if (openDesignDiscordPresenceCache) {
-        return { ...openDesignDiscordPresenceCache, stale: true };
-      }
-      throw error;
-    } finally {
-      clearTimeout(timeout);
-      openDesignDiscordPresenceInflight = null;
-    }
-  })();
-
-  return openDesignDiscordPresenceInflight;
-}
-
 function bearerTokenFromRequest(req) {
   const header = req.get('authorization');
   if (typeof header !== 'string') return undefined;
@@ -5016,58 +4819,10 @@ export async function startServer({
     res.json({ version });
   });
 
-  app.get('/api/github/open-design', async (_req, res) => {
-    try {
-      const stats = await readOpenDesignGithubRepoStats();
-      const payload = /** @type {OpenDesignGithubRepoResponse} */ ({
-        repo: 'nexu-io/open-design',
-        stargazers_count: stats.stargazersCount,
-        fetchedAt: stats.fetchedAt,
-        stale: stats.stale,
-      });
-      res.json(payload);
-    } catch (error) {
-      res.status(502).json({
-        error: error instanceof Error ? error.message : String(error),
-      });
-    }
-  });
-
-  app.get('/api/github/open-design/releases/latest', async (_req, res) => {
-    try {
-      const release = await readOpenDesignLatestReleaseInfo();
-      const payload = /** @type {OpenDesignGithubLatestReleaseResponse} */ ({
-        repo: 'nexu-io/open-design',
-        tag_name: release.tagName,
-        html_url: release.htmlUrl,
-        fetchedAt: release.fetchedAt,
-        stale: release.stale,
-      });
-      res.json(payload);
-    } catch (error) {
-      res.status(502).json({
-        error: error instanceof Error ? error.message : String(error),
-      });
-    }
-  });
-
-  app.get('/api/community/discord', async (_req, res) => {
-    try {
-      const presence = await readOpenDesignDiscordPresence();
-      const payload = /** @type {OpenDesignDiscordPresenceResponse} */ ({
-        inviteCode: OPEN_DESIGN_DISCORD_INVITE_CODE,
-        inviteUrl: OPEN_DESIGN_DISCORD_INVITE_URL,
-        onlineCount: presence.onlineCount,
-        memberCount: presence.memberCount,
-        fetchedAt: presence.fetchedAt,
-        stale: presence.stale,
-      });
-      res.json(payload);
-    } catch (error) {
-      res.status(502).json({
-        error: error instanceof Error ? error.message : String(error),
-      });
-    }
+  const openDesignPublicMetadata = createOpenDesignPublicMetadataService();
+  registerOpenDesignPublicMetadataRoutes(app, {
+    http: httpDeps,
+    openDesignPublicMetadata,
   });
 
   // Plan §3.F2 / spec §11.7 — daemon lifecycle status. Returns the
@@ -5318,10 +5073,10 @@ export async function startServer({
   // on garnet (with baseDir privilege check, linkedDirs validation,
   // template snapshot seeding, plugin snapshot resolution with default
   // scenario fallback) is intentionally dropped here. main moved project
-  // route registration into `./project-routes.js` via PR #1043, so the
+  // route registration into `./routes/project/index.js` via PR #1043, so the
   // simple project-create surface is wired through `registerProjectRoutes`
   // further down. Plugin-snapshot-resolution / default-scenario-fallback
-  // from garnet need to be re-integrated into project-routes.ts as a
+  // from garnet need to be re-integrated into routes/project/index.ts as a
   // follow-up — see reconcile decision log.
   // (legacy POST /api/projects body deleted — see registerProjectRoutes below.)
 
@@ -6003,257 +5758,6 @@ export async function startServer({
     conversations: conversationDeps,
     research: researchDeps,
   });
-
-  app.delete('/api/projects/:id', async (req, res) => {
-    try {
-      dbDeleteProject(db, req.params.id);
-      await removeProjectDir(PROJECTS_DIR, req.params.id).catch(() => {});
-      /** @type {import('@open-design/contracts').OkResponse} */
-      const body = { ok: true };
-      res.json(body);
-    } catch (err) {
-      sendApiError(res, 400, 'BAD_REQUEST', String(err));
-    }
-  });
-
-  // SSE stream of file-changed events for a project. Drives preview live-reload.
-  // Receipt of a `file-changed` event triggers a file-list refresh, which
-  // propagates new mtimes through to FileViewer iframes (the URL-load
-  // `?v=${mtime}` cache-bust from PR #384 then reloads the iframe automatically).
-  // Subscribers come and go as users open/close project tabs; the underlying
-  // chokidar watcher is refcounted in project-watchers.ts so we never hold
-  // descriptors for projects no UI is looking at.
-  app.get('/api/projects/:id/events', (req, res) => {
-    if (!getProject(db, req.params.id)) {
-      return sendApiError(res, 404, 'PROJECT_NOT_FOUND', 'not found');
-    }
-    let sub;
-    try {
-      const sse = createSseResponse(res);
-      const projectEventSink = (payload) => {
-        sse.send(payload.type, payload);
-      };
-      let sinks = activeProjectEventSinks.get(req.params.id);
-      if (!sinks) {
-        sinks = new Set();
-        activeProjectEventSinks.set(req.params.id, sinks);
-      }
-      sinks.add(projectEventSink);
-      const watchProject = getProject(db, req.params.id);
-      sub = subscribeFileEvents(PROJECTS_DIR, req.params.id, (evt) => {
-        sse.send('file-changed', evt);
-      }, { metadata: watchProject?.metadata });
-      sub.ready.then(() => sse.send('ready', { projectId: req.params.id })).catch(() => {});
-      const cleanup = () => {
-        if (sub) {
-          const { unsubscribe } = sub;
-          sub = null;
-          Promise.resolve(unsubscribe()).catch(() => {});
-        }
-        const currentSinks = activeProjectEventSinks.get(req.params.id);
-        currentSinks?.delete(projectEventSink);
-        if (currentSinks?.size === 0) activeProjectEventSinks.delete(req.params.id);
-      };
-      res.on('close', cleanup);
-      res.on('finish', cleanup);
-    } catch (err) {
-      if (sub) Promise.resolve(sub.unsubscribe()).catch(() => {});
-      if (!res.headersSent) sendApiError(res, 400, 'BAD_REQUEST', String(err?.message || err));
-    }
-  });
-
-  // ---- Conversations --------------------------------------------------------
-
-  app.get('/api/projects/:id/conversations', (req, res) => {
-    if (!getProject(db, req.params.id)) {
-      return res.status(404).json({ error: 'project not found' });
-    }
-    res.json({ conversations: listConversations(db, req.params.id) });
-  });
-
-  app.post('/api/projects/:id/conversations', (req, res) => {
-    if (!getProject(db, req.params.id)) {
-      return res.status(404).json({ error: 'project not found' });
-    }
-    const { title, seedFromConversationId, forkAfterMessageId } = req.body || {};
-    const now = Date.now();
-    const hasExplicitSessionMode = Boolean(
-      req.body && Object.prototype.hasOwnProperty.call(req.body, 'sessionMode'),
-    );
-    const requestedForkMessageId =
-      typeof forkAfterMessageId === 'string' && forkAfterMessageId
-        ? forkAfterMessageId
-        : null;
-    const sourceConversation =
-      typeof seedFromConversationId === 'string' && seedFromConversationId
-        ? getConversation(db, seedFromConversationId)
-        : null;
-    let seedMessages = [];
-    if (sourceConversation && sourceConversation.projectId === req.params.id) {
-      seedMessages = listMessages(db, seedFromConversationId);
-      if (requestedForkMessageId) {
-        const forkIndex = seedMessages.findIndex((message) => message.id === requestedForkMessageId);
-        if (forkIndex < 0) {
-          return res.status(404).json({ error: 'fork message not found' });
-        }
-        seedMessages = seedMessages.slice(0, forkIndex + 1);
-      }
-    } else if (requestedForkMessageId) {
-      return res.status(404).json({ error: 'fork source conversation not found' });
-    }
-    const sessionMode =
-      hasExplicitSessionMode
-        ? normalizeConversationSessionMode(req.body.sessionMode)
-        : sourceConversation && sourceConversation.projectId === req.params.id
-          ? normalizeConversationSessionMode(sourceConversation.sessionMode)
-          : 'design';
-    const conv = insertConversation(db, {
-      id: randomId(),
-      projectId: req.params.id,
-      title: typeof title === 'string' ? title.trim() || null : null,
-      sessionMode,
-      createdAt: now,
-      updatedAt: now,
-    });
-    if (conv && seedMessages.length > 0) {
-      for (const m of seedMessages) {
-        upsertMessage(db, conv.id, {
-          ...m,
-          id: randomId(),
-          runId: undefined,
-          runStatus: undefined,
-          lastRunEventId: undefined,
-        });
-      }
-    }
-    res.json({ conversation: conv });
-  });
-
-  app.patch('/api/projects/:id/conversations/:cid', (req, res) => {
-    const conv = getConversation(db, req.params.cid);
-    if (!conv || conv.projectId !== req.params.id) {
-      return res.status(404).json({ error: 'not found' });
-    }
-    const updated = updateConversation(db, req.params.cid, req.body || {});
-    res.json({ conversation: updated });
-  });
-
-  app.delete('/api/projects/:id/conversations/:cid', (req, res) => {
-    const conv = getConversation(db, req.params.cid);
-    if (!conv || conv.projectId !== req.params.id) {
-      return res.status(404).json({ error: 'not found' });
-    }
-    deleteConversation(db, req.params.cid);
-    res.json({ ok: true });
-  });
-
-  // ---- Messages -------------------------------------------------------------
-
-  app.get('/api/projects/:id/conversations/:cid/messages', (req, res) => {
-    const conv = getConversation(db, req.params.cid);
-    if (!conv || conv.projectId !== req.params.id) {
-      return res.status(404).json({ error: 'conversation not found' });
-    }
-    res.json({ messages: listMessages(db, req.params.cid) });
-  });
-
-  app.put('/api/projects/:id/conversations/:cid/messages/:mid', (req, res) => {
-    const conv = getConversation(db, req.params.cid);
-    if (!conv || conv.projectId !== req.params.id) {
-      return res.status(404).json({ error: 'conversation not found' });
-    }
-    const m = req.body || {};
-    if (m.id && m.id !== req.params.mid) {
-      return res.status(400).json({ error: 'id mismatch' });
-    }
-    const saved = upsertMessage(db, req.params.cid, {
-      ...m,
-      id: req.params.mid,
-    });
-    // Bump the parent project's updatedAt so the project list re-orders.
-    updateProject(db, req.params.id, {});
-    reportFinalizedMessage(saved, m, {
-      analyticsContext: readAnalyticsContext(req),
-      projectId: req.params.id,
-      conversationId: req.params.cid,
-    });
-    res.json({ message: saved });
-  });
-
-  // ---- Preview comments ----------------------------------------------------
-
-  app.get('/api/projects/:id/conversations/:cid/comments', (req, res) => {
-    const conv = getConversation(db, req.params.cid);
-    if (!conv || conv.projectId !== req.params.id) {
-      return res.status(404).json({ error: 'conversation not found' });
-    }
-    res.json({
-      comments: listPreviewComments(db, req.params.id, req.params.cid),
-    });
-  });
-
-  app.post('/api/projects/:id/conversations/:cid/comments', (req, res) => {
-    const conv = getConversation(db, req.params.cid);
-    if (!conv || conv.projectId !== req.params.id) {
-      return res.status(404).json({ error: 'conversation not found' });
-    }
-    try {
-      const comment = upsertPreviewComment(
-        db,
-        req.params.id,
-        req.params.cid,
-        req.body || {},
-      );
-      updateProject(db, req.params.id, {});
-      res.json({ comment });
-    } catch (err) {
-      res.status(400).json({ error: String(err?.message || err) });
-    }
-  });
-
-  app.patch(
-    '/api/projects/:id/conversations/:cid/comments/:commentId',
-    (req, res) => {
-      const conv = getConversation(db, req.params.cid);
-      if (!conv || conv.projectId !== req.params.id) {
-        return res.status(404).json({ error: 'conversation not found' });
-      }
-      try {
-        const comment = updatePreviewCommentStatus(
-          db,
-          req.params.id,
-          req.params.cid,
-          req.params.commentId,
-          req.body?.status,
-        );
-        if (!comment)
-          return res.status(404).json({ error: 'comment not found' });
-        updateProject(db, req.params.id, {});
-        res.json({ comment });
-      } catch (err) {
-        res.status(400).json({ error: String(err?.message || err) });
-      }
-    },
-  );
-
-  app.delete(
-    '/api/projects/:id/conversations/:cid/comments/:commentId',
-    (req, res) => {
-      const conv = getConversation(db, req.params.cid);
-      if (!conv || conv.projectId !== req.params.id) {
-        return res.status(404).json({ error: 'conversation not found' });
-      }
-      const ok = deletePreviewComment(
-        db,
-        req.params.id,
-        req.params.cid,
-        req.params.commentId,
-      );
-      if (!ok) return res.status(404).json({ error: 'comment not found' });
-      updateProject(db, req.params.id, {});
-      res.json({ ok: true });
-    },
-  );
 
   async function resolveAmrModelProbe() {
     const appConfig = await readAppConfig(RUNTIME_DATA_DIR);
@@ -11676,6 +11180,7 @@ export async function startServer({
     chat: { startChatRun },
     agents: agentDeps,
     critique: critiqueDeps,
+    openDesignPublicMetadata,
     lifecycle: { isDaemonShuttingDown: () => daemonShuttingDown },
   });
 
