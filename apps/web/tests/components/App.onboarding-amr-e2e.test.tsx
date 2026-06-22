@@ -254,16 +254,16 @@ describe('onboarding -> home AMR selection (end to end)', () => {
     fireEvent.click(cloudContinue);
 
     // About-you step is no longer the final step: advance past it to the
-    // newsletter step, then the brand step that hosts Finish setup.
+    // newsletter step, then the brand step that hosts Skip.
     const aboutYouContinue = await screen.findByRole('button', { name: /^Continue$/i });
     fireEvent.click(aboutYouContinue);
 
-    // Newsletter step -> Brand step -> finish.
+    // Newsletter step -> Brand step -> skip.
     const newsletterContinue = await screen.findByRole('button', { name: /^Continue$/i });
     fireEvent.click(newsletterContinue);
 
-    const finish = await screen.findByRole('button', { name: /Finish setup/i });
-    fireEvent.click(finish);
+    const skip = await screen.findByRole('button', { name: /Skip for now/i });
+    fireEvent.click(skip);
 
     // Now on home: the inline model switcher chip must reflect AMR, not the
     // Claude default the App-level auto-select used to snap to while AMR was

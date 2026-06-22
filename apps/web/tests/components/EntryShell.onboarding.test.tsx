@@ -812,6 +812,52 @@ describe('EntryShell onboarding Open Design AMR runtime', () => {
     expect(screen.getByRole('heading', { name: 'About you' })).toBeTruthy();
   });
 
+  it('does not show a memory-saved callout on the About you step before choices are submitted', async () => {
+    globalThis.fetch = vi.fn(async () =>
+      jsonResponse({
+        loggedIn: true,
+        profile: 'prod',
+        configPath: '/x',
+        user: { id: 'u', email: 'user@example.com' },
+      }),
+    ) as typeof fetch;
+    renderOnboarding();
+
+    fireEvent.click(await screen.findByRole('button', { name: /Continue \(signed in\)/i }));
+
+    expect(screen.getByRole('heading', { name: 'About you' })).toBeTruthy();
+    expect(screen.queryByText('Saved to your Memory')).toBeNull();
+  });
+
+  it('shows a Back control on the brand extraction onboarding step', async () => {
+    globalThis.fetch = vi.fn(async () =>
+      jsonResponse({
+        loggedIn: true,
+        profile: 'prod',
+        configPath: '/x',
+        user: { id: 'u', email: 'user@example.com' },
+      }),
+    ) as typeof fetch;
+    renderOnboarding();
+
+    fireEvent.click(await screen.findByRole('button', { name: /Continue \(signed in\)/i }));
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'About you' })).toBeTruthy();
+    });
+    fireEvent.click(screen.getByRole('button', { name: /^Continue$/i }));
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Stay in the loop' })).toBeTruthy();
+    });
+    fireEvent.click(screen.getByRole('button', { name: /^Continue$/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Extract your design system' })).toBeTruthy();
+    });
+    expect(screen.getByRole('button', { name: /^Back$/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Skip for now/i })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Finish setup/i })).toBeNull();
+  });
+
   it('tracks onboarding page views and about-you submission payload on completion', async () => {
     globalThis.fetch = vi.fn(async () =>
       jsonResponse({
@@ -845,7 +891,7 @@ describe('EntryShell onboarding Open Design AMR runtime', () => {
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: 'Extract your design system' })).toBeTruthy();
     });
-    fireEvent.click(screen.getByRole('button', { name: /Finish setup/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Skip for now/i }));
 
     expect(props.onCompleteOnboarding).toHaveBeenCalledTimes(1);
 
@@ -951,7 +997,7 @@ describe('EntryShell onboarding Open Design AMR runtime', () => {
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: 'Extract your design system' })).toBeTruthy();
     });
-    fireEvent.click(screen.getByRole('button', { name: /Finish setup/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Skip for now/i }));
 
     const subscribeCall = fetchMock.mock.calls.find(([url]) => String(url).endsWith('/subscribe'));
     expect(subscribeCall).toBeTruthy();
@@ -998,7 +1044,7 @@ describe('EntryShell onboarding Open Design AMR runtime', () => {
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: 'Extract your design system' })).toBeTruthy();
     });
-    fireEvent.click(screen.getByRole('button', { name: /Finish setup/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Skip for now/i }));
 
     expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith('/subscribe'))).toBe(false);
   });
@@ -1083,7 +1129,7 @@ describe('EntryShell onboarding Open Design AMR runtime', () => {
 
     // Advance to the newsletter step via Continue (the stepper no longer
     // allows forward jumps past the current step). The survey snapshot must
-    // still fire exactly once — on the final Finish — not zero times.
+    // still fire exactly once — on the final Skip — not zero times.
     fireEvent.click(screen.getByRole('button', { name: /^Continue$/i }));
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: 'Stay in the loop' })).toBeTruthy();
@@ -1092,7 +1138,7 @@ describe('EntryShell onboarding Open Design AMR runtime', () => {
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: 'Extract your design system' })).toBeTruthy();
     });
-    fireEvent.click(screen.getByRole('button', { name: /Finish setup/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Skip for now/i }));
 
     const aboutYouSubmits = trackedEvents('ui_click')
       .map(([, payload]) => payload as Record<string, unknown>)
@@ -1130,7 +1176,7 @@ describe('EntryShell onboarding Open Design AMR runtime', () => {
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: 'About you' })).toBeTruthy();
     });
-    // Continue -> Newsletter again, then Brand and finish.
+    // Continue -> Newsletter again, then Brand and skip.
     fireEvent.click(screen.getByRole('button', { name: /^Continue$/i }));
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: 'Stay in the loop' })).toBeTruthy();
@@ -1139,7 +1185,7 @@ describe('EntryShell onboarding Open Design AMR runtime', () => {
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: 'Extract your design system' })).toBeTruthy();
     });
-    fireEvent.click(screen.getByRole('button', { name: /Finish setup/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Skip for now/i }));
 
     // The detour crosses the About-you step twice, but the snapshot must
     // not double-fire.
@@ -1204,7 +1250,7 @@ describe('EntryShell onboarding Open Design AMR runtime', () => {
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: 'Extract your design system' })).toBeTruthy();
     });
-    fireEvent.click(screen.getByRole('button', { name: /Finish setup/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Skip for now/i }));
 
     expect(props.onModeChange).toHaveBeenCalledWith('api');
     expect(props.onApiModelChange).toHaveBeenCalledWith('claude-opus-4-8');
