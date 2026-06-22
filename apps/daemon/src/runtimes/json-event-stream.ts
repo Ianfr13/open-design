@@ -152,7 +152,16 @@ function handleOpenCodeEvent(obj: unknown, onEvent: StreamEventHandler, state: P
   const part = isRecord(obj.part) ? obj.part : {};
 
   if (obj.type === 'step_start') {
-    onEvent({ type: 'status', label: 'running' });
+    // `sessionID` is OpenCode's own session handle (capture-style resume).
+    // Surface it on the step-start status so the daemon can persist it to
+    // `agent_sessions` and replay it as `run -s <id>` next turn. OpenCode
+    // stamps it on every stream event; step_start is the turn opener, so a
+    // create turn always exposes it here.
+    const sessionId =
+      typeof obj.sessionID === 'string' && obj.sessionID.length > 0
+        ? obj.sessionID
+        : null;
+    onEvent({ type: 'status', label: 'running', sessionId });
     return true;
   }
 

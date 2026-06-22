@@ -17,6 +17,7 @@ import {
   isAgentResumeFailure,
   isClaudeResumeFailure,
   isCodexResumeFailure,
+  isOpencodeResumeFailure,
   persistCapturedAgentSession,
   resolveAgentResumeContext,
 } from '../src/agent-session-resume.js';
@@ -265,6 +266,21 @@ describe('isCodexResumeFailure', () => {
   });
 });
 
+describe('isOpencodeResumeFailure', () => {
+  it('matches the OpenCode "Session not found" resume error', () => {
+    expect(isOpencodeResumeFailure('Error: Session not found')).toBe(true);
+    expect(
+      isOpencodeResumeFailure('{"name":"NotFoundError","data":{"message":"Session not found: ses_x"}}'),
+    ).toBe(true);
+  });
+
+  it('ignores unrelated OpenCode errors and empty input', () => {
+    expect(isOpencodeResumeFailure('OpenCode auth failed: login required')).toBe(false);
+    expect(isOpencodeResumeFailure('rate limit exceeded')).toBe(false);
+    expect(isOpencodeResumeFailure('')).toBe(false);
+  });
+});
+
 describe('isAgentResumeFailure dispatch', () => {
   it('routes codex to the rollout-not-found detector', () => {
     expect(
@@ -273,6 +289,14 @@ describe('isAgentResumeFailure dispatch', () => {
     // A Claude-style signature must NOT count as a codex resume failure.
     expect(
       isAgentResumeFailure('codex', 'No conversation found with session ID: abc'),
+    ).toBe(false);
+  });
+
+  it('routes opencode to the session-not-found detector', () => {
+    expect(isAgentResumeFailure('opencode', 'Error: Session not found')).toBe(true);
+    // codex prose is not an OpenCode resume failure.
+    expect(
+      isAgentResumeFailure('opencode', 'no rollout found for thread id abc'),
     ).toBe(false);
   });
 

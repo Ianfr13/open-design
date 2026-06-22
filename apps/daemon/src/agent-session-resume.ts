@@ -171,6 +171,23 @@ export function isCodexResumeFailure(text: string): boolean {
   return CODEX_RESUME_FAILURE_PATTERNS.some((re) => re.test(text));
 }
 
+// Signature OpenCode prints when `run -s <id>` targets a session whose store is
+// gone (deleted, corrupted, different machine). Verified against the installed
+// OpenCode CLI: `run -s <well-formed-but-missing-id>` prints `Error: Session
+// not found` to stderr (and the HTTP path returns a `NotFoundError`). Like the
+// other CLIs this fails before any model call, so clearing the stale handle and
+// re-seeding the transcript next turn is the correct, lossless recovery.
+const OPENCODE_RESUME_FAILURE_PATTERNS: RegExp[] = [
+  /session not found/i,
+  /NotFoundError/,
+];
+
+/** True when OpenCode CLI output indicates a resume target session is missing. */
+export function isOpencodeResumeFailure(text: string): boolean {
+  if (!text) return false;
+  return OPENCODE_RESUME_FAILURE_PATTERNS.some((re) => re.test(text));
+}
+
 /**
  * Per-agent dispatch for "the session/thread I asked to resume is gone".
  * Generalizes the resume-fallback so every `resumesSessionViaCli` adapter
@@ -180,6 +197,7 @@ export function isCodexResumeFailure(text: string): boolean {
 export function isAgentResumeFailure(agentId: string, text: string): boolean {
   if (!text) return false;
   if (agentId === 'codex') return isCodexResumeFailure(text);
+  if (agentId === 'opencode') return isOpencodeResumeFailure(text);
   // claude + codebuddy share Claude Code's stream-json result shape.
   return isClaudeResumeFailure(text);
 }
