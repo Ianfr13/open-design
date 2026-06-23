@@ -262,4 +262,74 @@ describe('error-tracking', () => {
     reportHandledException(new Error('no context'));
     expect(fetchMock).not.toHaveBeenCalled();
   });
+
+  // Regression: 100% of our hand-built `$exception` events were failing to
+  // ingest with "missing field platform" because the frames omitted the
+  // `platform` key PostHog's exception pipeline requires. posthog-js stamps
+  // `web:javascript` on every frame; we must too.
+  it('stamps platform on every stack frame so PostHog ingestion accepts the event', () => {
+    setExceptionTrackingContext({
+      apiKey: 'phc_test',
+      host: 'https://us.i.posthog.com',
+      distinctId: 'user-platform',
+    });
+
+    const error = new Error('needs-platform');
+    error.stack = [
+      'Error: needs-platform',
+      '    at handleClick (app://apps/web/src/FileViewer.tsx:147:23)',
+      '    at app://apps/web/src/index.tsx:12:1',
+    ].join('\n');
+    reportHandledException(error);
+
+    const body = lastFetchedBody();
+    const list = (body.properties as Record<string, unknown>).$exception_list as Array<{
+      stacktrace?: { frames?: Array<Record<string, unknown>> };
+    }>;
+    const frames = list[0]?.stacktrace?.frames;
+    expect(frames).toBeTruthy();
+    expect(frames!.length).toBeGreaterThanOrEqual(2);
+    for (const frame of frames!) {
+      expect(frame.platform).toBe('web:javascript');
+    }
+  });
+
+  // Regression: `TypeError: Failed to fetch` from the daemon connection
+  // dropping (restart, boot race, navigation abort, offline) was ~90% of all
+  // captured exceptions — environmental noise, not a bug. Drop it, and the
+  // sibling network-error wordings, at the capture chokepoint.
+  it('drops environmental fetch/abort noise instead of reporting it as an exception', () => {
+    setExceptionTrackingContext({
+      apiKey: 'phc_test',
+      host: 'https://us.i.posthog.com',
+      distinctId: 'user-noise',
+    });
+
+    reportHandledException(new TypeError('Failed to fetch')); // Chromium
+    reportHandledException(new TypeError('Load failed')); // WebKit
+    const aborted = new Error('the user aborted a request.');
+    aborted.name = 'AbortError';
+    reportHandledException(aborted);
+
+    // The dominant production source is the uncaught-rejection path.
+    installErrorHandlers();
+    const reason = new TypeError('Failed to fetch');
+    const rejection = new Event('unhandledrejection') as Event & {
+      reason?: unknown;
+      promise?: Promise<unknown>;
+    };
+    rejection.reason = reason;
+    rejection.promise = Promise.reject(reason);
+    rejection.promise.catch(() => undefined);
+    window.dispatchEvent(rejection);
+
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    // A genuine error still flows through untouched.
+    reportHandledException(new Error('real-bug'));
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect((lastFetchedBody().properties as Record<string, unknown>).$exception_message).toBe(
+      'real-bug',
+    );
+  });
 });

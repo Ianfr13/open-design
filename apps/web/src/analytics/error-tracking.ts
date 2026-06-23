@@ -56,6 +56,11 @@ interface BufferedSafetyEvent {
 // memory footprint trivial.
 const MAX_BUFFER_SIZE = 50;
 
+// PostHog's exception ingestion requires a `platform` on each stack frame.
+// Mirrors the value posthog-js stamps so our hand-built events pass the
+// same server-side processing. See `buildExceptionList`.
+const FRAME_PLATFORM = 'web:javascript';
+
 let context: ExceptionTrackingContext | null = null;
 const buffer: BufferedSafetyEvent[] = [];
 let installed = false;
@@ -122,12 +127,33 @@ interface CaptureMetadata {
   handled?: boolean;
 }
 
+// Network / lifecycle fetch failures are environmental noise, not bugs:
+// the daemon restarting, the app booting before the daemon is ready, a
+// navigation / unmount aborting an in-flight request, or an offline blip.
+// In the packaged app (od://app) these surface as uncaught promise
+// rejections in enormous volume — a single polling loop on a flaky
+// connection can emit thousands — and bury every real exception. We drop
+// them at the single capture chokepoint so neither the window listeners
+// nor explicit reporters forward them.
+const IGNORED_EXCEPTION_VALUES = new Set([
+  'Failed to fetch', // Chromium (Electron, Chrome)
+  'Load failed', // WebKit (Safari)
+  'NetworkError when attempting to fetch resource.', // Firefox
+]);
+
+function isIgnorableNoise(type: unknown, value: unknown): boolean {
+  if (type === 'AbortError') return true;
+  if (typeof value === 'string' && IGNORED_EXCEPTION_VALUES.has(value)) return true;
+  return false;
+}
+
 function captureException(
   error: unknown,
   fallbackMessage: string,
   metadata: CaptureMetadata = {},
 ): void {
   const list = buildExceptionList(error, fallbackMessage, metadata);
+  if (isIgnorableNoise(list[0]?.type, list[0]?.value)) return;
   const scrubbed = scrubExceptionList(list);
   const properties: Record<string, unknown> = {
     $exception_list: scrubbed,
@@ -206,6 +232,14 @@ function dispatch(item: BufferedSafetyEvent): void {
       // auth surface; cookies are irrelevant and sending them would just
       // add CORS preflight friction.
       credentials: 'omit',
+    }).catch(() => {
+      // Swallow the async rejection too. The synchronous try/catch below
+      // only guards against fetch throwing on a malformed argument; the
+      // returned promise rejects separately when the beacon can't reach
+      // PostHog (offline, ingest down). Left unhandled, that rejection is
+      // itself scooped up by the `unhandledrejection` listener above and
+      // re-reported as a `Failed to fetch` $exception — a self-amplifying
+      // loop where our own telemetry transport manufactures telemetry.
     });
   } catch {
     // best-effort: safety telemetry must never propagate
@@ -225,7 +259,18 @@ function buildExceptionList(
       ? error
       : fallbackMessage;
   const stack = isError && typeof error.stack === 'string' ? error.stack : '';
-  const frames = parseStack(stack, metadata);
+  // Stamp `platform` on every frame. PostHog's exception ingestion treats
+  // it as a required field (it selects the symbolication / issue-grouping
+  // strategy per frame); a frame without it fails the exceptions pipeline
+  // with "missing field platform" and the whole event is dropped
+  // server-side — which is why 100% of our hand-built `$exception` events
+  // were failing to ingest. posthog-js stamps the same value on each frame;
+  // we replicate it because client.ts sets `capture_exceptions: false` and
+  // this module is the sole browser-exception transport.
+  const frames = parseStack(stack, metadata).map((frame) => ({
+    ...frame,
+    platform: FRAME_PLATFORM,
+  }));
   return [
     {
       type,
