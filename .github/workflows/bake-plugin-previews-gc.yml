@@ -17,11 +17,11 @@ on:
   workflow_dispatch:
     inputs:
       delete:
-        description: Actually delete orphans (default: dry-run report only).
+        description: 'Actually delete orphans (default: dry-run report only).'
         type: boolean
         default: false
       grace-days:
-        description: Minimum age (days) before an orphan may be deleted.
+        description: Minimum age in days before an orphan may be deleted.
         type: string
         default: '90'
 
@@ -59,8 +59,12 @@ jobs:
           # Second arming switch. Leave unset/empty to keep deletions disabled even
           # if someone passes --delete; set to '1' here only when ready to prune.
           GC_ENABLE_DELETE: ''
+          # Dispatch inputs via env (never interpolated into the script body) to
+          # avoid script injection.
+          GC_DELETE: ${{ github.event.inputs.delete }}
+          GC_GRACE_DAYS: ${{ github.event.inputs.grace-days }}
         run: |
-          GRACE="${{ github.event.inputs.grace-days || '90' }}"
+          GRACE="${GC_GRACE_DAYS:-90}"
           DELETE_FLAG=""
-          if [ "${{ github.event.inputs.delete }}" = "true" ]; then DELETE_FLAG="--delete"; fi
+          if [ "$GC_DELETE" = "true" ]; then DELETE_FLAG="--delete"; fi
           node scripts/plugin-previews-gc.mjs --grace-days "$GRACE" $DELETE_FLAG
