@@ -3,9 +3,9 @@ import {
   countDesignSystemPreviewModules,
   countNewArtifacts,
   didRunCreateDesignSystemFile,
-} from './runtimes/run-artifacts.js';
-import { scanRunEventsForUsageAnalytics } from './run-analytics-observability.js';
-import { runResultFromStatus } from './run-result.js';
+} from './run-artifacts.js';
+import { scanRunEventsForUsageAnalytics } from '../run-analytics-observability.js';
+import { runResultFromStatus } from '../run-result.js';
 
 export interface RunEventRecordLike {
   event: string;

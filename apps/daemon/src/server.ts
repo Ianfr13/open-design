@@ -106,7 +106,7 @@ import {
   runRetryEventsForAnalytics,
   scanRunEventsForFinishedProps,
   scanRunEventsForRetrySideEffects,
-} from './run-lifecycle-analytics.js';
+} from './runtimes/run-lifecycle-analytics.js';
 export {
   composeLiveInstructionPrompt,
   formatDesignFilesWorkspaceHint,
@@ -149,7 +149,7 @@ export {
   runRetryEventsForAnalytics as __forTestRunRetryEventsForAnalytics,
   scanRunEventsForFinishedProps as __forTestScanRunEventsForFinishedProps,
   scanRunEventsForRetrySideEffects as __forTestScanRunEventsForRetrySideEffects,
-} from './run-lifecycle-analytics.js';
+} from './runtimes/run-lifecycle-analytics.js';
 
 export { resolveProjectRoot };
 import { createCommandInvocation } from '@open-design/platform';

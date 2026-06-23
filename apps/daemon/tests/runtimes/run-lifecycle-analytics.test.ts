@@ -5,7 +5,7 @@ import {
   runRetryEventsForAnalytics,
   scanRunEventsForFinishedProps,
   scanRunEventsForRetrySideEffects,
-} from '../../src/run-lifecycle-analytics.js';
+} from '../../src/runtimes/run-lifecycle-analytics.js';
 import { hasExplicitRequestedModelForAnalytics } from '../../src/run-analytics-observability.js';
 
 describe('run lifecycle analytics', () => {
