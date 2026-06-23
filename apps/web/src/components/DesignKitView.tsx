@@ -15,7 +15,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Button, Textarea } from '@open-design/components';
 import { useT } from '../i18n';
-import { projectRawUrl } from '../providers/registry';
+import { openExternalUrl, projectRawUrl } from '../providers/registry';
 import { buildSrcdoc } from '../runtime/srcdoc';
 import {
   fontStack,
@@ -325,6 +325,11 @@ export function DesignKitView({
     if (file && onUploadModule) onUploadModule(module, file);
   }
 
+  function openInBrowser(event: React.MouseEvent<HTMLAnchorElement>, url: string) {
+    event.preventDefault();
+    void openExternalUrl(url);
+  }
+
   function emptyModule(hint: string, module?: KitUploadModule) {
     return (
       <div className={styles.emptyModule}>
@@ -397,6 +402,23 @@ export function DesignKitView({
               </button>
             ) : null}
           </>
+        ) : activeLogoSrc ? (
+          <button
+            type="button"
+            className={styles.coverImageButton}
+            onClick={() => setLightbox({ src: activeLogoSrc, caption: kit.name })}
+            aria-label={`${t('common.openPreview')}: ${kit.name}`}
+          >
+            <BrandLogo
+              brandId={kit.brandId}
+              logoSrc={kit.logoSrc}
+              host={kit.host}
+              name={kit.name}
+              faviconSize={128}
+              className={styles.coverLogo}
+              fallbackClassName={styles.coverLogoFallback}
+            />
+          </button>
         ) : (
           <BrandLogo
             brandId={kit.brandId}
@@ -423,6 +445,7 @@ export function DesignKitView({
               href={kit.sourceUrl}
               target="_blank"
               rel="noreferrer noopener"
+              onClick={(event) => openInBrowser(event, kit.sourceUrl!)}
             >
               {kit.host}
               <ExternalGlyph />
@@ -487,9 +510,14 @@ export function DesignKitView({
               <h3 className={styles.sectionTitle}>{t('brandDetail.logo')}</h3>
               {activeLogoSrc ? (
                 <>
-                  <div className={styles.logoStage}>
+                  <button
+                    type="button"
+                    className={`${styles.logoStage} ${styles.logoStageButton}`}
+                    onClick={() => setLightbox({ src: activeLogoSrc, caption: kit.name })}
+                    aria-label={`${t('common.openPreview')}: ${kit.name}`}
+                  >
                     <img className={styles.logoStageImg} src={activeLogoSrc} alt={kit.name} />
-                  </div>
+                  </button>
                   {logoCandidates.length > 1 ? (
                     <div className={styles.logoThumbs}>
                       {logoCandidates.map((cand, i) => (
@@ -707,6 +735,7 @@ export function DesignKitView({
                     href={kit.system.indexUrl}
                     target="_blank"
                     rel="noreferrer noopener"
+                    onClick={(event) => openInBrowser(event, kit.system!.indexUrl!)}
                   >
                     {t('brandDetail.openFullSystem')}
                     <ExternalGlyph />

@@ -7214,6 +7214,7 @@ async function runCraft(args)         { return runLibraryList('craft', args); }
 
 async function runDesignSystems(args) {
   if (args[0] === 'rename') return runDesignSystemRename(args.slice(1));
+  if (args[0] === 'download') return runDesignSystemDownload(args.slice(1));
   if (args[0] === 'import-local') return runDesignSystemImportLocal(args.slice(1));
   if (args[0] === 'import-github') return runDesignSystemImportGithub(args.slice(1));
   if (args[0] === 'import-shadcn') return runDesignSystemImportShadcn(args.slice(1));
@@ -7223,6 +7224,67 @@ async function runDesignSystems(args) {
     process.exit(isDesignSystemsHelpArg(args[0]) ? 0 : 2);
   }
   return runLibraryList('design-systems', args);
+}
+
+// od design-systems download <id> [--out <path>] [--json] [--daemon-url <url>]
+//
+// Streams GET /api/design-systems/:id/archive — the same self-contained brand
+// .zip (every system file plus a generated SKILLS.md usage guide) the web
+// "Download brand" button produces — and writes it to disk. Only user design
+// systems are downloadable; presets return 404.
+async function runDesignSystemDownload(args) {
+  if (args.length === 0 || args[0] === 'help' || args.includes('--help') || args.includes('-h')) {
+    console.log(`Usage:
+  od design-systems download <id> [--out <path>] [--json] [--daemon-url <url>]
+
+Downloads an editable design system as a shareable .zip (all files plus a
+generated SKILLS.md usage guide).
+
+  <id>                   Design system id (e.g. user:my-brand).
+  --out <path>           Write the .zip here (defaults to the brand's name).`);
+    process.exit(args.length === 0 ? 2 : 0);
+  }
+  const stringFlags = new Set([...LIBRARY_STRING_FLAGS, 'out']);
+  const flags = parseFlags(args, { string: stringFlags, boolean: LIBRARY_BOOLEAN_FLAGS });
+  const id = positionalArgs(args, stringFlags)[0];
+  if (!id) {
+    console.error('Usage: od design-systems download <id> [--out <path>]');
+    process.exit(2);
+  }
+  const base = (await libraryDaemonUrl(flags)).replace(/\/$/, '');
+  let resp;
+  try {
+    resp = await fetch(`${base}/api/design-systems/${encodeURIComponent(id)}/archive`);
+  } catch (err) {
+    surfaceFetchError(err, base);
+    process.exit(3);
+  }
+  if (resp.status === 404) {
+    console.error(`downloadable design system not found: ${id}`);
+    process.exit(4);
+  }
+  if (!resp.ok) return structuredHttpFailure(resp);
+  const buffer = Buffer.from(await resp.arrayBuffer());
+  let out = typeof flags.out === 'string' ? flags.out : null;
+  if (!out) {
+    const cd = resp.headers.get('content-disposition') || '';
+    const star = /filename\*=UTF-8''([^;]+)/i.exec(cd);
+    const plain = /filename="([^"]+)"/i.exec(cd);
+    if (star && star[1]) {
+      try { out = decodeURIComponent(star[1]); } catch { out = plain && plain[1] ? plain[1] : null; }
+    } else if (plain && plain[1]) {
+      out = plain[1];
+    }
+    if (!out) out = 'design-system.zip';
+  }
+  const { writeFile } = await import('node:fs/promises');
+  await writeFile(out, buffer);
+  if (flags.json) {
+    return process.stdout.write(
+      JSON.stringify({ ok: true, id, out, bytes: buffer.length }, null, 2) + '\n',
+    );
+  }
+  console.log(`Downloaded ${id} -> ${out} (${buffer.length} bytes)`);
 }
 
 // od design-systems import-local <path> [--name <name>]

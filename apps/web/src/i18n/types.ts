@@ -1640,6 +1640,9 @@ export interface Dict {
   'dsManager.rowMetaUpdated': string;
   'dsManager.edit': string;
   'dsManager.openSystem': string;
+  'dsManager.editWithAgent': string;
+  'dsManager.downloadTitle': string;
+  'dsManager.downloadAria': string;
   'dsManager.makeDefault': string;
   'dsManager.statusPublished': string;
   'dsManager.statusDraft': string;

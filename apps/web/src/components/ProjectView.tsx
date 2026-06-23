@@ -111,6 +111,7 @@ import { setDesignSystemFocus } from '../runtime/brands';
 import {
   buildBrandEnrichmentPrompt,
   installedBrandEnrichmentSkillIds,
+  isProgrammaticBrandExtractionProject,
 } from '../runtime/brand-enrichment';
 import { useBrandReadyPrompt } from '../runtime/useBrandReadyPrompt';
 import {
@@ -5809,7 +5810,7 @@ export function ProjectView({
     autoSendAttachmentsRef.current = isAutoSend ? readAutoSendAttachments(project.id) : [];
   }
   const brandEnrichmentEligibleForProject =
-    project.metadata?.kind === 'brand' && !autoSendFirstMessageRef.current;
+    isProgrammaticBrandExtractionProject(project.metadata) && !autoSendFirstMessageRef.current;
   const [initialDraft, setInitialDraft] = useState<
     { projectId: string; value: string } | undefined
   >(

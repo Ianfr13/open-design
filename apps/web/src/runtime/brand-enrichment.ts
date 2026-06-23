@@ -1,3 +1,4 @@
+import type { ProjectMetadata } from '@open-design/contracts';
 import type { SkillSummary } from '../types';
 
 export const DEFAULT_BRAND_ENRICHMENT_SKILL_IDS = [
@@ -35,6 +36,18 @@ export function installedBrandEnrichmentSkillIds(
 ): string[] {
   const installed = new Set(skills.map((skill) => skill.id));
   return DEFAULT_BRAND_ENRICHMENT_SKILL_IDS.filter((id) => installed.has(id));
+}
+
+export function isProgrammaticBrandExtractionProject(
+  metadata: ProjectMetadata | null | undefined,
+): boolean {
+  if (!metadata) return false;
+  return (
+    metadata.kind === 'brand' ||
+    metadata.importedFrom === 'brand-extraction' ||
+    Boolean(metadata.brandId) ||
+    Boolean(metadata.brandDesignSystemId)
+  );
 }
 
 export function buildBrandEnrichmentPrompt(existingPrompt?: string | null): string {

@@ -73,6 +73,8 @@
 
   /* Logo */
   .logo-stage { display: flex; min-height: 158px; align-items: center; justify-content: center; border: 1px solid var(--line-soft); border-radius: var(--radius); padding: 28px; }
+  .logo-stage[data-light-src] { cursor: zoom-in; }
+  .logo-stage[data-light-src]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .logo-stage img { max-height: 92px; max-width: 100%; object-fit: contain; }
   .logo-empty { display: flex; min-height: 158px; flex-direction: column; align-items: center; justify-content: center; gap: 6px; border: 1px dashed var(--line); border-radius: var(--radius); color: var(--ink-faint); font-size: 14px; }
   .logo-thumbs { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
@@ -155,6 +157,8 @@
 
   /* Hero banner — surfaces the first harvested brand image for visual richness */
   .kit-hero { margin-top: 22px; border: 1px solid var(--line-soft); border-radius: var(--radius); overflow: hidden; background: var(--line-soft); aspect-ratio: 16 / 5; box-shadow: 0 1px 2px rgba(0,0,0,.03); }
+  .kit-hero[data-light-src] { cursor: zoom-in; }
+  .kit-hero[data-light-src]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .kit-hero img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
   /* Font specimen tiles — a big "Ag" glyph per real family, in its own face */
@@ -294,6 +298,9 @@
   });
 
   function sectionTitle(t) { return '<h2 class="sec-title">' + esc(t) + '</h2>'; }
+  function emptyCard(text) {
+    return '<div class="card muted">' + esc(text) + '</div>';
+  }
 
   function logoHtml() {
     // Resilient candidate list: primary first when present, otherwise fall back
@@ -312,7 +319,7 @@
       return '<button class="logo-thumb' + (i===0?' active':'') + '" data-src="' + esc(c) + '" style="background:' + esc(bg) + '"><img src="' + esc(c) + '" alt=""></button>';
     }).join('') + '</div>' : '';
     var notes = brand.logo && brand.logo.notes ? '<p class="logo-notes">' + esc(brand.logo.notes) + '</p>' : '';
-    return '<div class="logo-stage" id="logo-stage" style="background:' + esc(bg) + '">' +
+    return '<div class="logo-stage" id="logo-stage" style="background:' + esc(bg) + '" data-light-src="' + esc(cands[0]) + '" data-light-caption="' + esc(brand.name || 'Logo') + '" tabindex="0" role="button" aria-label="Preview logo">' +
       '<img id="logo-img" src="' + esc(cands[0]) + '" alt="' + esc(brand.name || 'logo') + '"></div>' + thumbs + notes;
   }
 
@@ -366,7 +373,7 @@
   function heroHtml() {
     var samples = imagerySamples();
     if (!samples.length) return '';
-    return '<div class="kit-hero"><img src="' + esc(samples[0].file) + '" alt="' + esc(brand.name || '') + '" loading="lazy"></div>';
+    return '<div class="kit-hero" data-light-src="' + esc(samples[0].file) + '" data-light-caption="' + esc(samples[0].caption || samples[0].kind || brand.name || 'Image') + '" tabindex="0" role="button" aria-label="Preview hero image"><img src="' + esc(samples[0].file) + '" alt="' + esc(brand.name || '') + '" loading="lazy"></div>';
   }
 
   function typeHtml() {
@@ -376,6 +383,7 @@
     ];
     if (typo.mono) rows.push({ label: 'Mono', spec: typo.mono, sample: 'const brand = await extract(url);', size: '14px', weight: 400, color: fg });
     if (!typo.display && !typo.body) {
+      if (!extracting) return emptyCard('No typography captured.');
       return '<div class="type-row"><div class="skel skel-line" style="width:50%"></div><div class="skel" style="height:34px;margin-top:10px;width:70%"></div></div>';
     }
     return rows.map(function (r) {
@@ -391,6 +399,7 @@
 
   function paletteHtml() {
     if (!colors.length) {
+      if (!extracting) return emptyCard('No palette captured.');
       var sk = '';
       for (var i = 0; i < 7; i++) sk += '<div class="swatch"><div class="skel" style="height:92px"></div><div class="swatch-body"><div class="skel skel-line" style="width:70%"></div></div></div>';
       return '<div class="palette">' + sk + '</div>';
@@ -408,6 +417,7 @@
   function voiceHtml() {
     var v = brand.voice || {};
     if (!arr(v.adjectives).length && !v.tone) {
+      if (!extracting) return emptyCard('No voice notes captured.');
       return '<div class="card"><div class="skel skel-line" style="width:40%"></div><div class="skel skel-line" style="width:85%"></div><div class="skel skel-line" style="width:75%"></div></div>';
     }
     var chips = arr(v.adjectives).map(function (a) {
@@ -427,6 +437,7 @@
     var im = brand.imagery || {};
     var lay = brand.layout || {};
     if (!im.style && !arr(lay.postureRules).length) {
+      if (!extracting) return emptyCard('No imagery or layout notes captured.');
       return '<div class="card"><div class="skel skel-line" style="width:90%"></div><div class="skel skel-line" style="width:70%"></div></div>';
     }
     var posture = arr(lay.postureRules).length ? '<div class="posture"><div class="type-label">Layout posture</div><ul>' +
@@ -463,7 +474,7 @@
         '</div>';
     }
     var themes = arr(sys.themes).length ? arr(sys.themes).join(' · ') : 'default · dark · compact';
-    var openLink = sys.indexHref ? '<a class="btn" href="' + esc(sys.indexHref) + '" target="_top">Open full system ↗</a>' : '';
+    var openLink = sys.indexHref ? '<a class="btn" href="' + esc(sys.indexHref) + '" target="_blank" rel="noreferrer noopener">Open full system ↗</a>' : '';
     return '<section class="sec"><div class="ds-head"><div>' +
         '<h2 class="sec-title">Design system</h2>' +
         '<p class="ds-sub">Deterministic light / dark / compact tokens and a component kit derived from this one brand seed.</p>' +
@@ -503,18 +514,13 @@
       }).join('') + '</div></section>';
   }
 
-  var systemHref = (data.system && data.system.indexHref) || null;
-  var brandMdHref = (data.brandMd && data.brandMd.href) || null;
-
   var html = '' +
     '<header class="kit-head"><div>' +
       '<h1 class="kit-title" style="font-family:' + fontStack(typo.display || {}) + '">' + esc(brand.name || (data.host || 'Brand')) + '</h1>' +
       (brand.tagline ? '<p class="kit-tagline">' + esc(brand.tagline) + '</p>' : '') +
-      (brand.sourceUrl ? '<a class="kit-source" href="' + esc(brand.sourceUrl) + '" target="_top">' + esc(brand.sourceUrl) + ' ↗</a>' : '') +
+      (brand.sourceUrl ? '<a class="kit-source" href="' + esc(brand.sourceUrl) + '" target="_blank" rel="noreferrer noopener">' + esc(brand.sourceUrl) + ' ↗</a>' : '') +
     '</div><div class="head-actions">' +
       '<span class="status-pill ' + (extracting ? 'extracting' : 'ready') + '"><span class="dot"></span>' + (extracting ? 'Extracting…' : 'Brand ready') + '</span>' +
-      (brandMdHref ? '<a class="btn" href="' + esc(brandMdHref) + '" target="_top">BRAND.md</a>' : '') +
-      (systemHref ? '<a class="btn" href="' + esc(systemHref) + '" target="_top">Design system ↗</a>' : '') +
     '</div></header>' +
     heroHtml() +
     '<div class="sec grid-top"><section><h2 class="sec-title">Logo</h2>' + logoHtml() + '</section>' +
@@ -530,9 +536,12 @@
 
   // Logo thumbnail switcher.
   var img = document.getElementById('logo-img');
+  var logoStage = document.getElementById('logo-stage');
   Array.prototype.forEach.call(document.querySelectorAll('.logo-thumb'), function (b) {
     b.addEventListener('click', function () {
-      if (img) img.src = b.getAttribute('data-src');
+      var src = b.getAttribute('data-src');
+      if (img) img.src = src;
+      if (logoStage && src) logoStage.setAttribute('data-light-src', src);
       Array.prototype.forEach.call(document.querySelectorAll('.logo-thumb'), function (x) { x.classList.remove('active'); });
       b.classList.add('active');
     });
@@ -586,7 +595,7 @@
   });
 
   // Lightbox: a single enlarged image with optional prev/next + caption.
-  var lightOv = null, lightImg = null, lightCap = null, lightIdx = 0;
+  var lightOv = null, lightImg = null, lightCap = null, lightIdx = 0, lightPrev = null, lightNext = null;
   function buildLight() {
     if (lightOv) return;
     lightOv = mkOverlay('ov-light');
@@ -606,30 +615,41 @@
     close.addEventListener('click', function () { closeOverlay(lightOv); });
     lightOv.appendChild(close);
     if (SAMPLES.length > 1) {
-      var prev = document.createElement('button');
-      prev.className = 'light-nav light-prev';
-      prev.type = 'button';
-      prev.innerHTML = '\u2039';
-      prev.setAttribute('aria-label', 'Previous image');
-      prev.addEventListener('click', function (e) { e.stopPropagation(); showLight(lightIdx - 1); });
-      var next = document.createElement('button');
-      next.className = 'light-nav light-next';
-      next.type = 'button';
-      next.innerHTML = '\u203a';
-      next.setAttribute('aria-label', 'Next image');
-      next.addEventListener('click', function (e) { e.stopPropagation(); showLight(lightIdx + 1); });
-      lightOv.appendChild(prev);
-      lightOv.appendChild(next);
+      lightPrev = document.createElement('button');
+      lightPrev.className = 'light-nav light-prev';
+      lightPrev.type = 'button';
+      lightPrev.innerHTML = '\u2039';
+      lightPrev.setAttribute('aria-label', 'Previous image');
+      lightPrev.addEventListener('click', function (e) { e.stopPropagation(); showLight(lightIdx - 1); });
+      lightNext = document.createElement('button');
+      lightNext.className = 'light-nav light-next';
+      lightNext.type = 'button';
+      lightNext.innerHTML = '\u203a';
+      lightNext.setAttribute('aria-label', 'Next image');
+      lightNext.addEventListener('click', function (e) { e.stopPropagation(); showLight(lightIdx + 1); });
+      lightOv.appendChild(lightPrev);
+      lightOv.appendChild(lightNext);
     }
+  }
+  function setLightContent(src, alt, caption, showNav) {
+    lightImg.src = src;
+    lightImg.alt = alt || '';
+    lightCap.textContent = caption || '';
+    if (lightPrev) lightPrev.style.display = showNav ? 'flex' : 'none';
+    if (lightNext) lightNext.style.display = showNav ? 'flex' : 'none';
   }
   function showLight(idx) {
     if (!SAMPLES.length) return;
     buildLight();
     lightIdx = (idx % SAMPLES.length + SAMPLES.length) % SAMPLES.length;
     var s = SAMPLES[lightIdx];
-    lightImg.src = s.file;
-    lightImg.alt = s.caption || brand.name || '';
-    lightCap.textContent = s.caption || s.kind || '';
+    setLightContent(s.file, s.caption || brand.name || '', s.caption || s.kind || '', SAMPLES.length > 1);
+    openOverlay(lightOv);
+  }
+  function showStandaloneLight(src, caption) {
+    if (!src) return;
+    buildLight();
+    setLightContent(src, caption || brand.name || 'Image', caption || '', false);
     openOverlay(lightOv);
   }
 
@@ -725,6 +745,17 @@
   });
   var viewAllBtn = document.getElementById('gallery-view-all');
   if (viewAllBtn) viewAllBtn.addEventListener('click', openGrid);
+
+  // Wire standalone image placements (hero / logo) into the same lightbox.
+  Array.prototype.forEach.call(document.querySelectorAll('[data-light-src]'), function (el) {
+    var open = function () {
+      showStandaloneLight(el.getAttribute('data-light-src'), el.getAttribute('data-light-caption'));
+    };
+    el.addEventListener('click', open);
+    el.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); }
+    });
+  });
 
   // Wire brand-asset tiles → in-page full preview modal (click + keyboard).
   Array.prototype.forEach.call(document.querySelectorAll('.asset[data-asset-href]'), function (el) {

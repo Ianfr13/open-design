@@ -457,6 +457,7 @@ describe('bootstrap route regressions', () => {
       projectFiles: {} as never,
       projectStore: {} as never,
       designSystems: {
+        buildUserDesignSystemArchive: async () => null,
         createUserDesignSystem: async () => designSystemSummary as never,
         deleteUserDesignSystem: async () => false,
         ensureUserDesignSystemWorkspaceProject: async () => null,

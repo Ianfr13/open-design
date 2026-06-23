@@ -835,6 +835,27 @@ export async function exportProjectAsZip(opts: {
   }
 }
 
+// Design system ZIP export — asks the daemon to bundle the whole brand
+// directory plus a generated SKILLS.md usage guide so the user gets a
+// self-contained, shareable package. Used by the Design Systems detail panel's
+// download button. Returns false on failure so the caller can surface an error.
+export async function downloadDesignSystemArchive(opts: {
+  designSystemId: string;
+  fallbackTitle: string;
+}): Promise<boolean> {
+  const url = `/api/design-systems/${encodeURIComponent(opts.designSystemId)}/archive`;
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error(`archive request failed (${resp.status})`);
+    const blob = await resp.blob();
+    triggerDownload(blob, archiveFilenameFrom(resp, opts.fallbackTitle, ''));
+    return true;
+  } catch (err) {
+    console.warn('[downloadDesignSystemArchive] failed:', err);
+    return false;
+  }
+}
+
 // Exported for unit tests. Pure string transform with no DOM dependency.
 export function archiveRootFromFilePath(filePath: string): string {
   const trimmed = (filePath || '').replace(/^\/+/, '');

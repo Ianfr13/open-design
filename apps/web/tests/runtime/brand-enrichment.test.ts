@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildBrandEnrichmentPrompt,
   installedBrandEnrichmentSkillIds,
+  isProgrammaticBrandExtractionProject,
 } from '../../src/runtime/brand-enrichment';
 
 describe('brand enrichment runtime helpers', () => {
@@ -30,5 +31,18 @@ describe('brand enrichment runtime helpers', () => {
     expect(prompt).toContain('Existing source URL: https://example.com');
     expect(prompt).toContain('AI Optimize quality bar:');
     expect(prompt).toContain('DESIGN.md, README.md, SKILL.md');
+  });
+
+  it('recognizes reopened programmatic brand extraction projects from persisted metadata', () => {
+    expect(isProgrammaticBrandExtractionProject({
+      kind: 'prototype',
+      importedFrom: 'brand-extraction',
+      brandId: 'brand_baidu',
+    })).toBe(true);
+    expect(isProgrammaticBrandExtractionProject({
+      kind: 'prototype',
+      brandDesignSystemId: 'user:brand_baidu',
+    })).toBe(true);
+    expect(isProgrammaticBrandExtractionProject({ kind: 'prototype' })).toBe(false);
   });
 });
