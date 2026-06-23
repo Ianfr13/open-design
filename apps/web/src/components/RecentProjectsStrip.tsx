@@ -200,7 +200,10 @@ export function RecentProjectsStrip({
           <Icon name="chevron-right" size={12} />
         </button>
       </header>
-      <div className="recent-projects__row" role="list">
+      <div
+        className={`recent-projects__row${menuOpenId ? ' recent-projects__row--menu-open' : ''}`}
+        role="list"
+      >
         {recent.map((project) => {
           const cover = projectCover(project, coverByProject[project.id] ?? null);
           const designSystemProject = isDesignSystemProject(project);
@@ -213,7 +216,7 @@ export function RecentProjectsStrip({
             <div
               key={project.id}
               role="listitem"
-              className={`recent-projects__card${designSystemProject ? ' is-design-system-project' : ''}`}
+              className={`recent-projects__card${designSystemProject ? ' is-design-system-project' : ''}${menuOpenId === project.id ? ' is-menu-open' : ''}`}
               data-project-id={project.id}
             >
               <button

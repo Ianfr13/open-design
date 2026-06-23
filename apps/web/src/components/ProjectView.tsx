@@ -196,6 +196,7 @@ import {
   selectAutoOpenProducedHtml,
 } from './auto-open-file';
 import { buildRepoImportPrompt, designSystemNeedsRepoConnect } from './design-system-github-evidence';
+import { isDesignSystemProject, resolveProjectDesignSystemId } from './design-system-project';
 import { collectReferencedJsxNames } from '../runtime/jsx-module-refs';
 import { FileWorkspace } from './FileWorkspace';
 import {
@@ -868,6 +869,8 @@ export function ProjectView({
   const analytics = useAnalytics();
   const iframeKeepAlivePool = useIframeKeepAlivePool();
   const handleThemeChange = onThemeChange ?? (() => {});
+  const projectDesignSystemId = resolveProjectDesignSystemId(project);
+  const projectIsDesignSystemProject = isDesignSystemProject(project);
   // P0 page_view page_name=chat_panel — fire once per project mount.
   // ProjectView outlives conversation switches (ChatPane is keyed by
   // activeConversationId so it remounts when the user switches chats,
@@ -1889,7 +1892,7 @@ export function ProjectView({
               entry: fileName,
               title,
               sourceSkillId: project.skillId ?? undefined,
-              designSystemId: project.designSystemId,
+              designSystemId: projectDesignSystemId,
               metadata,
             })
           : inferLegacyManifest({
@@ -1898,7 +1901,7 @@ export function ProjectView({
               metadata: {
                 ...metadata,
                 sourceSkillId: project.skillId ?? undefined,
-                designSystemId: project.designSystemId,
+                designSystemId: projectDesignSystemId,
               },
             });
       const file = await writeProjectTextFile(project.id, fileName, artifactToPersist.html, {
@@ -1936,7 +1939,7 @@ export function ProjectView({
         );
       }
     },
-    [project.id, project.designSystemId, project.skillId, requestOpenFile],
+    [project.id, projectDesignSystemId, project.skillId, requestOpenFile],
   );
 
   const artifactFromStandaloneHtml = useCallback(
@@ -2058,8 +2061,8 @@ export function ProjectView({
       ? (skills.find((s) => s.id === project.skillId) ??
         designTemplates.find((s) => s.id === project.skillId))
       : null;
-    const designSystem = project.designSystemId
-      ? designSystems.find((d) => d.id === project.designSystemId)
+    const designSystem = projectDesignSystemId
+      ? designSystems.find((d) => d.id === projectDesignSystemId)
       : null;
     return JSON.stringify({
       designSystem: designSystem
@@ -2082,7 +2085,7 @@ export function ProjectView({
           }
         : null,
     });
-  }, [designSystems, designTemplates, project.designSystemId, project.skillId, skills]);
+  }, [designSystems, designTemplates, projectDesignSystemId, project.skillId, skills]);
   const previousPromptContextSignatureRef = useRef(activePromptContextSignature);
   useEffect(() => {
     if (previousPromptContextSignatureRef.current === activePromptContextSignature) return;
@@ -2176,17 +2179,17 @@ export function ProjectView({
         }
       }
     }
-    if (project.designSystemId) {
-      const summary = designSystems.find((d) => d.id === project.designSystemId);
+    if (projectDesignSystemId) {
+      const summary = designSystems.find((d) => d.id === projectDesignSystemId);
       designSystemTitle = summary?.title;
-      const cached = designCache.current.get(project.designSystemId);
+      const cached = designCache.current.get(projectDesignSystemId);
       if (cached !== undefined) {
         designSystemBody = cached;
       } else {
-        const detail = await fetchDesignSystem(project.designSystemId);
+        const detail = await fetchDesignSystem(projectDesignSystemId);
         if (detail) {
           designSystemBody = detail.body;
-          designCache.current.set(project.designSystemId, detail.body);
+          designCache.current.set(projectDesignSystemId, detail.body);
         }
       }
     }
