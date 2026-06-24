@@ -224,25 +224,11 @@ jobs:
       - name: Setup workspace
         uses: ./.github/actions/setup-workspace
 
-      - name: Setup Playwright
-        uses: ./.github/actions/setup-playwright
-        with:
-          package-json-path: e2e/package.json
-          install-command: pnpm -C e2e exec playwright install --with-deps chromium
+      - name: Prebuild web sidecar declarations
+        run: pnpm --filter @open-design/web build:sidecar
 
-      - name: Prebuild workspace type declarations
-        run: |
-          pnpm --filter @open-design/daemon build
-          pnpm --filter @open-design/desktop build
-          pnpm --filter @open-design/web build:sidecar
-
-      - name: Clean Playwright state
-        run: pnpm -C e2e exec tsx scripts/playwright.ts clean
-
-      - name: Run UI shell smoke
-        env:
-          OD_PLAYWRIGHT_WORKERS: "3"
-        run: pnpm -C e2e exec tsx scripts/playwright.ts run-ui-group smoke
+      - name: Web workspace tests
+        run: pnpm --filter @open-design/web test
 
   nix_validation:
     name: Validate Nix flake
