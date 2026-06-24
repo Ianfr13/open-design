@@ -244,6 +244,10 @@ type ProjectChatSendMeta = ChatSendMeta & {
    *  this send (e.g. 'resume_continue' from the resumable-failure Continue
    *  action). Behavior never depends on it; it only shapes PostHog props. */
   entryFrom?: ChatAnalyticsEntryFrom;
+  /** Marks this send as the AI-optimize (deep enrichment) run so the daemon
+   *  can emit design_system_enrich_result + flag the DS as ai_refined on
+   *  success (tracking spec C14/C15). Analytics-only. */
+  dsEnrichment?: boolean;
 };
 
 export function mergeSavedPreviewComment(current: PreviewComment[], saved: PreviewComment): PreviewComment[] {
@@ -4359,6 +4363,7 @@ export function ProjectView({
           ...(sessionTurn
             ? { turnIndex: sessionTurn.turnIndex, isFirstRun: sessionTurn.isFirstRun }
             : {}),
+          ...(meta?.dsEnrichment ? { dsEnrichment: true } : {}),
           hasExistingArtifact,
           // This branch only runs in daemon (local-execution) mode, so the
           // runtime is the bundled AMR cloud agent or a local coding CLI —
@@ -6141,7 +6146,7 @@ export function ProjectView({
       }),
       [],
       [],
-      skillIds.length > 0 ? { skillIds } : undefined,
+      { ...(skillIds.length > 0 ? { skillIds } : {}), dsEnrichment: true },
     ).finally(() => setBrandEnrichmentStarting(false));
   }, [
     activeDesignSystemSummary,
