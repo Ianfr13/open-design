@@ -39,6 +39,7 @@ type GitHubEvent = {
   };
   inputs?: {
     ci_mode?: string;
+    runner_poc?: boolean | string;
   };
 };
 
@@ -71,8 +72,13 @@ function createScopePlan(): ScopePlan {
 
   const eventName = requiredEnv("GITHUB_EVENT_NAME");
   const ciMode = resolveCiMode(eventName);
+  const runnerPoc = isRunnerPoc(eventName);
 
-  if (eventName === "pull_request") {
+  if (runnerPoc) {
+    // The persistent runner POC is a workflow-routing probe. Keep normal CI
+    // scopes empty so the workflow only runs the dedicated POC job plus the
+    // static/aggregate control jobs.
+  } else if (eventName === "pull_request") {
     for (const file of changedPullRequestFiles()) {
       applyChangedFile(file, outputs);
       if (allScopeOutputsTrue(outputs)) break;
@@ -105,7 +111,7 @@ function createScopePlan(): ScopePlan {
 
   return {
     ...outputs,
-    ...createRunPlan(outputs, ciMode),
+    ...createRunPlan(outputs, ciMode, runnerPoc),
     ui_p0_matrix: JSON.stringify(uiP0CiMatrix),
     visual_matrix: JSON.stringify(visualCiMatrix),
   };
@@ -125,7 +131,24 @@ function resolveCiMode(eventName: string): CiMode {
 function createRunPlan(
   outputs: ScopeOutputs,
   ciMode: CiMode,
+  runnerPoc = false,
 ): Omit<ScopePlan, keyof ScopeOutputs | "ui_p0_matrix" | "visual_matrix"> {
+  if (runnerPoc) {
+    return {
+      ci_mode: ciMode,
+      run_docker_build: false,
+      run_e2e_vitest: false,
+      run_nix_validation: false,
+      run_playwright_critical: false,
+      run_playwright_visual: false,
+      run_preflight: false,
+      run_ui_p0: false,
+      run_web_workspace_tests: false,
+      run_windows_tools_pack_payload_tests: false,
+      run_workspace_unit_tests: false,
+    };
+  }
+
   const isFull = ciMode === "full";
 
   return {
@@ -141,6 +164,12 @@ function createRunPlan(
     run_windows_tools_pack_payload_tests: isFull || outputs.tools_pack_tests_required,
     run_workspace_unit_tests: true,
   };
+}
+
+function isRunnerPoc(eventName: string): boolean {
+  if (eventName !== "workflow_dispatch") return false;
+  const event = JSON.parse(readFileSync(requiredEnv("GITHUB_EVENT_PATH"), "utf8")) as GitHubEvent;
+  return event.inputs?.runner_poc === true || event.inputs?.runner_poc === "true";
 }
 
 function changedPullRequestFiles(): string[] {
