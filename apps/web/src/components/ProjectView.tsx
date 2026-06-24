@@ -196,7 +196,11 @@ import {
   selectAutoOpenProducedHtml,
 } from './auto-open-file';
 import { buildRepoImportPrompt, designSystemNeedsRepoConnect } from './design-system-github-evidence';
-import { isDesignSystemProject, resolveProjectDesignSystemId } from './design-system-project';
+import {
+  designSystemExtractionSource,
+  isDesignSystemProject,
+  resolveProjectDesignSystemId,
+} from './design-system-project';
 import { collectReferencedJsxNames } from '../runtime/jsx-module-refs';
 import { FileWorkspace } from './FileWorkspace';
 import {

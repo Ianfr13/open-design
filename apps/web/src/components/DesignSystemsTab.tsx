@@ -23,6 +23,8 @@ import {
   deleteDesignSystemDraft,
   fetchDesignSystem,
   fetchDesignSystemShowcase,
+  fetchProjectFileText,
+  projectRawUrl,
   updateDesignSystemDraft,
 } from '../providers/registry';
 import { downloadDesignSystemArchive, downloadProjectArchive } from '../runtime/exports';
@@ -720,9 +722,14 @@ export function DesignSystemsTab({
         system={system}
         active={system.id === previewId}
         isDefault={system.id === selectedId}
-        categoryLabel={
+        subtitle={
+          // User systems: prefer the scenario (summary), then the source link
+          // (host, truncated by CSS), then the generic placeholder. Presets keep
+          // their localized category, which already reads as their scenario.
           isUserSystem(system)
-            ? t('brandDetail.designSystem')
+            ? (system.summary?.trim()
+              || designSystemLogoHost(system)
+              || t('brandDetail.designSystem'))
             : localizeDesignSystemCategory(locale, system.category || 'Uncategorized')
         }
         statusLabel={(system.status ?? 'draft') === 'published' ? t('dsManager.statusPublished') : t('dsManager.statusDraft')}
@@ -783,7 +790,7 @@ interface SystemRowProps {
   system: DesignSystemSummary;
   active: boolean;
   isDefault: boolean;
-  categoryLabel: string;
+  subtitle: string;
   statusLabel: string;
   onSelect: () => void;
 }
@@ -813,24 +820,67 @@ function SystemRowPaletteLogo({ system }: { system: DesignSystemSummary }) {
   );
 }
 
-// Row thumbnail. For the user's own systems, prefer their actual logo (served
-// from the backing project via /api/brands/:id/logo) so a system with a logo
-// shows it instead of the palette stripe. Otherwise prefer a real site favicon
-// (captured source URL, reference brand, or curated official-preset domain).
-// Fall back to the palette stripe when neither resolves.
+// Resolve a system's own logo from its backing project's brand.json
+// (`logo.primary`), exactly mirroring how the detail kit loads it via
+// `useDesignKit`. The list row can't use `/api/brands/:id/logo` because the row
+// only knows the *design-system* id, which differs from the brand id the brands
+// route expects. Returns `undefined` while the fetch is in flight, `null` when
+// the project has no logo, or the raw URL string.
+function useProjectLogoSrc(projectId: string | undefined): string | null | undefined {
+  const [src, setSrc] = useState<string | null | undefined>(projectId ? undefined : null);
+  useEffect(() => {
+    if (!projectId) {
+      setSrc(null);
+      return;
+    }
+    let cancelled = false;
+    setSrc(undefined);
+    void fetchProjectFileText(projectId, 'brand.json', { cache: 'no-store' }).then((raw) => {
+      if (cancelled) return;
+      let primary: string | null = null;
+      if (raw) {
+        try {
+          const data = JSON.parse(raw) as { logo?: { primary?: unknown } };
+          const candidate = data?.logo?.primary;
+          if (typeof candidate === 'string' && candidate.trim()) primary = candidate.trim();
+        } catch {
+          // Not a valid brand.json (e.g. a non-brand "Create"d system) — no logo.
+        }
+      }
+      setSrc(primary ? projectRawUrl(projectId, primary) : null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId]);
+  return src;
+}
+
+// Row thumbnail. Prefer the system's real logo (resolved from the backing
+// project's brand.json), then a site favicon (captured source URL, reference
+// brand, or curated official-preset domain), falling back to the palette stripe
+// when neither resolves. The palette also holds the slot while a user system's
+// logo is still loading, so the thumbnail never flashes a broken image first.
 function SystemRowLogo({ system }: { system: DesignSystemSummary }) {
   const host = designSystemLogoHost(system);
-  const hasOwnLogo = isUserSystem(system) || Boolean(system.projectId);
-  type Stage = 'brand' | 'favicon' | 'palette';
-  const firstStage: Stage = hasOwnLogo ? 'brand' : host ? 'favicon' : 'palette';
-  const [stage, setStage] = useState<Stage>(firstStage);
-  useEffect(() => setStage(firstStage), [firstStage, system.id]);
+  const projectLogo = useProjectLogoSrc(isUserSystem(system) ? system.projectId : undefined);
 
-  if (stage === 'palette') return <SystemRowPaletteLogo system={system} />;
-  const src =
-    stage === 'brand'
-      ? `/api/brands/${encodeURIComponent(system.id)}/logo`
-      : `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=64`;
+  // Candidate srcs in priority order, skipping empties; `onError` advances to
+  // the next, and exhausting them collapses to the palette stripe.
+  const candidates = useMemo(() => {
+    const list: string[] = [];
+    if (typeof projectLogo === 'string') list.push(projectLogo);
+    if (host) list.push(`https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=64`);
+    return list;
+  }, [projectLogo, host]);
+
+  const [failedCount, setFailedCount] = useState(0);
+  useEffect(() => setFailedCount(0), [candidates]);
+
+  const resolving = projectLogo === undefined;
+  const src = !resolving && failedCount < candidates.length ? candidates[failedCount] : null;
+
+  if (!src) return <SystemRowPaletteLogo system={system} />;
   return (
     <img
       className={styles.itemLogo}
@@ -838,14 +888,12 @@ function SystemRowLogo({ system }: { system: DesignSystemSummary }) {
       alt=""
       loading="lazy"
       referrerPolicy="no-referrer"
-      onError={() =>
-        setStage((s) => (s === 'brand' ? (host ? 'favicon' : 'palette') : 'palette'))
-      }
+      onError={() => setFailedCount((n) => n + 1)}
     />
   );
 }
 
-function SystemRow({ system, active, isDefault, categoryLabel, statusLabel, onSelect }: SystemRowProps) {
+function SystemRow({ system, active, isDefault, subtitle, statusLabel, onSelect }: SystemRowProps) {
   const { t } = useI18n();
   const status = system.status ?? 'draft';
   const isUser = isUserSystem(system);

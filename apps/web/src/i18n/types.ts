@@ -2053,6 +2053,9 @@ export interface Dict {
   'ds.copyDesignMd': string;
   'ds.editDesignMd': string;
   'ds.openDesignMd': string;
+  'ds.copyDesignMdModule': string;
+  'ds.editDesignMdModule': string;
+  'ds.openDesignMdModule': string;
   'ds.uploadMd': string;
   'ds.uploadFont': string;
   'ds.refresh': string;

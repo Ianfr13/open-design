@@ -68,9 +68,11 @@ describe('DesignKitView iframe sandboxing', () => {
     );
 
     expect(screen.getAllByTitle('复制 DESIGN.md').length).toBeGreaterThan(0);
-    expect(screen.getByTitle('上传字体')).toBeTruthy();
+    expect(screen.getByTitle('添加字体文件')).toBeTruthy();
+    expect(screen.getByTitle('复制字体排版段落')).toBeTruthy();
     expect(screen.getByTitle('刷新')).toBeTruthy();
-    expect(screen.queryByText('Upload font')).toBeNull();
+    expect(screen.queryByText('Add font file')).toBeNull();
+    expect(screen.queryByText('Copy Typography section')).toBeNull();
     expect(screen.queryByText('Copy DESIGN.md')).toBeNull();
   });
 

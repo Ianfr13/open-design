@@ -68,7 +68,7 @@ import { listDesignArtifactCandidates } from './design-files/designArtifacts';
 import type { PluginFolderAgentAction } from './design-files/pluginFolderActions';
 import { Icon, type IconName } from './Icon';
 import { BrandEnrichmentBanner } from './BrandEnrichmentBanner';
-import { DesignSystemCreateCta } from './DesignSystemCreateCta';
+import { DesignSystemExtractionPanel } from './DesignSystemExtractionPanel';
 import { repoConnectCopy } from './design-system-github-evidence';
 import { isRenderableSketchJson, SketchPreview } from './SketchPreview';
 import type { SettingsSection } from './SettingsDialog';
@@ -574,9 +574,18 @@ interface Props {
   // Creates a fresh design project that inherits this design system. The parent
   // only supplies this for design-system-level projects (a project that *is* a
   // design system), not for regular design projects that merely use one as
-  // context — so its presence alone gates the empty-state CTA. Surfaces the same
-  // canonical create-from-design-system flow as the right-hand panel button.
+  // context. Surfaces the same canonical create-from-design-system flow as the
+  // right-hand panel button, here as a featured "next step".
   onCreateDesignFromActiveSystem?: () => void;
+  // When set, the empty chat state of a design-system project renders the
+  // synthesized extraction conversation + "next steps" panel instead of the
+  // generic "Start a conversation" starters. Only the parent (which knows the
+  // project is a design system) supplies it, so its presence gates the panel.
+  designSystemIntro?: {
+    sourceLabel: string;
+    systemTitle: string;
+    extracting: boolean;
+  } | null;
   // Bumped by the parent to push a draft into the composer (used by the
   // "Import repo" CTA). The nonce lets the same text fire more than once.
   composerDraftSignal?: { text: string; nonce: number };
@@ -745,6 +754,7 @@ export function ChatPane({
   brandEnrichmentEligible,
   onContinueBrandEnrichment,
   onCreateDesignFromActiveSystem,
+  designSystemIntro,
   composerDraftSignal,
   petConfig,
   onAdoptPet,
@@ -2049,6 +2059,23 @@ export function ChatPane({
                       onOpenFile={onRequestOpenFile}
                       t={t}
                     />
+                  ) : designSystemIntro ? (
+                    <DesignSystemExtractionPanel
+                      sourceLabel={designSystemIntro.sourceLabel}
+                      systemTitle={designSystemIntro.systemTitle}
+                      extracting={designSystemIntro.extracting}
+                      onAiOptimize={
+                        brandEnrichmentEligible
+                          ? () => onContinueBrandEnrichment?.()
+                          : undefined
+                      }
+                      aiOptimizeBusy={Boolean(
+                        streaming || sendDisabled || loading || !activeConversationId,
+                      )}
+                      onCreateDesign={onCreateDesignFromActiveSystem}
+                      onPromptAction={handleNextStepPromptAction}
+                      t={t}
+                    />
                   ) : (
                     <>
                       <div className="chat-empty">
@@ -2061,9 +2088,6 @@ export function ChatPane({
                           busy={Boolean(streaming || sendDisabled || loading || !activeConversationId)}
                           onContinue={() => onContinueBrandEnrichment?.()}
                         />
-                      ) : null}
-                      {onCreateDesignFromActiveSystem ? (
-                        <DesignSystemCreateCta onCreate={onCreateDesignFromActiveSystem} />
                       ) : null}
                       <div className="chat-examples" role="list">
                         {pickStarters(projectMetadata, t).map((ex, i) => (

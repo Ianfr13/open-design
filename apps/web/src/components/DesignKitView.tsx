@@ -750,13 +750,14 @@ function DesignKitViewInner({
   function designMdModuleActionButtons(module: DesignMdModuleSpec) {
     if (!designMd) return null;
     const slice = designMdModuleSlice(designMd.body, module);
+    const moduleVars = { module: module.label };
     return (
       <>
-        {moduleActionButton(`Copy ${module.label}`, 'copy', () => void copyDesignMdModule(module), !slice.text.trim())}
+        {moduleActionButton(t('ds.copyDesignMdModule', moduleVars), 'copy', () => void copyDesignMdModule(module), !slice.text.trim())}
         {canEditDesignMd
-          ? moduleActionButton(`Edit ${module.label}`, 'edit', () => openDesignMdModuleEditor(module), Boolean(designMd.saving))
+          ? moduleActionButton(t('ds.editDesignMdModule', moduleVars), 'edit', () => openDesignMdModuleEditor(module), Boolean(designMd.saving))
           : designMd.onOpenFile
-            ? moduleActionButton(`Open ${module.label}`, 'file-text', designMd.onOpenFile)
+            ? moduleActionButton(t('ds.openDesignMdModule', moduleVars), 'file-text', designMd.onOpenFile)
             : null}
       </>
     );
