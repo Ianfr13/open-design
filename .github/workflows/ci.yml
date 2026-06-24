@@ -926,11 +926,17 @@ jobs:
             #   2. each commit subject's trailing `(#N)` — the queue's per-entry squash commit
             #      carries its own PR number, so this recovers the NON-tip PRs of a batched group.
             #   3. commits/<sha>/pulls — covers a non-squash queue where commits map back directly.
+            # Sources 2/3 depend on the compare API. Capture it in a REQUIRED assignment (no
+            # `|| true`) so an API failure trips set -e and blocks — otherwise an empty result would
+            # silently fall back to the ref tip and merge a batched needs-validation PR unchecked.
+            # Only grep no-match (an empty set within a SUCCESSFUL response) is tolerated.
+            compare_json="$(gh api "repos/$REPO/compare/$BASE_SHA...$HEAD_SHA")"
             ref_prs="$(printf '%s\n' "$MERGE_GROUP_REF" | grep -oE 'pr-[0-9]+' | grep -oE '[0-9]+' || true)"
-            msg_prs="$(gh api "repos/$REPO/compare/$BASE_SHA...$HEAD_SHA" --jq '.commits[].commit.message | split("\n")[0]' 2>/dev/null | grep -oE '\(#[0-9]+\)' | grep -oE '[0-9]+' || true)"
+            msg_prs="$(printf '%s' "$compare_json" | jq -r '.commits[].commit.message | split("\n")[0]' | grep -oE '\(#[0-9]+\)' | grep -oE '[0-9]+' || true)"
             assoc_prs=""
-            for s in $(gh api "repos/$REPO/compare/$BASE_SHA...$HEAD_SHA" --jq '.commits[].sha' 2>/dev/null || true); do
-              assoc_prs="$(printf '%s\n%s\n' "$assoc_prs" "$(gh api "repos/$REPO/commits/$s/pulls" --jq '.[].number' 2>/dev/null || true)")"
+            for s in $(printf '%s' "$compare_json" | jq -r '.commits[].sha'); do
+              pulls="$(gh api "repos/$REPO/commits/$s/pulls" --jq '.[].number')"   # required; failure blocks
+              assoc_prs="$(printf '%s\n%s\n' "$assoc_prs" "$pulls")"
             done
             prs="$(printf '%s\n%s\n%s\n' "$ref_prs" "$msg_prs" "$assoc_prs" | grep -E '^[0-9]+$' | sort -u || true)"
             if [ -z "$prs" ]; then
