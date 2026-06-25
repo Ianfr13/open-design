@@ -92,6 +92,12 @@ function fetchDeadline(signal?: AbortSignal | null): AbortSignal {
   return signal ? AbortSignal.any([signal, timeout]) : timeout;
 }
 
+function throwIfPrefetchAborted(signal?: AbortSignal | null): void {
+  if (!signal?.aborted) return;
+  if (typeof signal.throwIfAborted === "function") signal.throwIfAborted();
+  throw signal.reason instanceof Error ? signal.reason : new DOMException("Aborted", "AbortError");
+}
+
 async function fetchText(
   url: string,
   cap: number,
@@ -716,12 +722,15 @@ export async function prefetchBrand(
 ): Promise<PrefetchResult | null> {
   const onProgress = opts.onProgress ?? (() => {});
   const { signal } = opts;
+  throwIfPrefetchAborted(signal);
   onProgress("fetch", url);
   let page = await fetchText(url, HTML_CAP, { allowHttpError: true, signal });
+  throwIfPrefetchAborted(signal);
   // A non-2xx body is only useful when it's a bot-wall challenge page (it
   // routes into blocked mode below). A site's own 404/500 page is not the
   // brand — treat that as a failed fetch.
   if (page && !page.ok && !isChallengePage(page.text)) page = null;
+  throwIfPrefetchAborted(signal);
   let html: string;
   let baseUrl: string;
   let renderedDom: string | null = null; // set once Chrome has rendered the page
@@ -731,6 +740,7 @@ export async function prefetchBrand(
   } else {
     // Plain fetch blocked or answered with a bot challenge → headless-Chrome
     // fallback (real browser fingerprint).
+    throwIfPrefetchAborted(signal);
     onProgress(
       "chrome",
       page
@@ -738,6 +748,7 @@ export async function prefetchBrand(
         : "plain fetch blocked — rendering with headless Chrome",
     );
     renderedDom = await chromeDumpDom(url);
+    throwIfPrefetchAborted(signal);
     if (renderedDom) {
       html = renderedDom.slice(0, HTML_CAP);
       baseUrl = page?.finalUrl ?? url;
@@ -785,6 +796,7 @@ async function harvestFromHtml(
   const onProgress: PrefetchProgress = opts.onProgress ?? (() => {});
   const allowChrome = opts.allowChrome ?? true;
   let renderedDom = opts.renderedDom ?? null;
+  throwIfPrefetchAborted(signal);
   // Chrome can render a challenge page too (interactive Turnstile etc.) —
   // re-check the HTML we actually ended up with.
   const blocked = isChallengePage(html);
@@ -839,8 +851,10 @@ async function harvestFromHtml(
     // at runtime. Render once with headless Chrome — the dumped DOM carries the
     // injected <style> tags and inline styles — and re-extract.
     if (colors.filter((c) => !c.extreme).length < 3 && !renderedDom && allowChrome && findChrome()) {
+      throwIfPrefetchAborted(signal);
       onProgress("chrome", "thin static CSS — re-harvesting from the rendered DOM");
       renderedDom = await chromeDumpDom(baseUrl);
+      throwIfPrefetchAborted(signal);
       if (renderedDom) {
         const domCss: string[] = [];
         for (const m of renderedDom.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/gi)) domCss.push(m[1]);
@@ -930,9 +944,11 @@ async function harvestFromHtml(
   fs.mkdirSync(prefetchDir, { recursive: true });
   let screenshot: string | null = null;
   if (logos.length === 0 && !blocked && allowChrome && findChrome()) {
+    throwIfPrefetchAborted(signal);
     onProgress("chrome", "no logo downloadable — capturing a page screenshot");
     const shotPath = path.join(prefetchDir, "screenshot.png");
     if (await chromeScreenshot(baseUrl, shotPath)) screenshot = "prefetch/screenshot.png";
+    throwIfPrefetchAborted(signal);
   }
   onProgress("logos-done", `${logos.length} candidates${screenshot ? " + page screenshot" : ""}`);
 

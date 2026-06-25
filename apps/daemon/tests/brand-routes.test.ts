@@ -374,6 +374,36 @@ describe('brand routes', () => {
     expect(storedMeta.status).toBe('extracting');
   });
 
+  it('continues deterministic extraction through the HTTP route', async () => {
+    const prefetch = vi.fn(async (): Promise<PrefetchResult | null> => null);
+    const server = await startBrandServer({
+      prefetch,
+      logoFallback: NO_LOGO_FALLBACK,
+      imageryFallback: NO_IMAGERY_FALLBACK,
+    });
+    try {
+      const started = await server.requestJson('/api/brands', {
+        method: 'POST',
+        body: { url: 'https://example.com' },
+      });
+
+      const continued = await server.requestJson(`/api/brands/${started.body.id}/continue-extraction`, {
+        method: 'POST',
+        body: {},
+      });
+
+      expect(continued.status).toBe(200);
+      expect(continued.body).toMatchObject({
+        id: started.body.id,
+        projectId: started.body.projectId,
+        status: 'extracting',
+      });
+      expect(continued.body.conversationId).toEqual(expect.any(String));
+    } finally {
+      await server.close();
+    }
+  });
+
   it('aborts an active programmatic pass before extracting from browser HTML', async () => {
     let prefetchStarted!: () => void;
     const prefetchStartedPromise = new Promise<void>((resolve) => {

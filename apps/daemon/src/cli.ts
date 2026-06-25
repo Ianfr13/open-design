@@ -5090,6 +5090,7 @@ async function runBrand(args) {
     case 'list':     return runBrandList(rest);
     case 'create':   return runBrandCreate(rest);
     case 'extract':  return runBrandCreate(rest);
+    case 'continue': return runBrandContinue(rest);
     case 'preview':  return runBrandPreview(rest);
     case 'finalize': return runBrandFinalize(rest);
     case 'extract-from-html': return runBrandExtractFromHtml(rest);
@@ -5236,6 +5237,48 @@ async function runBrandFinalize(rest) {
   const name = data?.brand?.name ?? data?.id ?? id;
   console.log(`${data?.id ?? id}\t${name}`);
   if (data?.designSystemId) process.stderr.write(`[brand] registered design system ${data.designSystemId}\n`);
+}
+
+async function runBrandContinue(rest) {
+  let flags;
+  try {
+    flags = parseFlags(rest, { string: BRAND_STRING_FLAGS, boolean: BRAND_BOOLEAN_FLAGS });
+  } catch (err) {
+    console.error(err.message);
+    process.exit(2);
+  }
+  const id = positionalArgs(rest, BRAND_STRING_FLAGS)[0];
+  if (!id) {
+    console.error('Usage: od brand continue <id> [--json]');
+    process.exit(2);
+  }
+  const base = await cliDaemonBaseUrl(flags);
+  let resp;
+  try {
+    resp = await fetch(`${base}/api/brands/${encodeURIComponent(id)}/continue-extraction`, {
+      method: 'POST',
+      headers: { accept: 'application/json' },
+    });
+  } catch (err) {
+    surfaceFetchError(err, base);
+    process.exit(3);
+  }
+  if (resp.status === 404) {
+    console.error(`brand not found: ${id}`);
+    process.exit(4);
+  }
+  if (!resp.ok) return structuredHttpFailure(resp);
+  const data = await resp.json();
+  if (flags.json) {
+    process.stdout.write(JSON.stringify({ ok: true, ...data }, null, 2) + '\n');
+    return;
+  }
+  console.log([
+    data?.id ?? id,
+    data?.status ?? '-',
+    data?.projectId ?? '',
+    data?.conversationId ?? '',
+  ].join('\t'));
 }
 
 // Read a flag value as file content (or stdin when the value is "-"). Returns
