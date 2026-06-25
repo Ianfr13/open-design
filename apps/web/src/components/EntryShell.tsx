@@ -1490,6 +1490,12 @@ function OnboardingView({
     return fields.map(([label, value]) => `- ${label}: ${value}`).join('\n');
   }
 
+  function hasOnboardingProfileChoices(snapshot: OnboardingProfileState): boolean {
+    return Boolean(
+      snapshot.role || snapshot.orgSize || snapshot.useCase.length > 0 || snapshot.source,
+    );
+  }
+
   async function persistOnboardingProfileToMemory(): Promise<void> {
     const body = buildOnboardingProfileBody(profileRef.current);
     if (!body || body === lastPersistedOnboardingProfileBodyRef.current) return;
@@ -2466,29 +2472,31 @@ function OnboardingView({
                   }}
                 />
               </div>
-              <div className="onboarding-view__memory-callout">
-                <span className="onboarding-view__memory-callout-icon" aria-hidden>
-                  <Icon name="sparkles" size={16} />
-                </span>
-                <div className="onboarding-view__memory-callout-body">
-                  <strong>{t('settings.onboardingMemoryCalloutTitle')}</strong>
-                  <p>{t('settings.onboardingMemoryCalloutBody')}</p>
-                  <ul className="onboarding-view__memory-benefits">
-                    <li>
-                      <Icon name="check" size={13} aria-hidden />
-                      <span>{t('settings.onboardingMemoryBenefitIntent')}</span>
-                    </li>
-                    <li>
-                      <Icon name="check" size={13} aria-hidden />
-                      <span>{t('settings.onboardingMemoryBenefitFewerQuestions')}</span>
-                    </li>
-                    <li>
-                      <Icon name="check" size={13} aria-hidden />
-                      <span>{t('settings.onboardingMemoryBenefitPersonalized')}</span>
-                    </li>
-                  </ul>
+              {hasOnboardingProfileChoices(profile) ? (
+                <div className="onboarding-view__memory-callout">
+                  <span className="onboarding-view__memory-callout-icon" aria-hidden>
+                    <Icon name="sparkles" size={16} />
+                  </span>
+                  <div className="onboarding-view__memory-callout-body">
+                    <strong>{t('settings.onboardingMemoryCalloutTitle')}</strong>
+                    <p>{t('settings.onboardingMemoryCalloutBody')}</p>
+                    <ul className="onboarding-view__memory-benefits">
+                      <li>
+                        <Icon name="check" size={13} aria-hidden />
+                        <span>{t('settings.onboardingMemoryBenefitIntent')}</span>
+                      </li>
+                      <li>
+                        <Icon name="check" size={13} aria-hidden />
+                        <span>{t('settings.onboardingMemoryBenefitFewerQuestions')}</span>
+                      </li>
+                      <li>
+                        <Icon name="check" size={13} aria-hidden />
+                        <span>{t('settings.onboardingMemoryBenefitPersonalized')}</span>
+                      </li>
+                    </ul>
+                  </div>
                 </div>
-              </div>
+              ) : null}
             </div>
           ) : null}
 

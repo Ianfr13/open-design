@@ -6329,12 +6329,6 @@ export function ProjectView({
     // with no in-memory message to attach the runId to.
     if (!messagesInitialized) return;
     if (streaming) return;
-    if (projectIsProgrammaticBrandExtraction) {
-      clearAutoSendSession(project.id);
-      autoSendAttachmentsRef.current = [];
-      autoSentRef.current = true;
-      return;
-    }
     if (messages.length > 0) return;
     let flag: string | null = null;
     try {
@@ -6355,8 +6349,12 @@ export function ProjectView({
     ).trim();
     const attachments = autoSendAttachmentsRef.current ?? [];
     if (!seed && attachments.length === 0) {
+      return;
+    }
+    if (projectIsProgrammaticBrandExtraction) {
       autoSentRef.current = true;
       clearAutoSendSession(project.id);
+      autoSendAttachmentsRef.current = [];
       return;
     }
     autoSentRef.current = true;
