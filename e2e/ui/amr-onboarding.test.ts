@@ -54,10 +54,9 @@ test('[P0] @critical onboarding lets AMR Cloud sign in and complete setup after 
     .poll(() => page.evaluate(() => window.__amrOnboardingStatusCalls ?? 0))
     .toBeGreaterThan(statusCallsBeforeLogin);
   // Login success lands on the About-you step; advance past newsletter to the
-  // final brand step that hosts Finish setup.
+  // final design-system step.
   await expect(page.getByRole('heading', { name: /About you/i })).toBeVisible({ timeout: T.long });
   await advanceFromAboutYouToBrand(page);
-  await expect(page.getByRole('button', { name: /Finish setup/i })).toBeVisible({ timeout: 10_000 });
   await expectOnboardingFinished(page);
   await pollStoredConfig(page).toMatchObject({
     agentId: 'amr',
@@ -205,7 +204,7 @@ test('[P0] onboarding recovers from a transient AMR status failure and still con
   // Recovery lands on About you; step through newsletter to the final brand step.
   await expect(page.getByRole('button', { name: /^Continue$/i })).toBeVisible({ timeout: 12_000 });
   await advanceFromAboutYouToBrand(page);
-  await expect(page.getByRole('button', { name: /Finish setup/i })).toBeVisible({ timeout: 12_000 });
+  await expectFinalDesignSystemStep(page);
 });
 
 test('[P0] onboarding signed-in AMR status failure stays gated instead of bypassing Connect', async ({ page }) => {
@@ -358,9 +357,7 @@ test('[P0] @critical onboarding signed-in AMR path finishes setup with the AMR r
 
   await expect(page.getByText(/Optional details for better defaults/i)).toBeVisible();
   await advanceFromAboutYouToBrand(page);
-  await page.getByRole('button', { name: /Finish setup/i }).click();
-
-  await expect(page).not.toHaveURL(/\/onboarding$/);
+  await expectOnboardingFinished(page);
   await pollStoredConfig(page).toMatchObject({
     agentId: 'amr',
     onboardingCompleted: true,
@@ -381,7 +378,6 @@ test('[P0] onboarding AMR runtime selection carries into the first Home run requ
 
   await clickCloudPrimary(page);
   await advanceFromAboutYouToBrand(page);
-  await page.getByRole('button', { name: /Finish setup/i }).click();
   await expectOnboardingFinished(page);
 
   let runBody: Record<string, unknown> | null = null;
@@ -521,7 +517,6 @@ test('[P0] onboarding about-you step accepts profile selections and completes se
 
   // About you is no longer the final step; advance through newsletter before finishing.
   await advanceFromAboutYouToBrand(page);
-  await page.getByRole('button', { name: /Finish setup/i }).click();
 
   await expectOnboardingFinished(page);
   await pollStoredConfig(page).toMatchObject({
@@ -546,8 +541,7 @@ test('[P0] onboarding newsletter email is optional and blank email can finish se
 
   await expect(page.getByPlaceholder('you@studio.com')).toHaveValue('');
   await page.getByRole('button', { name: /^Continue$/i }).click();
-  await expect(page.getByRole('heading', { name: /Extract your design system/i })).toBeVisible();
-  await page.getByRole('button', { name: /Finish setup/i }).click();
+  await expectFinalDesignSystemStep(page);
 
   await expectOnboardingFinished(page);
   await expect.poll(() => newsletterCalls).toBe(0);
@@ -573,8 +567,7 @@ test('[P0] onboarding newsletter malformed email does not block finishing setup'
 
   await page.getByPlaceholder('you@studio.com').fill('not-an-email');
   await page.getByRole('button', { name: /^Continue$/i }).click();
-  await expect(page.getByRole('heading', { name: /Extract your design system/i })).toBeVisible();
-  await page.getByRole('button', { name: /Finish setup/i }).click();
+  await expectFinalDesignSystemStep(page);
 
   await expectOnboardingFinished(page);
   await expect.poll(() => newsletterCalls).toBe(0);
@@ -634,7 +627,6 @@ test('[P0] @critical onboarding BYOK path can fetch models, test the provider, a
   await expect(page.getByText(/Optional details for better defaults/i)).toBeVisible();
   // Advance from About you through newsletter to the brand step, then finish.
   await advanceFromAboutYouToBrand(page);
-  await page.getByRole('button', { name: /Finish setup/i }).click();
 
   await expectOnboardingFinished(page);
   await pollStoredConfig(page).toMatchObject({
@@ -1056,12 +1048,24 @@ async function seedOnboardingConfig(page: Page, config: OnboardingConfig) {
 
 async function expectOnboardingFinished(page: Page) {
   await dismissPrivacyDialog(page);
-  const finishSetup = page.getByRole('button', { name: /Finish setup/i });
-  if (await finishSetup.isVisible().catch(() => false)) {
-    await finishSetup.click();
+  const goHome = page.getByRole('button', { name: /Go to home/i });
+  if (await goHome.isVisible().catch(() => false)) {
+    await goHome.click();
+  } else {
+    const finishSetup = page.getByRole('button', { name: /Finish setup/i });
+    if (await finishSetup.isVisible().catch(() => false)) {
+      await finishSetup.click();
+    }
   }
   await expect(page).not.toHaveURL(/\/onboarding$/);
-  await expect(page.getByText('What do you want to design?')).toBeVisible();
+  await dismissPrivacyDialog(page);
+  await expect(page.getByRole('heading', { name: /What will you design today/i })).toBeVisible();
+}
+
+async function expectFinalDesignSystemStep(page: Page) {
+  await expect(page.getByRole('heading', { name: /Create once, build everywhere/i })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Go to home/i })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Build a design system/i })).toBeVisible();
 }
 
 async function advanceFromAboutYouToBrand(page: Page) {
@@ -1072,7 +1076,7 @@ async function advanceFromAboutYouToBrand(page: Page) {
   await expect(page.getByRole('heading', { name: /Stay in the loop/i })).toBeVisible();
   await continueButton.scrollIntoViewIfNeeded();
   await continueButton.click();
-  await expect(page.getByRole('heading', { name: /Extract your design system/i })).toBeVisible();
+  await expectFinalDesignSystemStep(page);
 }
 
 // Drive from the signed-in cloud landing through About-you to the Newsletter
