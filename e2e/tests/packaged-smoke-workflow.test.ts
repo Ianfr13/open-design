@@ -522,7 +522,11 @@ describe("packaged smoke workflow", () => {
 
     expect(postMergeWorkflow).toContain("permissions:\n  contents: write");
     expect(postMergeWorkflow).toContain("CLOUDFLARE_R2_REPOSITORY_ASSETS_AK");
-    expect(postMergeWorkflow).toContain("PREVIEW_BAKE_TOKEN");
+    // The write-capable credential the PR path lacks lives here post-merge. The rolling manifest PR
+    // is now authored with the release-bot App (so its push triggers CI and the auto-merge reactor
+    // can act), replacing the never-configured PREVIEW_BAKE_TOKEN fallback.
+    expect(postMergeWorkflow).toContain("secrets.RELEASE_BOT_APP_ID");
+    expect(postMergeWorkflow).not.toContain("PREVIEW_BAKE_TOKEN");
   });
 
   it("[P2] preserves beta linux AppImage smoke reports for platform publication", async () => {
