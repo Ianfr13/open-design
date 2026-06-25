@@ -52,8 +52,8 @@ const stories = [
   },
 ];
 
-const title = ui.metaTitle;
-const description = ui.metaDescription;
+const title = `${ui.eyebrow} — ${ui.heading}`;
+const description = `${ui.sub} ${vp.foot}`;
 const fallbackSite = 'https://open-design.ai/';
 const ogImage = new URL('/stories/ikigai-one-cover.webp', Astro.site ?? fallbackSite).toString();
 
@@ -62,8 +62,8 @@ const ogImage = new URL('/stories/ikigai-one-cover.webp', Astro.site ?? fallback
 const collectionJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'CollectionPage',
-  name: ui.metaTitle,
-  description: ui.metaDescription,
+  name: title,
+  description,
   url: new URL(Astro.url.pathname, Astro.site ?? fallbackSite).toString(),
   inLanguage: localeDef.htmlLang,
   hasPart: stories.map((s) => ({
