@@ -176,6 +176,8 @@ vi.mock('../../src/components/ChatPane', () => ({
     }) => Promise<{ ok: boolean; action?: 'opened' | 'confirmed'; message?: string } | void>;
     onContinueBrandExtraction?: () => void;
     continueBrandExtractionBusy?: boolean;
+    onContinueBrandAgentExtraction?: () => void;
+    continueBrandAgentExtractionBusy?: boolean;
   }) => {
     chatPaneSpy(props);
     return (

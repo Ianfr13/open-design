@@ -126,23 +126,42 @@ describe('NextStepActions', () => {
 
   it('offers continue extraction and agent fallback for incomplete brand extraction', () => {
     const onContinueExtraction = vi.fn();
-    const onAiOptimize = vi.fn();
+    const onContinueAiExtraction = vi.fn();
     renderActions({
-      variant: 'brand-extraction-incomplete',
+      variant: 'brand-programmatic-incomplete',
       onContinueExtraction,
-      onAiOptimize,
+      onContinueAiExtraction,
       onCreateDesign: undefined,
     });
 
     expect(screen.getByText('Continue extraction')).toBeTruthy();
+    expect(screen.getByText('Continue with agent')).toBeTruthy();
     expect(screen.queryByText(en['nextStep.brandCreateDesignTitle'])).toBeNull();
+    expect(screen.queryByText(en['nextStep.brandAiOptimizeTitle'])).toBeNull();
 
     fireEvent.click(screen.getByTestId('next-step-brand-action-brand-continue-extraction'));
     expect(onContinueExtraction).toHaveBeenCalledTimes(1);
-    fireEvent.click(screen.getByTestId('next-step-toolbox-more'));
+    fireEvent.click(screen.getByTestId('next-step-brand-action-brand-continue-ai-extraction'));
+    expect(onContinueAiExtraction).toHaveBeenCalledTimes(1);
+  });
+
+  it('offers only agent continuation for incomplete AI brand extraction', () => {
+    const onContinueAiExtraction = vi.fn();
+    renderActions({
+      variant: 'brand-ai-incomplete',
+      onContinueExtraction: vi.fn(),
+      onContinueAiExtraction,
+      onAiOptimize: vi.fn(),
+      onCreateDesign: vi.fn(),
+    });
+
     expect(screen.getByText('Continue with agent')).toBeTruthy();
-    fireEvent.click(screen.getByTestId('next-step-brand-action-brand-ai-optimize'));
-    expect(onAiOptimize).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText('Continue extraction')).toBeNull();
+    expect(screen.queryByText(en['nextStep.brandAiOptimizeTitle'])).toBeNull();
+    expect(screen.queryByText(en['nextStep.brandCreateDesignTitle'])).toBeNull();
+
+    fireEvent.click(screen.getByTestId('next-step-brand-action-brand-continue-ai-extraction'));
+    expect(onContinueAiExtraction).toHaveBeenCalledTimes(1);
   });
 
   it('offers ordinary project recovery prompts for incomplete turns without artifacts', () => {

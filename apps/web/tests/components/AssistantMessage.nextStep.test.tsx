@@ -154,6 +154,7 @@ describe('AssistantMessage next-step affordance', () => {
   it('renders incomplete brand extraction next steps after cancellation without an artifact', () => {
     const h = handlers();
     const onContinueExtraction = vi.fn();
+    const onContinueAiExtraction = vi.fn();
     render(
       <AssistantMessage
         message={baseMessage({
@@ -165,18 +166,19 @@ describe('AssistantMessage next-step affordance', () => {
         projectId="proj-brand"
         isLast
         nextStepVariant="brand-extraction"
-        onNextStepAiOptimize={vi.fn()}
         onNextStepContinueExtraction={onContinueExtraction}
+        onNextStepContinueAiExtraction={onContinueAiExtraction}
         {...h}
       />,
     );
 
     expect(screen.getByTestId('next-step-actions')).toBeTruthy();
     expect(screen.getByText('Continue extraction')).toBeTruthy();
-    fireEvent.click(screen.getByTestId('next-step-toolbox-more'));
     expect(screen.getByText('Continue with agent')).toBeTruthy();
     fireEvent.click(screen.getByTestId('next-step-brand-action-brand-continue-extraction'));
     expect(onContinueExtraction).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByTestId('next-step-brand-action-brand-continue-ai-extraction'));
+    expect(onContinueAiExtraction).toHaveBeenCalledTimes(1);
   });
 
   it('does not render when the handlers are not wired', () => {

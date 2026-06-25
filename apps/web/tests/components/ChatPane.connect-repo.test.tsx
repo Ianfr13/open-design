@@ -210,7 +210,7 @@ describe('ChatPane connect-repo CTA', () => {
         brandId: 'brand-1',
       },
       onContinueBrandExtraction: vi.fn(),
-      onContinueBrandEnrichment: vi.fn(),
+      onContinueBrandAgentExtraction: vi.fn(),
       messages: [
         {
           id: 'assist-card',
@@ -226,8 +226,36 @@ describe('ChatPane connect-repo CTA', () => {
     expect(screen.getByText('artifact.odCardBrandAssistBody')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'artifact.odCardBrandAssistConfirm' })).toBeTruthy();
     expect(screen.getByTestId('next-step-brand-action-brand-continue-extraction')).toBeTruthy();
-    expect(screen.getByTestId('next-step-brand-action-brand-ai-optimize').textContent)
+    expect(screen.getByTestId('next-step-brand-action-brand-continue-ai-extraction').textContent)
       .toContain('Continue with agent');
+    expect(screen.queryByText('Refine extracted design system')).toBeNull();
+    expect(screen.queryByText('Create with this design system')).toBeNull();
+  });
+
+  it('renders only agent continuation after an incomplete AI brand extraction turn', () => {
+    renderPane({
+      projectMetadata: {
+        kind: 'brand',
+        importedFrom: 'brand-extraction',
+        brandId: 'brand-1',
+      },
+      onContinueBrandExtraction: vi.fn(),
+      onContinueBrandAgentExtraction: vi.fn(),
+      messages: [
+        {
+          id: 'agent-failed',
+          role: 'assistant',
+          agentName: 'AMR',
+          runStatus: 'failed',
+          content: 'Task failed\n\nAgent could not finish extracting the brand.',
+          createdAt: 1,
+          endedAt: 2,
+        },
+      ],
+    });
+
+    expect(screen.getByTestId('next-step-brand-action-brand-continue-ai-extraction')).toBeTruthy();
+    expect(screen.queryByTestId('next-step-brand-action-brand-continue-extraction')).toBeNull();
     expect(screen.queryByText('Refine extracted design system')).toBeNull();
     expect(screen.queryByText('Create with this design system')).toBeNull();
   });

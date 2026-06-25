@@ -325,6 +325,8 @@ interface Props {
   nextStepAiOptimizeBusy?: boolean;
   onNextStepContinueExtraction?: () => void;
   nextStepContinueExtractionBusy?: boolean;
+  onNextStepContinueAiExtraction?: () => void;
+  nextStepContinueAiExtractionBusy?: boolean;
   onNextStepCreateDesign?: () => void;
   nextStepCreateDesignBusy?: boolean;
   onPickSkill?: (skillId: string) => void;
@@ -436,6 +438,8 @@ function AssistantMessageImpl({
   nextStepAiOptimizeBusy,
   onNextStepContinueExtraction,
   nextStepContinueExtractionBusy,
+  onNextStepContinueAiExtraction,
+  nextStepContinueAiExtractionBusy,
   onNextStepCreateDesign,
   nextStepCreateDesignBusy,
   onPickSkill,
@@ -579,7 +583,9 @@ function AssistantMessageImpl({
     (e) => e.kind === "status" && e.label === "empty_response"
   );
   const isBrandBrowserAssistMessage =
-    (nextStepVariant === 'brand-extraction' || nextStepVariant === 'brand-extraction-incomplete') &&
+    (nextStepVariant === 'brand-extraction' ||
+      nextStepVariant === 'brand-extraction-incomplete' ||
+      nextStepVariant === 'brand-programmatic-incomplete') &&
     message.content.includes('<od-card type="brand-browser-assist"');
   const unfinishedTodos = streaming ? [] : unfinishedTodosFromEvents(events);
   const runSucceeded =
@@ -628,15 +634,18 @@ function AssistantMessageImpl({
     canShowOpenDesignSubmission && (!!isLast || shareToOpenDesignBusy);
   const effectiveNextStepVariant: NextStepActionsVariant =
     nextStepVariant === 'brand-extraction' && (!runSucceeded || !nextStepArtifactName)
-      ? 'brand-extraction-incomplete'
+      ? 'brand-programmatic-incomplete'
       : nextStepVariant === 'default' && (!runSucceeded || !nextStepArtifactName)
         ? 'project-incomplete'
         : nextStepVariant;
   const hasNextStepPrimary =
     effectiveNextStepVariant === 'brand-extraction'
       ? !!onNextStepAiOptimize || !!onNextStepCreateDesign || !!onNextStepContinueExtraction
-      : effectiveNextStepVariant === 'brand-extraction-incomplete'
-        ? !!onNextStepContinueExtraction || !!onNextStepAiOptimize
+      : effectiveNextStepVariant === 'brand-extraction-incomplete' ||
+          effectiveNextStepVariant === 'brand-programmatic-incomplete'
+        ? !!onNextStepContinueExtraction || !!onNextStepContinueAiExtraction
+        : effectiveNextStepVariant === 'brand-ai-incomplete'
+          ? !!onNextStepContinueAiExtraction
         : effectiveNextStepVariant === 'design-system'
           ? !!onNextStepPromptAction
           : effectiveNextStepVariant === 'project-incomplete'
@@ -867,6 +876,8 @@ function AssistantMessageImpl({
             aiOptimizeBusy={Boolean(isLast && nextStepAiOptimizeBusy)}
             onContinueExtraction={isLast ? onNextStepContinueExtraction : undefined}
             continueExtractionBusy={Boolean(isLast && nextStepContinueExtractionBusy)}
+            onContinueAiExtraction={isLast ? onNextStepContinueAiExtraction : undefined}
+            continueAiExtractionBusy={Boolean(isLast && nextStepContinueAiExtractionBusy)}
             onCreateDesign={isLast ? onNextStepCreateDesign : undefined}
             createDesignBusy={Boolean(isLast && nextStepCreateDesignBusy)}
             onPickSkill={isLast ? onPickSkill : undefined}

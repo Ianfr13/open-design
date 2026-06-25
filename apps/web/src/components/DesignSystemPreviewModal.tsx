@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useAnalytics } from '../analytics/provider';
 import {
@@ -7,7 +7,13 @@ import {
   trackDesignSystemsTemplatesModalSurfaceView,
 } from '../analytics/events';
 import { useT } from '../i18n';
-import type { DesignSystemSummary } from '../types';
+import {
+  fetchDesignSystem,
+  fetchDesignSystemPreview,
+  fetchDesignSystemShowcase,
+} from '../providers/registry';
+import type { DesignSystemDetail, DesignSystemSummary } from '../types';
+import { DesignSpecView } from './DesignSpecView';
 import { DesignSystemKitPreview } from './DesignSystemKitPreview';
 import { PreviewModal } from './PreviewModal';
 
@@ -16,9 +22,13 @@ interface Props {
   onClose: () => void;
 }
 
-// Full DS preview: reuse the same brand-kit-style module stack that powers the
-// Design Systems detail pane, so picker expansion and the manager page stay in
-// visual parity.
+function isDesignSystemDetail(system: DesignSystemSummary): system is DesignSystemDetail {
+  return typeof (system as { body?: unknown }).body === 'string';
+}
+
+// Full DS preview: keep the brand-kit-style module stack as the default view,
+// while retaining the lazy showcase/tokens tabs and DESIGN.md side panel from
+// the richer modal flow.
 export function DesignSystemPreviewModal({ system, onClose }: Props) {
   const t = useT();
   const analytics = useAnalytics();
@@ -33,7 +43,76 @@ export function DesignSystemPreviewModal({ system, onClose }: Props) {
       templates_type: system.source ?? 'library',
     });
   }, [analytics.track, system.id, system.source]);
-  const detail = (
+
+  const [showcaseHtml, setShowcaseHtml] = useState<string | null | undefined>(undefined);
+  const [tokensHtml, setTokensHtml] = useState<string | null | undefined>(undefined);
+  const [specBody, setSpecBody] = useState<string | null | undefined>(undefined);
+  const [detail, setDetail] = useState<DesignSystemDetail | null | undefined>(
+    () => (isDesignSystemDetail(system) ? system : undefined),
+  );
+  const detailBody = detail?.body ?? (isDesignSystemDetail(system) ? system.body : undefined);
+
+  useEffect(() => {
+    let cancelled = false;
+    setDetail(isDesignSystemDetail(system) ? system : undefined);
+    void fetchDesignSystem(system.id).then((next) => {
+      if (cancelled) return;
+      if (next) setDetail(next);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [system]);
+
+  const initialViewIdRef = useRef<string | null>(null);
+  const handleView = useCallback(
+    (viewId: string) => {
+      if (initialViewIdRef.current === null) {
+        initialViewIdRef.current = viewId;
+      } else if (initialViewIdRef.current !== viewId) {
+        initialViewIdRef.current = viewId;
+        if (viewId === 'showcase' || viewId === 'tokens') {
+          trackDesignSystemsTemplatesModalClick(analytics.track, {
+            page_name: 'design_systems',
+            area: 'templates_modal',
+            element: viewId,
+            templates_id: system.id,
+            templates_type: system.source ?? 'library',
+          });
+        }
+      }
+      if (viewId === 'showcase' && showcaseHtml === undefined) {
+        setShowcaseHtml(null);
+        void fetchDesignSystemShowcase(system.id).then((html) => setShowcaseHtml(html));
+      }
+      if (viewId === 'tokens' && tokensHtml === undefined) {
+        setTokensHtml(null);
+        void fetchDesignSystemPreview(system.id).then((html) => setTokensHtml(html));
+      }
+    },
+    [analytics.track, system.id, system.source, showcaseHtml, tokensHtml],
+  );
+
+  const handleSidebarToggle = useCallback(
+    (open: boolean) => {
+      if (!open || specBody !== undefined) return;
+      if (detailBody !== undefined) {
+        setSpecBody(detailBody);
+        return;
+      }
+      setSpecBody(null);
+      void fetchDesignSystem(system.id).then((detail) => setSpecBody(detail?.body ?? null));
+    },
+    [detailBody, system.id, specBody],
+  );
+
+  useEffect(() => {
+    setShowcaseHtml(undefined);
+    setTokensHtml(undefined);
+    setSpecBody(undefined);
+  }, [system.id]);
+
+  const modal = (
     <PreviewModal
       title={system.title}
       subtitle={system.summary || system.category}
@@ -51,9 +130,12 @@ export function DesignSystemPreviewModal({ system, onClose }: Props) {
             />
           ),
         },
+        { id: 'showcase', label: t('ds.showcase'), html: showcaseHtml },
+        { id: 'tokens', label: t('ds.tokens'), html: tokensHtml },
       ]}
       initialViewId="kit"
-      exportTitleFor={() => system.title}
+      onView={handleView}
+      exportTitleFor={(viewId) => (viewId === 'kit' ? system.title : `${system.title} - ${viewId}`)}
       onClose={onClose}
       onFullscreenClick={() =>
         trackDesignSystemsTemplatesModalClick(analytics.track, {
@@ -73,6 +155,15 @@ export function DesignSystemPreviewModal({ system, onClose }: Props) {
           templates_type: system.source ?? 'library',
         })
       }
+      onSidebarToggleClick={() =>
+        trackDesignSystemsTemplatesModalClick(analytics.track, {
+          page_name: 'design_systems',
+          area: 'templates_modal',
+          element: 'design_md',
+          templates_id: system.id,
+          templates_type: system.source ?? 'library',
+        })
+      }
       onSharePopoverItemClick={(item) =>
         trackDesignSystemsTemplatesModalSharePopoverClick(analytics.track, {
           page_name: 'design_systems',
@@ -82,9 +173,21 @@ export function DesignSystemPreviewModal({ system, onClose }: Props) {
           templates_type: system.source ?? 'library',
         })
       }
+      sidebar={{
+        label: t('ds.specToggle'),
+        defaultOpen: true,
+        onToggle: handleSidebarToggle,
+        contentKey: system.id,
+        content: (
+          <DesignSpecView
+            source={specBody}
+            loadingLabel={t('ds.specLoading')}
+          />
+        ),
+      }}
     />
   );
 
-  if (typeof document === 'undefined') return detail;
-  return createPortal(detail, document.body);
+  if (typeof document === 'undefined') return modal;
+  return createPortal(modal, document.body);
 }

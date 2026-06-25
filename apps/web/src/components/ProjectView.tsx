@@ -202,6 +202,7 @@ import { DesignSystemPicker } from './DesignSystemPicker';
 import { PluginDetailsModal } from './PluginDetailsModal';
 import { DesignSystemPreviewModal } from './DesignSystemPreviewModal';
 import { ChatPane } from './ChatPane';
+import { SessionModeToggle } from './SessionModeToggle';
 import type { QuestionFormOpenRequest } from './AssistantMessage';
 import type { ChatSendMeta } from './ChatComposer';
 import {
@@ -465,6 +466,44 @@ function brandExtractionPreviewFileName(projectFiles: readonly ProjectFile[]): s
     projectFiles.find((file) => file.name.endsWith('/brand.html'))?.name ??
     'brand.html'
   );
+}
+
+function buildBrandAgentExtractionContinuationPrompt(input: {
+  promptSeed?: string | null;
+  metadata?: ProjectMetadata | null;
+  projectFiles: readonly ProjectFile[];
+}): string {
+  const trimmed = input.promptSeed?.trim() ?? '';
+  const brandId = input.metadata?.brandId?.trim() || '(current brand id)';
+  const sourceUrl = input.metadata?.brandSourceUrl?.trim() || 'the source website';
+  const base = /DESIGN SYSTEM EXTRACTION|ready design system is NOT guaranteed/i.test(trimmed)
+    ? trimmed
+    : [
+        `Continue the AI design-system extraction for ${sourceUrl}.`,
+        `Brand id: ${brandId}`,
+        '',
+        'The programmatic pass has not produced a ready design system yet. Continue from the current brand.html scaffold and saved project files; do not assume the design system is ready, and do not create a duplicate design-system id.',
+        '',
+        'Inspect brand.html, brand.json, DESIGN.md, BRAND.md, context/, logos/, imagery/, fonts/, and system assets. Measure the source website when reachable. If the live page is an anti-bot verification interstitial, ask the user to clear it in the Browser tab before continuing.',
+        '',
+        `Write valid partial brand.json updates progressively, run od brand preview ${brandId} after meaningful field groups, then run od brand finalize ${brandId} when the kit is complete. Fix validation errors and keep updating the same registered design system in place.`,
+      ].join('\n');
+  const visibleFiles = input.projectFiles
+    .filter((file) => file.name.trim())
+    .slice(0, 80)
+    .map((file) => `  - ${file.name}${file.size > 0 ? ` (${Math.round(file.size / 1024)}KB)` : ''}`);
+  if (visibleFiles.length === 0 || base.includes('Current brand extraction continuation context:')) {
+    return base;
+  }
+  return [
+    base,
+    '',
+    'Current brand extraction continuation context:',
+    `- Source URL: ${sourceUrl}`,
+    `- Brand id: ${brandId}`,
+    '- Files visible in the project right now:',
+    ...visibleFiles,
+  ].join('\n');
 }
 
 function chatAttachmentsFromPreviewCommentImages(
@@ -6349,6 +6388,7 @@ export function ProjectView({
     () => brandEnrichmentPromptSeed,
   );
   const [brandEnrichmentStarting, setBrandEnrichmentStarting] = useState(false);
+  const [brandAgentExtractionStarting, setBrandAgentExtractionStarting] = useState(false);
   const [brandProgrammaticContinueStarting, setBrandProgrammaticContinueStarting] = useState(false);
   const [brandCreateDesignStarting, setBrandCreateDesignStarting] = useState(false);
   useEffect(() => {
@@ -6457,6 +6497,28 @@ export function ProjectView({
     requestOpenFile,
     scheduleConversationMessageRefresh,
     t,
+  ]);
+
+  const handleBrandAgentExtraction = useCallback(() => {
+    if (brandAgentExtractionStarting) return;
+    const brandId = currentProject.metadata?.brandId?.trim();
+    if (brandId) setBrandExtractionStatusOverride({ brandId, status: 'extracting' });
+    const prompt = buildBrandAgentExtractionContinuationPrompt({
+      promptSeed: brandEnrichmentPromptSeed || brandEnrichmentPromptSeedCache,
+      metadata: currentProject.metadata,
+      projectFiles,
+    });
+    setBrandAgentExtractionStarting(true);
+    requestOpenFile(brandExtractionPreviewFileName(projectFiles));
+    void handleSend(prompt, [], []).finally(() => setBrandAgentExtractionStarting(false));
+  }, [
+    brandAgentExtractionStarting,
+    brandEnrichmentPromptSeed,
+    brandEnrichmentPromptSeedCache,
+    currentProject.metadata,
+    handleSend,
+    projectFiles,
+    requestOpenFile,
   ]);
 
   // Run the deeper "AI Optimize" enrichment pass on a programmatically-extracted
@@ -6615,6 +6677,9 @@ export function ProjectView({
     const record = plugins.find((plugin) => plugin.id === normalizedId);
     if (record) setContextPluginDetails(record);
   }, []);
+  const handleOpenContextDesignSystemDetails = useCallback((system: DesignSystemSummary) => {
+    setContextDesignSystemDetails(system);
+  }, []);
   const chatDesignSystemSummary = useMemo(() => {
     if (activeDesignSystemSummary) return activeDesignSystemSummary;
     const designSystemName = activePluginSnapshot?.inputs?.designSystem;
@@ -6738,54 +6803,61 @@ export function ProjectView({
   // CLI / agent selector lives below the chat conversation (composer footer),
   // not in the top-right header.
   const executionControls = (
-    <AvatarMenu
-      config={config}
-      agents={agents}
-      daemonLive={daemonLive}
-      onModeChange={onModeChange}
-      onOpen={() => {
-        trackComposerBarClick(analytics.track, {
-          page_name: 'chat_panel',
-          area: 'chat_composer',
-          element: 'agent_selector_open',
-          ...(project?.id ? { project_id: project.id } : {}),
-        });
-      }}
-      onAgentChange={(id) => {
-        trackComposerBarClick(analytics.track, {
-          page_name: 'chat_panel',
-          area: 'chat_composer',
-          element: 'agent_select',
-          agent_id: id,
-          ...(project?.id ? { project_id: project.id } : {}),
-        });
-        onAgentChange(id);
-      }}
-      onAgentModelChange={(agentId, choice) => {
-        trackComposerBarClick(analytics.track, {
-          page_name: 'chat_panel',
-          area: 'chat_composer',
-          element: 'agent_model_select',
-          agent_id: agentId,
-          ...(choice?.model ? { model_id: choice.model } : {}),
-          ...(project?.id ? { project_id: project.id } : {}),
-        });
-        onAgentModelChange(agentId, choice);
-      }}
-      onApiModelChange={(model) => {
-        trackComposerBarClick(analytics.track, {
-          page_name: 'chat_panel',
-          area: 'chat_composer',
-          element: 'agent_model_select',
-          model_id: model,
-          ...(project?.id ? { project_id: project.id } : {}),
-        });
-        onApiModelChange?.(model);
-      }}
-      onOpenSettings={onOpenSettings}
-      onRefreshAgents={onRefreshAgents}
-      placement="up"
-    />
+    <>
+      <SessionModeToggle
+        mode={activeSessionMode}
+        onChange={handleActiveConversationSessionModeChange}
+        disabled={currentConversationControlStreaming}
+      />
+      <AvatarMenu
+        config={config}
+        agents={agents}
+        daemonLive={daemonLive}
+        onModeChange={onModeChange}
+        onOpen={() => {
+          trackComposerBarClick(analytics.track, {
+            page_name: 'chat_panel',
+            area: 'chat_composer',
+            element: 'agent_selector_open',
+            ...(project?.id ? { project_id: project.id } : {}),
+          });
+        }}
+        onAgentChange={(id) => {
+          trackComposerBarClick(analytics.track, {
+            page_name: 'chat_panel',
+            area: 'chat_composer',
+            element: 'agent_select',
+            agent_id: id,
+            ...(project?.id ? { project_id: project.id } : {}),
+          });
+          onAgentChange(id);
+        }}
+        onAgentModelChange={(agentId, choice) => {
+          trackComposerBarClick(analytics.track, {
+            page_name: 'chat_panel',
+            area: 'chat_composer',
+            element: 'agent_model_select',
+            agent_id: agentId,
+            ...(choice?.model ? { model_id: choice.model } : {}),
+            ...(project?.id ? { project_id: project.id } : {}),
+          });
+          onAgentModelChange(agentId, choice);
+        }}
+        onApiModelChange={(model) => {
+          trackComposerBarClick(analytics.track, {
+            page_name: 'chat_panel',
+            area: 'chat_composer',
+            element: 'agent_model_select',
+            model_id: model,
+            ...(project?.id ? { project_id: project.id } : {}),
+          });
+          onApiModelChange?.(model);
+        }}
+        onOpenSettings={onOpenSettings}
+        onRefreshAgents={onRefreshAgents}
+        placement="up"
+      />
+    </>
   );
 
   return (
@@ -6851,7 +6923,7 @@ export function ProjectView({
               onSendQueuedNow={sendQueuedChatSendNow}
               onRequestOpenFile={requestOpenFile}
               onRequestPluginDetails={handleOpenContextPluginDetails}
-              onRequestDesignSystemDetails={setContextDesignSystemDetails}
+              onRequestDesignSystemDetails={handleOpenContextDesignSystemDetails}
               onRequestPluginFolderAgentAction={handlePluginFolderAgentAction}
               activePluginActionPaths={activePluginActionPaths}
               hiddenPluginActionPaths={hiddenAssistantPluginActionPaths}
@@ -6901,6 +6973,8 @@ export function ProjectView({
               brandEnrichmentEligible={brandEnrichmentEligibleForProject}
               onContinueBrandEnrichment={handleBrandEnrichment}
               brandEnrichmentBusy={brandEnrichmentStarting}
+              onContinueBrandAgentExtraction={handleBrandAgentExtraction}
+              continueBrandAgentExtractionBusy={brandAgentExtractionStarting}
               onContinueBrandExtraction={handleContinueBrandExtraction}
               continueBrandExtractionBusy={brandProgrammaticContinueStarting}
               onCreateDesignFromActiveDesignSystem={handleCreateDesignFromActiveDesignSystem}

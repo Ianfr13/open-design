@@ -28,7 +28,9 @@ export type NextStepActionsVariant =
   | 'project-incomplete'
   | 'design-system'
   | 'brand-extraction'
-  | 'brand-extraction-incomplete';
+  | 'brand-extraction-incomplete'
+  | 'brand-programmatic-incomplete'
+  | 'brand-ai-incomplete';
 
 export const DESIGN_SYSTEM_NEXT_STEP_ACTIONS = [
   {
@@ -97,17 +99,26 @@ export const BRAND_EXTRACTION_INCOMPLETE_NEXT_STEP_ACTIONS = [
     prompt: BRAND_CONTINUE_EXTRACTION_PROMPT,
   },
   {
-    id: 'brand-ai-optimize',
+    id: 'brand-continue-ai-extraction',
     icon: 'sparkles' as IconName,
     title: 'Continue with agent',
     description: 'Use the selected agent to extract from the saved draft if the programmatic pass still cannot finish.',
-    busyKey: 'brandEnrichment.busy' as keyof Dict,
+  },
+] as const;
+
+export const BRAND_AI_EXTRACTION_INCOMPLETE_NEXT_STEP_ACTIONS = [
+  {
+    id: 'brand-continue-ai-extraction',
+    icon: 'sparkles' as IconName,
+    title: 'Continue with agent',
+    description: 'Resume the selected agent from the current brand scaffold and finish the same design system.',
   },
 ] as const;
 
 const ALL_BRAND_EXTRACTION_NEXT_STEP_ACTIONS = [
   ...BRAND_EXTRACTION_NEXT_STEP_ACTIONS,
   ...BRAND_EXTRACTION_INCOMPLETE_NEXT_STEP_ACTIONS,
+  ...BRAND_AI_EXTRACTION_INCOMPLETE_NEXT_STEP_ACTIONS,
 ] as const;
 
 // Surfaced under More → Design toolbox. The two featured ids already have their
@@ -140,6 +151,9 @@ interface Props {
   // extraction, reusing the same brand/project/design-system.
   onContinueExtraction?: () => void;
   continueExtractionBusy?: boolean;
+  // Resume the selected agent on an incomplete brand extraction scaffold.
+  onContinueAiExtraction?: () => void;
+  continueAiExtractionBusy?: boolean;
   // Create a new design using the active brand/design system.
   onCreateDesign?: () => void;
   createDesignBusy?: boolean;
@@ -224,6 +238,8 @@ export function NextStepActions({
   aiOptimizeBusy = false,
   onContinueExtraction,
   continueExtractionBusy = false,
+  onContinueAiExtraction,
+  continueAiExtractionBusy = false,
   onCreateDesign,
   createDesignBusy = false,
   onPickSkill,
@@ -387,6 +403,13 @@ export function NextStepActions({
     closeAll();
   }, [closeAll, createDesignBusy, onCreateDesign, track]);
 
+  const handleContinueAiExtraction = useCallback(() => {
+    if (continueAiExtractionBusy) return;
+    track('toolbox_action', 'brand-continue-ai-extraction');
+    onContinueAiExtraction?.();
+    closeAll();
+  }, [closeAll, continueAiExtractionBusy, onContinueAiExtraction, track]);
+
   const handleBrandAction = useCallback(
     (action: BrandExtractionAction) => {
       if (action.id === 'brand-continue-extraction') {
@@ -394,6 +417,10 @@ export function NextStepActions({
         track('toolbox_action', action.id);
         onContinueExtraction?.();
         closeAll();
+        return;
+      }
+      if (action.id === 'brand-continue-ai-extraction') {
+        handleContinueAiExtraction();
         return;
       }
       if (action.id === 'brand-ai-optimize') {
@@ -405,6 +432,7 @@ export function NextStepActions({
     [
       closeAll,
       continueExtractionBusy,
+      handleContinueAiExtraction,
       handleAiOptimize,
       handleCreateDesign,
       onContinueExtraction,
@@ -457,14 +485,24 @@ export function NextStepActions({
   const showToolbox = !!onToolboxAction;
   const showProjectIncompleteRows = variant === 'project-incomplete' && !!onPromptAction;
   const showDesignSystemRows = variant === 'design-system' && !!onPromptAction;
-  const brandActions = variant === 'brand-extraction-incomplete'
-    ? BRAND_EXTRACTION_INCOMPLETE_NEXT_STEP_ACTIONS
-    : BRAND_EXTRACTION_NEXT_STEP_ACTIONS;
+  const brandActions =
+    variant === 'brand-ai-incomplete'
+      ? BRAND_AI_EXTRACTION_INCOMPLETE_NEXT_STEP_ACTIONS
+      : variant === 'brand-extraction-incomplete' || variant === 'brand-programmatic-incomplete'
+        ? BRAND_EXTRACTION_INCOMPLETE_NEXT_STEP_ACTIONS
+        : BRAND_EXTRACTION_NEXT_STEP_ACTIONS;
   const showBrandRows =
-    (variant === 'brand-extraction' || variant === 'brand-extraction-incomplete') &&
     (
-      variant === 'brand-extraction-incomplete'
-        ? !!onContinueExtraction || !!onAiOptimize
+      variant === 'brand-extraction' ||
+      variant === 'brand-extraction-incomplete' ||
+      variant === 'brand-programmatic-incomplete' ||
+      variant === 'brand-ai-incomplete'
+    ) &&
+    (
+      variant === 'brand-extraction-incomplete' || variant === 'brand-programmatic-incomplete'
+        ? !!onContinueExtraction || !!onContinueAiExtraction
+        : variant === 'brand-ai-incomplete'
+          ? !!onContinueAiExtraction
         : !!onAiOptimize || !!onCreateDesign
     );
 
@@ -480,10 +518,12 @@ export function NextStepActions({
             ? brandActions.map((action) => {
                 const busy =
                   (action.id === 'brand-continue-extraction' && continueExtractionBusy) ||
+                  (action.id === 'brand-continue-ai-extraction' && continueAiExtractionBusy) ||
                   (action.id === 'brand-ai-optimize' && aiOptimizeBusy) ||
                   (action.id === 'brand-create-design' && createDesignBusy);
                 const unavailable =
                   (action.id === 'brand-continue-extraction' && !onContinueExtraction) ||
+                  (action.id === 'brand-continue-ai-extraction' && !onContinueAiExtraction) ||
                   (action.id === 'brand-ai-optimize' && !onAiOptimize) ||
                   (action.id === 'brand-create-design' && !onCreateDesign);
                 if (unavailable) return null;

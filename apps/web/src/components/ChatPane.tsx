@@ -580,6 +580,10 @@ interface Props {
   // seeded enrichment prompt with the default per-turn skill bundle.
   onContinueBrandEnrichment?: () => void;
   brandEnrichmentBusy?: boolean;
+  // Runs or resumes the selected agent for an incomplete brand extraction
+  // scaffold. Distinct from AI Optimize, which assumes a ready system exists.
+  onContinueBrandAgentExtraction?: () => void;
+  continueBrandAgentExtractionBusy?: boolean;
   // Restarts the deterministic programmatic pass for an incomplete brand
   // extraction without creating a duplicate design-system item.
   onContinueBrandExtraction?: () => void;
@@ -812,6 +816,8 @@ export function ChatPane({
   brandEnrichmentEligible,
   onContinueBrandEnrichment,
   brandEnrichmentBusy,
+  onContinueBrandAgentExtraction,
+  continueBrandAgentExtractionBusy,
   onContinueBrandExtraction,
   continueBrandExtractionBusy,
   onCreateDesignFromActiveDesignSystem,
@@ -952,11 +958,20 @@ export function ChatPane({
   const handlePickSkill = useCallback((skillId: string) => {
     composerRef.current?.applyDesignToolboxSkill(skillId);
   }, []);
+  const latestAssistantForBrandState = useMemo(() => {
+    for (let i = displayMessages.length - 1; i >= 0; i -= 1) {
+      const message = displayMessages[i]!;
+      if (message.role === 'assistant') return message;
+    }
+    return null;
+  }, [displayMessages]);
   const nextStepVariant: NextStepActionsVariant = isDesignSystemNextStepProject(projectMetadata)
     ? isBrandExtractionNextStepProject(projectMetadata)
       ? brandExtractionComplete
         ? 'brand-extraction'
-        : 'brand-extraction-incomplete'
+        : !latestAssistantForBrandState || isProgrammaticBrandAssistantMessage(latestAssistantForBrandState)
+          ? 'brand-programmatic-incomplete'
+          : 'brand-ai-incomplete'
       : 'design-system'
     : 'default';
   // The `@skill` shown in each featured row's hover detail — matched the same
@@ -2235,6 +2250,8 @@ export function ChatPane({
                 nextStepAiOptimizeBusy={brandEnrichmentBusy}
                 onNextStepContinueExtraction={onContinueBrandExtraction}
                 nextStepContinueExtractionBusy={continueBrandExtractionBusy}
+                onNextStepContinueAiExtraction={onContinueBrandAgentExtraction}
+                nextStepContinueAiExtractionBusy={continueBrandAgentExtractionBusy}
                 onNextStepCreateDesign={onCreateDesignFromActiveDesignSystem}
                 nextStepCreateDesignBusy={createDesignFromActiveDesignSystemBusy}
                 onPickSkill={handlePickSkill}
@@ -2631,6 +2648,8 @@ function ChatRows({
   nextStepAiOptimizeBusy,
   onNextStepContinueExtraction,
   nextStepContinueExtractionBusy,
+  onNextStepContinueAiExtraction,
+  nextStepContinueAiExtractionBusy,
   onNextStepCreateDesign,
   nextStepCreateDesignBusy,
   onPickSkill,
@@ -2680,6 +2699,8 @@ function ChatRows({
   nextStepAiOptimizeBusy?: boolean;
   onNextStepContinueExtraction?: () => void;
   nextStepContinueExtractionBusy?: boolean;
+  onNextStepContinueAiExtraction?: () => void;
+  nextStepContinueAiExtractionBusy?: boolean;
   onNextStepCreateDesign?: () => void;
   nextStepCreateDesignBusy?: boolean;
   onPickSkill?: (skillId: string) => void;
@@ -2814,6 +2835,8 @@ function ChatRows({
         nextStepAiOptimizeBusy={nextStepAiOptimizeBusy}
         onNextStepContinueExtraction={onNextStepContinueExtraction}
         nextStepContinueExtractionBusy={nextStepContinueExtractionBusy}
+        onNextStepContinueAiExtraction={onNextStepContinueAiExtraction}
+        nextStepContinueAiExtractionBusy={nextStepContinueAiExtractionBusy}
         onNextStepCreateDesign={onNextStepCreateDesign}
         nextStepCreateDesignBusy={nextStepCreateDesignBusy}
         onPickSkill={onPickSkill}
@@ -4042,6 +4065,16 @@ function isBrandExtractionNextStepProject(metadata: ProjectMetadata | undefined)
     metadata.importedFrom === 'brand-extraction' ||
     Boolean(metadata.brandId) ||
     Boolean(metadata.brandDesignSystemId)
+  );
+}
+
+function isProgrammaticBrandAssistantMessage(message: ChatMessage | null | undefined): boolean {
+  if (!message || message.role !== 'assistant') return false;
+  const content = message.content || '';
+  return (
+    content.includes('<od-card type="brand-browser-assist"') ||
+    /programmatic (design-system )?extraction|automatic pass needs a hand|extraction stopped/i.test(content) ||
+    /程序化.*抽取|程式化.*抽取|抽取已停止/.test(content)
   );
 }
 
