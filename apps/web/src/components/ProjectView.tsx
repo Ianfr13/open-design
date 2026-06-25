@@ -315,6 +315,27 @@ export function mergeServerMessagesIntoConversation(
   return merged;
 }
 
+function ensureConversationPresent(
+  conversations: Conversation[],
+  conversationId: string,
+  projectId: string,
+): Conversation[] {
+  if (conversations.some((conversation) => conversation.id === conversationId)) {
+    return conversations;
+  }
+  const now = Date.now();
+  return [
+    {
+      id: conversationId,
+      projectId,
+      title: null,
+      createdAt: now,
+      updatedAt: now,
+    },
+    ...conversations,
+  ];
+}
+
 interface Props {
   project: Project;
   routeFileName: string | null;
@@ -5697,6 +5718,29 @@ export function ProjectView({
     setMessageLoadRetryNonce((nonce) => nonce + 1);
   }, [activeConversationId, failedMessagesConversationId, project.id, openTabsState.active]);
 
+  const refreshConversationsForProgrammaticBrandRetry = useCallback(
+    async (conversationId: string): Promise<boolean> => {
+      const capturedProjectId = project.id;
+      const myToken = ++conversationsRefreshTokenRef.current;
+      try {
+        const list = await listConversations(capturedProjectId);
+        if (projectIdRef.current !== capturedProjectId) return false;
+        if (conversationsRefreshTokenRef.current !== myToken) return false;
+        setConversations(ensureConversationPresent(list, conversationId, capturedProjectId));
+        return true;
+      } catch (err) {
+        if (projectIdRef.current !== capturedProjectId) return false;
+        if (conversationsRefreshTokenRef.current !== myToken) return false;
+        console.warn('Failed to refresh conversations after brand extraction retry', err);
+        setConversations((curr) =>
+          ensureConversationPresent(curr, conversationId, capturedProjectId),
+        );
+        return true;
+      }
+    },
+    [project.id],
+  );
+
   const handleDeleteConversation = useCallback(
     async (id: string) => {
       const ok = await deleteConversationApi(project.id, id);
@@ -6423,8 +6467,21 @@ export function ProjectView({
       ]);
       setFilesRefresh((n) => n + 1);
       requestOpenFile(brandPreviewFile);
-      const refreshConversationId = conversationId || activeConversationId;
-      if (refreshConversationId) scheduleConversationMessageRefresh(refreshConversationId);
+      const returnedConversationId = conversationId?.trim() || null;
+      if (returnedConversationId) {
+        const stillCurrent = await refreshConversationsForProgrammaticBrandRetry(returnedConversationId);
+        if (!stillCurrent) return;
+        if (
+          returnedConversationId !== activeConversationId
+          || failedMessagesConversationId === returnedConversationId
+        ) {
+          handleSelectConversation(returnedConversationId);
+        } else {
+          scheduleConversationMessageRefresh(returnedConversationId);
+        }
+        return;
+      }
+      if (activeConversationId) scheduleConversationMessageRefresh(activeConversationId);
     };
 
     void (async () => {
@@ -6487,12 +6544,15 @@ export function ProjectView({
     brandProgrammaticContinueStarting,
     currentProject.metadata,
     dismissBrandBrowserAssist,
+    failedMessagesConversationId,
+    handleSelectConversation,
     onDesignSystemsRefresh,
     onProjectsRefresh,
     projectDetail,
     projectFiles,
     projectIsProgrammaticBrandExtraction,
     readBrandBrowserSnapshot,
+    refreshConversationsForProgrammaticBrandRetry,
     refreshWorkspaceItems,
     requestOpenFile,
     scheduleConversationMessageRefresh,

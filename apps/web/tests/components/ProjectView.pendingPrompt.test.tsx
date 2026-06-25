@@ -8,6 +8,7 @@ import { ProjectView } from '../../src/components/ProjectView';
 import type {
   AgentInfo,
   AppConfig,
+  ChatMessage,
   Conversation,
   DesignSystemSummary,
   Project,
@@ -166,6 +167,8 @@ vi.mock('../../src/components/Loading', () => ({
 
 vi.mock('../../src/components/ChatPane', () => ({
   ChatPane: (props: {
+    messages?: ChatMessage[];
+    activeConversationId?: string | null;
     initialDraft?: string;
     onBrandBrowserAssistConfirm?: (card: {
       kind: 'brand-browser-assist';
@@ -181,11 +184,17 @@ vi.mock('../../src/components/ChatPane', () => ({
   }) => {
     chatPaneSpy(props);
     return (
-      <textarea
-        data-testid="chat-composer-input"
-        readOnly
-        value={props.initialDraft ?? ''}
-      />
+      <>
+        <div data-testid="active-conversation">{props.activeConversationId ?? ''}</div>
+        <div data-testid="chat-message-content">
+          {props.messages?.map((message) => message.content).join('\n') ?? ''}
+        </div>
+        <textarea
+          data-testid="chat-composer-input"
+          readOnly
+          value={props.initialDraft ?? ''}
+        />
+      </>
     );
   },
 }));
@@ -452,6 +461,80 @@ describe('ProjectView pending prompt seeding', () => {
           props.openRequest?.name === 'brand.html',
         ),
       ).toBe(true);
+    });
+  });
+
+  it('switches to the replacement conversation returned by a brand extraction retry', async () => {
+    const projectId = 'brand-retry-missing';
+    const replacementConversation = {
+      ...conversation(projectId),
+      id: 'conv-brand-replacement',
+      title: 'Brand retry',
+    };
+    mockedListConversations
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([replacementConversation]);
+    mockedCreateConversation.mockResolvedValueOnce({
+      ...conversation(projectId),
+      id: 'conv-brand-empty',
+      title: 'Empty fallback',
+    });
+    mockedListMessages.mockImplementation(async (_projectId, conversationId) => {
+      if (conversationId === 'conv-brand-replacement') {
+        return [
+          {
+            id: 'replacement-transcript',
+            role: 'assistant',
+            content: 'Replacement retry transcript loaded',
+            createdAt: 3,
+          },
+        ];
+      }
+      return [];
+    });
+    mockedContinueBrandExtraction.mockResolvedValueOnce({
+      ok: true,
+      result: {
+        id: projectId,
+        projectId,
+        conversationId: 'conv-brand-replacement',
+        sourceUrl: 'https://economist.com/',
+        status: 'extracting',
+        designSystemId: `user:${projectId}`,
+      },
+    });
+
+    renderProjectView(
+      {
+        ...project(projectId),
+        metadata: {
+          kind: 'brand',
+          importedFrom: 'brand-extraction',
+          brandId: projectId,
+          brandSourceUrl: 'https://economist.com/',
+          brandDesignSystemId: `user:${projectId}`,
+        },
+      },
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('active-conversation').textContent).toBe('conv-brand-empty');
+    });
+    chatPaneSpy.mock.calls.at(-1)?.[0].onContinueBrandExtraction?.();
+
+    await waitFor(() => {
+      expect(mockedContinueBrandExtraction).toHaveBeenCalledWith(projectId);
+    });
+    await waitFor(() => {
+      expect(mockedListMessages).toHaveBeenCalledWith(projectId, 'conv-brand-replacement');
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('active-conversation').textContent).toBe('conv-brand-replacement');
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('chat-message-content').textContent).toContain(
+        'Replacement retry transcript loaded',
+      );
     });
   });
 
