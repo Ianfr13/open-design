@@ -18,7 +18,7 @@
 // later visit does not nag again.
 
 import { useCallback, useEffect, useState } from 'react';
-import type { BrandStatus, ProjectMetadata } from '@open-design/contracts';
+import type { BrandMeta, BrandStatus, ProjectMetadata } from '@open-design/contracts';
 import { fetchBrands } from './brands';
 
 const POLL_INTERVAL_MS = 5000;
@@ -71,6 +71,18 @@ function assistAlreadyShown(brandId: string): boolean {
 
 function markAssistShown(brandId: string): void {
   writeFlag(assistStorageKey(brandId));
+}
+
+function finiteTimestamp(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function extractionAttemptStallBaseline(meta: BrandMeta): { key: string; startedAt: number | null } {
+  const startedAt = finiteTimestamp(meta.extractionStartedAt);
+  return {
+    key: `${meta.extractionAttemptId ?? ''}:${startedAt ?? ''}`,
+    startedAt,
+  };
 }
 
 export interface BrandReadyPromptState {
@@ -130,7 +142,9 @@ export function useBrandReadyPrompt(
     let cancelled = false;
     let timer: number | undefined;
     let polls = 0;
-    const startedAt = Date.now();
+    let assistBaselineAt = Date.now();
+    let lastExtractionKey: string | null = null;
+    let lastStatus: BrandStatus | null = null;
 
     const check = async (): Promise<void> => {
       polls += 1;
@@ -139,6 +153,16 @@ export function useBrandReadyPrompt(
       const summary = brands.find((b) => b.meta.id === brandId);
       const status = summary?.meta.status;
       setStatus(status ?? null);
+      if (status === 'extracting' && summary) {
+        const baseline = extractionAttemptStallBaseline(summary.meta);
+        if (lastStatus !== 'extracting' || baseline.key !== lastExtractionKey) {
+          assistBaselineAt = baseline.startedAt ?? Date.now();
+          lastExtractionKey = baseline.key;
+        }
+      } else {
+        lastExtractionKey = null;
+      }
+      lastStatus = status ?? null;
       const designSystemId = summary?.meta.designSystemId;
       if (status === 'ready' && designSystemId) {
         const next = { designSystemId, brandName: summary?.brand?.name ?? null };
@@ -164,7 +188,7 @@ export function useBrandReadyPrompt(
         /cloudflare|captcha|challenge|turnstile|anti[- ]?bot|bot check|access denied|verify/i.test(
           antiBotFailureText,
         );
-      const stalled = status === 'extracting' && Date.now() - startedAt >= ASSIST_TIMEOUT_MS;
+      const stalled = status === 'extracting' && Date.now() - assistBaselineAt >= ASSIST_TIMEOUT_MS;
       if ((blocked || failedWithAntiBotSignal || stalled) && !assistAlreadyShown(brandId)) {
         markAssistShown(brandId);
         setBrowserAssist({
