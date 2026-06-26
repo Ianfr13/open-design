@@ -3305,6 +3305,23 @@ export function SettingsDialog({
             aria-label="Settings sections"
             aria-hidden={settingsSidebarCollapsed ? true : undefined}
           >
+            {pageMode ? (
+              <div className="settings-page-nav-head">
+                <button
+                  type="button"
+                  className="settings-page-back"
+                  onClick={onClose}
+                >
+                  <Icon name="arrow-left" size={15} />
+                  <span>返回应用</span>
+                </button>
+                <label className="settings-page-search">
+                  <Icon name="search" size={14} />
+                  <input type="search" placeholder="搜索设置..." readOnly />
+                </label>
+                <span className="settings-page-nav-group">个人</span>
+              </div>
+            ) : null}
             <button
               type="button"
               className={`settings-nav-item${activeSection === 'execution' ? ' active' : ''}`}
