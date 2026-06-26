@@ -73,13 +73,14 @@ export function isSubChipParent(chipId: string | null): chipId is SubChipParentI
 }
 
 const LOCAL_SUBCHIPS: Record<'social-card' | 'diagram', HomeHeroSubChip[]> = {
+  // Overseas-facing platforms lead; domestic (Xiaohongshu, WeChat) follow.
   'social-card': [
     { slug: 'x-twitter-card', label: 'Twitter / X', icon: SUBCATEGORY_ICONS['x-twitter-card'] ?? DEFAULT_SUBCATEGORY_ICON },
     { slug: 'threads-card', label: 'Threads', icon: SUBCATEGORY_ICONS['threads-card'] ?? DEFAULT_SUBCATEGORY_ICON },
-    { slug: 'xiaohongshu-carousel', label: 'Xiaohongshu / Rednote', icon: SUBCATEGORY_ICONS['xiaohongshu-carousel'] ?? DEFAULT_SUBCATEGORY_ICON },
-    { slug: 'wechat-cover', label: 'WeChat cover', icon: SUBCATEGORY_ICONS['wechat-cover'] ?? DEFAULT_SUBCATEGORY_ICON },
     { slug: 'linkedin-card', label: 'LinkedIn', icon: SUBCATEGORY_ICONS['linkedin-card'] ?? DEFAULT_SUBCATEGORY_ICON },
     { slug: 'instagram-story', label: 'Instagram story', icon: SUBCATEGORY_ICONS['instagram-story'] ?? DEFAULT_SUBCATEGORY_ICON },
+    { slug: 'xiaohongshu-carousel', label: 'Xiaohongshu / Rednote', icon: SUBCATEGORY_ICONS['xiaohongshu-carousel'] ?? DEFAULT_SUBCATEGORY_ICON },
+    { slug: 'wechat-cover', label: 'WeChat cover', icon: SUBCATEGORY_ICONS['wechat-cover'] ?? DEFAULT_SUBCATEGORY_ICON },
   ],
   diagram: [
     { slug: 'architecture-diagram', label: 'Architecture', icon: SUBCATEGORY_ICONS['architecture-diagram'] ?? DEFAULT_SUBCATEGORY_ICON },

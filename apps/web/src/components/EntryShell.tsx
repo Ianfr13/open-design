@@ -576,6 +576,18 @@ export function EntryShell({
     setNewProjectOpen(true);
   }
 
+  function startBlankProjectFromRail() {
+    setNewProjectOpen(false);
+    void Promise.resolve(onCreateProject({
+      name: t('common.untitled'),
+      skillId: null,
+      designSystemId: null,
+      metadata: { kind: 'other' },
+    })).catch((err) => {
+      console.warn('Failed to create blank project from entry rail', err);
+    });
+  }
+
   function handleCreate(input: CreateInput) {
     // The NewProjectModal no longer asks the user to pick a plugin.
     // Each project kind is silently bound to its default scenario
@@ -757,7 +769,7 @@ export function EntryShell({
         <EntryNavRail
           view={view}
           onViewChange={changeView}
-          onNewProject={() => openNewProject()}
+          onNewProject={startBlankProjectFromRail}
           open={railOpen}
           onClose={() => setRailOpen(false)}
         />

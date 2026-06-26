@@ -344,7 +344,7 @@ describe('EntryShell settings menu', () => {
 });
 
 describe('EntryShell new project rail', () => {
-  it('opens the new project modal from the rail plus', async () => {
+  it('creates a blank project directly from the rail plus', async () => {
     window.localStorage.setItem('od.entry.railOpen', 'false');
     const fetchMock = vi.fn(
       async (input: Parameters<typeof fetch>[0], _init?: Parameters<typeof fetch>[1]) => {
@@ -376,10 +376,16 @@ describe('EntryShell new project rail', () => {
     fireEvent.click(screen.getByTestId('entry-nav-new-project'));
 
     await waitFor(() => {
-      expect(screen.getByTestId('new-project-modal')).toBeTruthy();
+      expect(props.onCreateProject).toHaveBeenCalledTimes(1);
     });
-    expect(screen.getByTestId('new-project-panel')).toBeTruthy();
-    expect(props.onCreateProject).not.toHaveBeenCalled();
+    expect(props.onCreateProject).toHaveBeenCalledWith({
+      name: 'Untitled',
+      skillId: null,
+      designSystemId: null,
+      metadata: { kind: 'other' },
+    });
+    expect(screen.queryByTestId('new-project-modal')).toBeNull();
+    expect(screen.queryByTestId('new-project-panel')).toBeNull();
     expect(props.onOpenProject).not.toHaveBeenCalled();
     expect(
       fetchMock.mock.calls.find(

@@ -23,7 +23,6 @@ import type {
   RefObject,
 } from 'react';
 import type {
-  ChatSessionMode,
   ConnectorDetail,
   DesignSystemSummary,
   InputFieldSpec,
@@ -75,7 +74,6 @@ import { applyFacetSelection } from './plugins-home/facets';
 import { inferPluginPreview } from './plugins-home/preview';
 import { pluginSubfacetLabel } from './plugins-home/subfacetLabel';
 import { ComposerPlusMenu } from './ComposerPlusMenu';
-import { SessionModeToggle } from './SessionModeToggle';
 import { TemplatePicker } from './home-hero/TemplatePicker';
 import { LibraryPicker } from './LibraryPicker';
 import { assetTitle } from './LibraryAssetMeta';
@@ -98,8 +96,8 @@ import {
   localTemplatePresetSearchText,
   localTemplatePresetsForChip,
   type LocalTemplatePreset,
-  type LocalTemplatePresetVariant,
 } from './home-hero/local-template-presets';
+import { TemplatePreview } from './home-hero/TemplatePreview';
 
 export interface HomeHeroSubmitHandler {
   (): void;
@@ -137,8 +135,6 @@ interface Props {
   // showing: the host seeds the prompt with `scenario.text`, binds the
   // scenario's template, and creates the project -- one-click "just start".
   onSubmitScenario?: (scenario: PlaceholderScenario) => void;
-  sessionMode?: ChatSessionMode;
-  onSessionModeChange?: (mode: ChatSessionMode) => void;
   activePluginTitle: string | null;
   // True when the active plugin chip shows a user-picked plugin (Community card
   // or example-prompt preset) rather than a task-type chip's default plugin —
@@ -271,8 +267,6 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
     onSubmit,
     onSubmitScenario = () => undefined,
     firstRunGuide,
-    sessionMode = 'design',
-    onSessionModeChange,
     activePluginTitle,
     activePluginIsExplicit = false,
     activePluginRecord = null,
@@ -1673,13 +1667,6 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
             ) : null}
           </div>
           <div className="home-hero__foot-right">
-            {onSessionModeChange ? (
-              <SessionModeToggle
-                mode={sessionMode}
-                onChange={onSessionModeChange}
-                disabled={submitting}
-              />
-            ) : null}
             {executionSwitcher ? (
               <div className="home-hero__execution-switcher">
                 {executionSwitcher}
@@ -1932,11 +1919,12 @@ function LocalTemplatePresets({
                 className={`home-hero__plugin-preset home-hero__local-preset${pulseFirstPreset && index === 0 ? ' home-hero__attention-sheen' : ''}`}
                 data-testid="home-hero-local-template-preset"
                 data-template-preset-id={preset.id}
-                data-template-variant={preset.variant}
+                data-template-variant={`${preset.preview.kind}-${preset.preview.layout}`}
+                data-template-palette={preset.preview.palette}
                 onClick={() => onPick(preset)}
               >
                 <span className="home-hero__plugin-preset-preview home-hero__local-preset-preview" aria-hidden>
-                  <LocalTemplatePresetPreview variant={preset.variant} />
+                  <TemplatePreview preset={preset} />
                 </span>
                 <span className="home-hero__plugin-preset-title">
                   <span>{preset.title}</span>
@@ -1949,139 +1937,6 @@ function LocalTemplatePresets({
         <EdgeScrollZones {...edgeScroll} />
       </div>
     </div>
-  );
-}
-
-function LocalTemplatePresetPreview({ variant }: { variant: LocalTemplatePresetVariant }) {
-  const isDiagram = variant.startsWith('diagram-');
-  return (
-    <span className={`home-hero__local-preview home-hero__local-preview--${isDiagram ? 'diagram' : 'social'}`}>
-      {isDiagram ? (
-        <DiagramPresetPreview variant={variant} />
-      ) : (
-        <SocialPresetPreview variant={variant} />
-      )}
-    </span>
-  );
-}
-
-function SocialPresetPreview({ variant }: { variant: LocalTemplatePresetVariant }) {
-  if (variant === 'social-wechat-pair') {
-    return (
-      <>
-        <span className="local-preview__wechat-wide">
-          <span />
-          <strong>21:9</strong>
-        </span>
-        <span className="local-preview__wechat-square">
-          <strong>1:1</strong>
-          <span />
-        </span>
-      </>
-    );
-  }
-  if (variant === 'social-thread-strip') {
-    return (
-      <span className="local-preview__thread">
-        <span /><span /><span /><span />
-      </span>
-    );
-  }
-  if (variant === 'social-linkedin-metric') {
-    return (
-      <span className="local-preview__linkedin">
-        <strong>48%</strong>
-        <span />
-        <span />
-      </span>
-    );
-  }
-  if (variant === 'social-story') {
-    return (
-      <span className="local-preview__story">
-        <strong>03</strong>
-        <span />
-        <span />
-      </span>
-    );
-  }
-  const swiss = variant === 'social-swiss-carousel';
-  return (
-    <span className={`local-preview__carousel${swiss ? ' is-swiss' : ''}`}>
-      <span>
-        <strong>{swiss ? 'KPI' : 'FIELD'}</strong>
-        <i />
-        <i />
-      </span>
-      <span>
-        <strong>{swiss ? 'S09' : 'NOTES'}</strong>
-        <i />
-        <i />
-      </span>
-      <span>
-        <strong>{swiss ? 'MATRIX' : 'SAVE'}</strong>
-        <i />
-        <i />
-      </span>
-    </span>
-  );
-}
-
-function DiagramPresetPreview({ variant }: { variant: LocalTemplatePresetVariant }) {
-  const dark = variant === 'diagram-dark-terminal';
-  const blueprint = variant === 'diagram-blueprint';
-  const sequence = variant === 'diagram-uml-sequence';
-  const lineage = variant === 'diagram-data-lineage';
-  return (
-    <svg
-      className={`local-preview__diagram${dark ? ' is-dark' : ''}${blueprint ? ' is-blueprint' : ''}`}
-      viewBox="0 0 248 150"
-      role="presentation"
-      focusable="false"
-      aria-hidden="true"
-    >
-      <defs>
-        <pattern id={`grid-${variant}`} width="16" height="16" patternUnits="userSpaceOnUse">
-          <path d="M16 0H0V16" fill="none" stroke="currentColor" strokeOpacity="0.11" strokeWidth="1" />
-        </pattern>
-      </defs>
-      <rect width="248" height="150" rx="0" className="diagram-bg" />
-      <rect width="248" height="150" fill={`url(#grid-${variant})`} />
-      {sequence ? (
-        <>
-          {[44, 94, 144, 194].map((x) => (
-            <g key={x}>
-              <rect x={x - 19} y="20" width="38" height="18" rx="5" className="diagram-node" />
-              <line x1={x} y1="40" x2={x} y2="126" className="diagram-lane" />
-            </g>
-          ))}
-          <path d="M44 58H144M144 78H94M94 98H194M194 116H44" className="diagram-arrow" />
-          <circle cx="144" cy="58" r="3" className="diagram-accent" />
-          <circle cx="94" cy="78" r="3" className="diagram-accent" />
-          <circle cx="194" cy="98" r="3" className="diagram-accent" />
-        </>
-      ) : lineage ? (
-        <>
-          <path d="M28 76H72C92 76 90 42 112 42H220M72 76C94 76 94 112 118 112H220" className="diagram-arrow" />
-          {[28, 72, 118, 170, 220].map((x, index) => (
-            <rect key={x} x={x - 17} y={index === 3 ? 27 : index === 4 ? 96 : 62} width="34" height="24" rx="7" className={index === 2 ? 'diagram-node diagram-node-accent' : 'diagram-node'} />
-          ))}
-        </>
-      ) : (
-        <>
-          <rect x="20" y="28" width="50" height="30" rx="8" className="diagram-node" />
-          <rect x="99" y="23" width="54" height="36" rx="9" className="diagram-node diagram-node-accent" />
-          <rect x="178" y="28" width="50" height="30" rx="8" className="diagram-node" />
-          <rect x="57" y="94" width="48" height="30" rx="8" className="diagram-node" />
-          <rect x="143" y="94" width="48" height="30" rx="8" className="diagram-node" />
-          <path d="M70 43H99M153 43H178M126 59V82M81 94L113 59M167 94L139 59" className="diagram-arrow" />
-          <circle cx="126" cy="43" r="4" className="diagram-accent" />
-          {variant === 'diagram-agent-loop' ? (
-            <path d="M97 109C111 128 139 128 153 109" className="diagram-loop" />
-          ) : null}
-        </>
-      )}
-    </svg>
   );
 }
 

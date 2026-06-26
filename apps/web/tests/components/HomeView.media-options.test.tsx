@@ -2,6 +2,7 @@
 
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { DEFAULT_UNSELECTED_SCENARIO_PLUGIN_ID } from '@open-design/contracts';
 
 vi.mock('../../src/components/home-hero/PlaceholderCarousel', () => ({
   PlaceholderCarousel: () => null,
@@ -58,26 +59,21 @@ afterEach(() => {
 });
 
 describe('HomeView media composer options', () => {
-  it('shows the Home composer session-mode switcher and can submit Ask mode', async () => {
+  it('keeps the Home composer mode switcher hidden and submits free-form prompts through Design mode', async () => {
     stubFetch();
     const onSubmit = vi.fn();
     renderHome({ onSubmit });
 
     await screen.findByTestId('home-hero-input');
 
-    const modeTrigger = screen.getByTestId('session-mode-trigger');
-    expect(modeTrigger.textContent).toContain('Design');
-
-    fireEvent.click(modeTrigger);
-    fireEvent.click(screen.getByRole('menuitemradio', { name: /Ask mode/i }));
-
-    expect(screen.getByTestId('session-mode-trigger').textContent).toContain('Ask');
+    expect(screen.queryByTestId('session-mode-trigger')).toBeNull();
 
     await setHomePrompt('Create a dashboard.');
     await submitHome();
     await waitFor(() => {
       expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({
-        conversationMode: 'chat',
+        conversationMode: 'design',
+        pluginId: DEFAULT_UNSELECTED_SCENARIO_PLUGIN_ID,
       }));
     });
   });

@@ -284,7 +284,7 @@ export function HomeView({
     text: string;
     chipId: string | null;
   } | null>(null);
-  const [sessionMode, setSessionMode] = useState<ChatSessionMode>('design');
+  const sessionMode: ChatSessionMode = 'design';
   const [activeSkill, setActiveSkill] = useState<SkillSummary | null>(null);
   const [selectedPluginContexts, setSelectedPluginContexts] = useState<SelectedPluginContext[]>([]);
   const [selectedMcpContexts, setSelectedMcpContexts] = useState<SelectedMcpContext[]>([]);
@@ -574,20 +574,14 @@ export function HomeView({
     if (seed && seed.files.length > 0) stageFiles(seed.files);
   }, [isActive]);
 
-  const activeContextItemCount = useMemo(
-    () =>
-      active
-        ? active.result?.contextItems?.length ??
-          estimatePluginContextItemCount(active.record)
-        : 0,
-    [active],
-  );
   // Inline-backed contexts are already represented in the composer as `@mention`
   // pills, so they must NOT also drive the active context row — otherwise
   // selecting only an inline-mentioned connector mounts an empty row (count
-  // label, no visible children) above the editor. Context-only `Use` selections
+  // label, no visible children) above the editor. A type-chip's default plugin
+  // can also carry hidden skill/craft context; that context is not rendered as a
+  // chip, so it must not mount the row either. Context-only `Use` selections
   // have no inline representation, so they are the only ones the row should
-  // surface (and count).
+  // surface (and count), together with staged files.
   const contextItemCount = useMemo(() => {
     const contextOnlyPlugins = selectedPluginContexts.filter(
       (item) => !item.inlineBacked,
@@ -599,14 +593,12 @@ export function HomeView({
       (item) => !item.inlineBacked,
     ).length;
     return (
-      activeContextItemCount +
       contextOnlyPlugins +
       contextOnlyMcp +
       contextOnlyConnectors +
       stagedFiles.length
     );
   }, [
-    activeContextItemCount,
     selectedConnectorContexts,
     selectedMcpContexts,
     selectedPluginContexts,
@@ -1125,14 +1117,24 @@ export function HomeView({
   function handlePromptChange(nextPrompt: string) {
     setPrompt(nextPrompt);
     setPromptEditedByUser(true);
-    if (!active?.queryTemplate) return;
+    if (!active?.queryTemplate) {
+      if (active) {
+        const derivedActive = deriveSuppressedPromptInputsFromPrompt(active, nextPrompt);
+        if (derivedActive !== active) setActive(derivedActive);
+      }
+      return;
+    }
     const extracted = extractPluginInputsFromPrompt(
       active.queryTemplate,
       nextPrompt,
       active.inputFields,
       { allowPrefix: active.queryTemplateAllowsPrefix === true },
     );
-    if (!extracted) return;
+    if (!extracted) {
+      const derivedActive = deriveSuppressedPromptInputsFromPrompt(active, nextPrompt);
+      if (derivedActive !== active) setActive(derivedActive);
+      return;
+    }
     const nextInputs = { ...active.inputs, ...extracted };
     const normalizedInputs = active.mediaSurface
       ? normalizeHomeMediaInputs(active.mediaSurface, nextInputs, promptTemplates, elevenLabsVoices, composerImageModels)
@@ -1604,7 +1606,10 @@ export function HomeView({
       area: 'chat_composer',
       element: 'send_button',
     });
-    let submittedActive = active;
+    let submittedActive = active
+      ? deriveSuppressedPromptInputsFromPrompt(active, trimmed)
+      : active;
+    if (submittedActive !== active) setActive(submittedActive);
     if (submittedActive && !submittedActive.inputsValid) {
       const missing = missingRequiredInputs(
         submittedActive.inputFields,
@@ -1703,9 +1708,9 @@ export function HomeView({
             submittedActive?.projectMetadata ?? fallbackProjectMetadata ?? null,
           );
       // Scenario plugins (chips / preset cards) and explicit skill picks are
-      // mutually exclusive routing sources. In Design mode, free-form prompts
-      // route through the default design router; in Ask mode they stay plain
-      // chat conversations with no hidden router plugin.
+      // mutually exclusive routing sources. Home now keeps the composer in
+      // Design mode, so free-form prompts route through the default design
+      // router instead of exposing an Ask/Design toggle in the input footer.
       const resolvedSkillId = submittedActive ? null : activeSkill?.id ?? null;
       const routedPluginId =
         sessionMode === 'design'
@@ -1848,8 +1853,6 @@ export function HomeView({
         }}
         onExamplePromptStatusChange={handleExamplePromptStatusChange}
         onStartBlankProject={startBlankProject}
-        sessionMode={sessionMode}
-        onSessionModeChange={setSessionMode}
         executionSwitcher={executionSwitcher}
       />
 
