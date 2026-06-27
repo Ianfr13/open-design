@@ -10665,6 +10665,21 @@ function isJsonFile(file: ProjectFile): boolean {
 
 type MarkdownViewerMode = 'edit' | 'split' | 'preview';
 type MarkdownSaveState = 'idle' | 'saving' | 'saved' | 'error';
+type MarkdownScrollPane = 'editor' | 'preview';
+
+function markdownScrollRange(element: HTMLElement): number {
+  return Math.max(0, element.scrollHeight - element.clientHeight);
+}
+
+function markdownScrollRatio(element: HTMLElement): number {
+  const range = markdownScrollRange(element);
+  return range > 0 ? element.scrollTop / range : 0;
+}
+
+function markdownScrollTopForRatio(element: HTMLElement, ratio: number): number {
+  const clamped = Math.max(0, Math.min(1, Number.isFinite(ratio) ? ratio : 0));
+  return markdownScrollRange(element) * clamped;
+}
 
 function MarkdownViewer({
   projectId,
@@ -10683,10 +10698,14 @@ function MarkdownViewer({
   const [mode, setMode] = useState<MarkdownViewerMode>('split');
   const [saveState, setSaveState] = useState<MarkdownSaveState>('idle');
   const editorRef = useRef<HTMLTextAreaElement | null>(null);
+  const markdownPreviewPaneRef = useRef<HTMLElement | null>(null);
   const markdownArticleRef = useRef<HTMLElement | null>(null);
   const copyBlockTimerRef = useRef<number | null>(null);
   const copiedMarkdownBlockRef = useRef<HTMLElement | null>(null);
   const saveTimerRef = useRef<number | null>(null);
+  const scrollSyncTimerRef = useRef<number | null>(null);
+  const programmaticScrollRef = useRef<{ pane: MarkdownScrollPane; top: number } | null>(null);
+  const previousModeRef = useRef<MarkdownViewerMode>('split');
   const saveInFlightRef = useRef(false);
   const pendingSaveAfterFlightRef = useRef(false);
   const textRef = useRef('');
@@ -10726,6 +10745,9 @@ function MarkdownViewer({
       }
       if (saveTimerRef.current) {
         window.clearTimeout(saveTimerRef.current);
+      }
+      if (scrollSyncTimerRef.current) {
+        window.clearTimeout(scrollSyncTimerRef.current);
       }
     };
   }, []);
@@ -10862,6 +10884,48 @@ function MarkdownViewer({
     return rewriteMarkdownImageSources(decorateMarkdownCodeBlocks(renderPartial(text)), projectId, file.name);
   }, [file.name, projectId, text]);
 
+  const queueProgrammaticScrollClear = useCallback(() => {
+    if (scrollSyncTimerRef.current) {
+      window.clearTimeout(scrollSyncTimerRef.current);
+    }
+    scrollSyncTimerRef.current = window.setTimeout(() => {
+      programmaticScrollRef.current = null;
+      scrollSyncTimerRef.current = null;
+    }, 80);
+  }, []);
+
+  const applyMarkdownScrollSync = useCallback(
+    (source: HTMLElement | null, target: HTMLElement | null, targetPane: MarkdownScrollPane) => {
+      if (mode !== 'split' || !source || !target) return;
+      const targetTop = markdownScrollTopForRatio(target, markdownScrollRatio(source));
+      if (Math.abs(target.scrollTop - targetTop) < 1) return;
+      programmaticScrollRef.current = { pane: targetPane, top: targetTop };
+      target.scrollTop = targetTop;
+      queueProgrammaticScrollClear();
+    },
+    [mode, queueProgrammaticScrollClear],
+  );
+
+  const shouldIgnoreMarkdownScroll = useCallback((pane: MarkdownScrollPane, element: HTMLElement): boolean => {
+    const programmatic = programmaticScrollRef.current;
+    if (programmatic?.pane !== pane) return false;
+    if (Math.abs(element.scrollTop - programmatic.top) > 1) return false;
+    programmaticScrollRef.current = null;
+    return true;
+  }, []);
+
+  const handleMarkdownEditorScroll = useCallback(() => {
+    const editor = editorRef.current;
+    if (!editor || shouldIgnoreMarkdownScroll('editor', editor)) return;
+    applyMarkdownScrollSync(editor, markdownPreviewPaneRef.current, 'preview');
+  }, [applyMarkdownScrollSync, shouldIgnoreMarkdownScroll]);
+
+  const handleMarkdownPreviewScroll = useCallback(() => {
+    const previewPane = markdownPreviewPaneRef.current;
+    if (!previewPane || shouldIgnoreMarkdownScroll('preview', previewPane)) return;
+    applyMarkdownScrollSync(previewPane, editorRef.current, 'editor');
+  }, [applyMarkdownScrollSync, shouldIgnoreMarkdownScroll]);
+
   useEffect(() => {
     const article = markdownArticleRef.current;
     if (!article) return;
@@ -10870,6 +10934,21 @@ function MarkdownViewer({
       setMarkdownCodeBlockCopiedState(copiedMarkdownBlockRef.current, true, t);
     }
   }, [html, t]);
+
+  useEffect(() => {
+    if (mode !== 'split') {
+      previousModeRef.current = mode;
+      return;
+    }
+    const editor = editorRef.current;
+    const previewPane = markdownPreviewPaneRef.current;
+    if (previousModeRef.current === 'preview') {
+      applyMarkdownScrollSync(previewPane, editor, 'editor');
+    } else {
+      applyMarkdownScrollSync(editor, previewPane, 'preview');
+    }
+    previousModeRef.current = mode;
+  }, [applyMarkdownScrollSync, html, mode]);
 
   async function handleMarkdownBodyClick(event: ReactMouseEvent<HTMLElement>) {
     const target = event.target;
@@ -11001,13 +11080,19 @@ function MarkdownViewer({
                   value={text}
                   spellCheck
                   onChange={(event) => setText(event.currentTarget.value)}
+                  onScroll={handleMarkdownEditorScroll}
                   onPaste={handleEditorPaste}
                   onDrop={handleEditorDrop}
                 />
               </section>
             ) : null}
             {showPreview ? (
-              <section className="markdown-preview-pane" aria-label={t('fileViewer.markdownPreview')}>
+              <section
+                ref={markdownPreviewPaneRef}
+                className="markdown-preview-pane"
+                aria-label={t('fileViewer.markdownPreview')}
+                onScroll={handleMarkdownPreviewScroll}
+              >
                 {isStreaming ? <div className="markdown-status">{t('fileViewer.markdownStreamingStatus')}</div> : null}
                 {isError ? <div className="markdown-status markdown-status-error">{t('fileViewer.markdownErrorStatus')}</div> : null}
                 {/* Safe by contract: renderMarkdownToSafeHtml escapes raw HTML and rejects unsafe link protocols. */}
