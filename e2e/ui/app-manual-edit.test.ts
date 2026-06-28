@@ -687,9 +687,16 @@ async function openDesignFile(page: Page, fileName: string) {
   if (tabFound) {
     await fileTabButton.click();
   } else {
-    const fileButton = page.getByRole('button', { name: filePattern });
+    const fileButton = page.getByRole('button', { name: filePattern }).first();
     await fileButton.click();
-    await page.getByTestId('design-file-preview').getByRole('button', { name: 'Open' }).click();
+    if (!(await preview.isVisible().catch(() => false))) {
+      const openButton = page.getByTestId('design-file-preview').getByRole('button', { name: 'Open' });
+      if (await openButton.isVisible().catch(() => false)) {
+        await openButton.click();
+      } else {
+        await fileButton.dblclick();
+      }
+    }
   }
   await expect(preview).toBeVisible();
 }
