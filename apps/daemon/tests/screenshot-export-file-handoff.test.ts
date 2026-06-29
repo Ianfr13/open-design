@@ -168,6 +168,19 @@ describe('screenshot export desktop renderer file handoff', () => {
     expect(seenInputs.at(-1)?.deck).toBeUndefined();
   });
 
+  it('preserves generic export width and height contract inputs', async () => {
+    const before = seenInputs.length;
+    const res = await fetch(`${baseUrl}/api/projects/${projectId}/export`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fileName: 'index.html', format: 'image', width: 1280, height: 720 }),
+    });
+    expect(res.status).toBe(200);
+    expect(seenInputs.length).toBe(before + 1);
+    expect(seenInputs.at(-1)?.width).toBe(1280);
+    expect(seenInputs.at(-1)?.height).toBe(720);
+  });
+
   it('routes generic POST /export pdf through the raster screenshot renderer, not the vector path', async () => {
     // Regression: the generic /export route used to render `format: pdf` with the
     // vector printToPDF path (desktopArtifactExporter), which drops CJK glyphs in

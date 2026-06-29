@@ -164,10 +164,12 @@ export async function renderDeckSlides(
     tLoad = Date.now();
     await waitForPrintableContent(window);
     tAssets = Date.now();
+    const requestedStage = requestedRenderSize(input.width, input.height, SLIDE_W, SLIDE_H);
+    const requestedPage = requestedRenderSize(input.width, input.height, PAGE_W, PAGE_VIEW_H);
 
     // Lay out at the default stage first so the slide box can be measured
     // against a stable viewport.
-    window.setContentSize(SLIDE_W, SLIDE_H);
+    window.setContentSize(requestedStage.w, requestedStage.h);
 
     // Paint invisibly: opacity 0 before showInactive => compositor renders the
     // page (so capturePage returns real pixels) with zero on-screen flash.
@@ -201,7 +203,7 @@ export async function renderDeckSlides(
       // the PDF path) splits a long page into one image per viewport.
       const pageJpeg = shouldCapturePageAsJpeg(input.pageImageFormat, input.paginate);
       return finish(
-        await capturePage(window, pageJpeg, input.outputDir, input.paginate === true),
+        await capturePage(window, pageJpeg, input.outputDir, input.paginate === true, requestedPage),
       );
     }
 
@@ -216,7 +218,9 @@ export async function renderDeckSlides(
     // can be 4:3, square, portrait, or any custom canvas. The capture rect, the
     // pinned stage, and (downstream) the PPTX layout all follow this so a non-16:9
     // deck is not clipped or distorted. Falls back to 1920x1080 if unmeasurable.
-    const stage = await measureSlideStage(window);
+    const stage = input.width != null || input.height != null
+      ? requestedStage
+      : await measureSlideStage(window);
     window.setContentSize(stage.w, stage.h);
     await nextFrames(window);
 
@@ -301,6 +305,18 @@ export async function renderDeckSlides(
 interface Stage {
   w: number;
   h: number;
+}
+
+export function requestedRenderSize(
+  width: number | undefined,
+  height: number | undefined,
+  fallbackW: number,
+  fallbackH: number,
+): Stage {
+  return {
+    w: width != null && Number.isFinite(width) && width > 0 ? Math.round(width) : fallbackW,
+    h: height != null && Number.isFinite(height) && height > 0 ? Math.round(height) : fallbackH,
+  };
 }
 
 // Measures the deck's authored slide box so the capture/PPTX follow the real
@@ -498,10 +514,11 @@ async function capturePage(
   jpeg: boolean,
   outputDir: string | undefined,
   paginate = false,
+  pageSize: Stage = { w: PAGE_W, h: PAGE_VIEW_H },
 ): Promise<DesktopRenderSlidesResult> {
   // Lay the document out at a desktop width first so width-dependent content
   // (responsive layouts) renders the way a desktop visitor sees it.
-  window.setContentSize(PAGE_W, PAGE_VIEW_H);
+  window.setContentSize(pageSize.w, pageSize.h);
   await nextFrames(window);
 
   // Pre-pass: freeze animations and scroll the whole page once so reveal-on-
@@ -526,14 +543,14 @@ async function capturePage(
       "Math.ceil(Math.max(document.documentElement.scrollHeight, document.body ? document.body.scrollHeight : 0))",
       true,
     )) as number;
-    const totalLogical = Math.max(PAGE_VIEW_H, Number.isFinite(measured) ? measured : PAGE_VIEW_H);
-    return await paginatePageViewports(window, totalLogical, jpeg, outputDir);
+    const totalLogical = Math.max(pageSize.h, Number.isFinite(measured) ? measured : pageSize.h);
+    return await paginatePageViewports(window, totalLogical, jpeg, outputDir, pageSize);
   }
 
   // The window's device-pixel-ratio already scales the capture (2 on retina),
   // exactly like the deck path's capturePage. Report real px via it.
   const dpr = await queryDevicePixelRatio(window);
-  const outW = PAGE_W * dpr;
+  const outW = pageSize.w * dpr;
   const ramMaxOutH = Math.floor(PAGE_RAM_BUDGET_BYTES / (outW * 4));
 
   const dbg = window.webContents.debugger;
@@ -556,8 +573,7 @@ async function capturePage(
         "Math.ceil(Math.max(document.documentElement.scrollHeight, document.body ? document.body.scrollHeight : 0))",
         true,
       )) as number;
-      const docW = PAGE_W;
-      const docH = Math.max(1, Number.isFinite(measuredH) ? measuredH : PAGE_VIEW_H);
+      const docH = Math.max(1, Number.isFinite(measuredH) ? measuredH : pageSize.h);
       const outHpx = docH * dpr;
 
       // Image export always stitches the page from per-viewport captures (scroll
@@ -574,7 +590,7 @@ async function capturePage(
           error: `page is too tall to export as one image (~${docH}px) — export as PDF instead`,
         };
       }
-      return await scrollSegmentStitch(window, docH, jpeg, outputDir);
+      return await scrollSegmentStitch(window, docH, jpeg, outputDir, pageSize);
     }
   } catch {
     // Fall through to the capturePage-based scroll stitch path.
@@ -593,7 +609,7 @@ async function capturePage(
     "Math.ceil(Math.max(document.documentElement.scrollHeight, document.body ? document.body.scrollHeight : 0))",
     true,
   )) as number;
-  const totalLogical = Math.max(PAGE_VIEW_H, Number.isFinite(measured) ? measured : PAGE_VIEW_H);
+  const totalLogical = Math.max(pageSize.h, Number.isFinite(measured) ? measured : pageSize.h);
   // Same budget guard as the debugger path: refuse rather than truncate. The PDF
   // path uses paginatePageViewports before debugger attach, so reaching this
   // branch means the caller asked for a single image. The encoder (PNG/JPEG) must
@@ -604,7 +620,7 @@ async function capturePage(
       error: `page is too tall to export as one image (~${totalLogical}px) — export as PDF instead`,
     };
   }
-  return await scrollSegmentStitch(window, totalLogical, jpeg, outputDir);
+  return await scrollSegmentStitch(window, totalLogical, jpeg, outputDir, pageSize);
 }
 
 // Freezes animations/transitions and scroll-prewarms the page so reveal-on-
@@ -697,10 +713,11 @@ async function scrollSegmentStitch(
   totalLogical: number,
   jpeg: boolean,
   outputDir: string | undefined,
+  pageSize: Stage = { w: PAGE_W, h: PAGE_VIEW_H },
 ): Promise<DesktopRenderSlidesResult> {
-  window.setContentSize(PAGE_W, PAGE_VIEW_H);
+  window.setContentSize(pageSize.w, pageSize.h);
   await nextFrames(window);
-  const maxScroll = Math.max(0, totalLogical - PAGE_VIEW_H);
+  const maxScroll = Math.max(0, totalLogical - pageSize.h);
 
   let W = 0;
   let H = 0;
@@ -708,16 +725,16 @@ async function scrollSegmentStitch(
   let bgra: Buffer | null = null;
   const background = await queryPageBackgroundColor(window);
 
-  for (let y = 0; ; y += PAGE_VIEW_H) {
+  for (let y = 0; ; y += pageSize.h) {
     const target = Math.min(y, maxScroll);
     const actualY = await scrollToCaptureTarget(window, target);
-    const image = await window.webContents.capturePage({ x: 0, y: 0, width: PAGE_W, height: PAGE_VIEW_H });
+    const image = await window.webContents.capturePage({ x: 0, y: 0, width: pageSize.w, height: pageSize.h });
     const bmp = image.toBitmap(); // BGRA
     const size = image.getSize();
     if (!bgra) {
       // Use the real captured pixel width (and its true, possibly fractional,
       // ratio) for the buffer + placement — never a rounded integer scale.
-      const geo = scrollStitchGeometry(size.width, totalLogical, PAGE_W);
+      const geo = scrollStitchGeometry(size.width, totalLogical, pageSize.w);
       W = geo.width;
       H = geo.height;
       dpr = geo.dpr;
@@ -793,22 +810,23 @@ async function paginatePageViewports(
   totalLogical: number,
   jpeg: boolean,
   outputDir: string | undefined,
+  pageSize: Stage = { w: PAGE_W, h: PAGE_VIEW_H },
 ): Promise<DesktopRenderSlidesResult> {
-  window.setContentSize(PAGE_W, PAGE_VIEW_H);
+  window.setContentSize(pageSize.w, pageSize.h);
   await nextFrames(window);
-  const maxScroll = Math.max(0, totalLogical - PAGE_VIEW_H);
-  const pageCount = Math.max(1, Math.ceil(totalLogical / PAGE_VIEW_H));
+  const maxScroll = Math.max(0, totalLogical - pageSize.h);
+  const pageCount = Math.max(1, Math.ceil(totalLogical / pageSize.h));
   const images: Array<{ buffer: Buffer; jpeg: boolean }> = [];
-  let width = PAGE_W;
-  let height = PAGE_VIEW_H;
+  let width = pageSize.w;
+  let height = pageSize.h;
   for (let p = 0; p < pageCount; p++) {
-    const target = Math.min(p * PAGE_VIEW_H, maxScroll);
+    const target = Math.min(p * pageSize.h, maxScroll);
     const actualY = await scrollToCaptureTarget(window, target);
-    const band = paginateViewportBand(p, actualY, totalLogical);
+    const band = paginateViewportBand(p, actualY, totalLogical, pageSize.h);
     const image = await window.webContents.capturePage({
       x: 0,
       y: band.top,
-      width: PAGE_W,
+      width: pageSize.w,
       height: band.height,
     });
     const size = image.getSize();
@@ -835,11 +853,12 @@ export function paginateViewportBand(
   p: number,
   actualY: number,
   totalLogical: number,
+  viewportH: number = PAGE_VIEW_H,
 ): { top: number; height: number } {
-  const desiredTop = p * PAGE_VIEW_H;
+  const desiredTop = p * viewportH;
   const top = Math.max(0, Math.round(desiredTop - actualY));
   const remaining = Math.ceil(totalLogical - desiredTop);
-  const height = Math.max(1, Math.min(PAGE_VIEW_H - top, remaining));
+  const height = Math.max(1, Math.min(viewportH - top, remaining));
   return { top, height };
 }
 

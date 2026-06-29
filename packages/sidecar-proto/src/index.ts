@@ -279,6 +279,10 @@ export type DesktopRenderSlidesInput = {
   // the PDF path so a long scrolling page becomes a multi-page PDF (one screen
   // per page). Ignored in deck mode (decks already paginate per slide).
   paginate?: boolean;
+  // Optional requested render viewport/stage size in CSS px. Omitted dimensions
+  // fall back to renderer defaults.
+  width?: number;
+  height?: number;
   // When set, the renderer writes each rendered image to a file inside this
   // directory and returns the file paths in `slideFiles` instead of base64
   // data URLs in `slides`. The daemon (which owns the data root) creates and
@@ -741,7 +745,7 @@ function normalizeDesktopExportPdfInput(input: unknown): DesktopExportPdfInput {
 
 function normalizeDesktopRenderSlidesInput(input: unknown): DesktopRenderSlidesInput {
   const value = assertObject(input, "desktop render slides input");
-  assertKnownKeys(value, ["baseHref", "deck", "editable", "html", "index", "outputDir", "pageImageFormat", "stitch", "paginate"], "desktop render slides input");
+  assertKnownKeys(value, ["baseHref", "deck", "editable", "height", "html", "index", "outputDir", "pageImageFormat", "stitch", "paginate", "width"], "desktop render slides input");
   if (value.deck != null && typeof value.deck !== "boolean") {
     throw new Error("desktop render slides deck must be a boolean");
   }
@@ -779,6 +783,8 @@ function normalizeDesktopRenderSlidesInput(input: unknown): DesktopRenderSlidesI
     ...(value.pageImageFormat == null ? {} : { pageImageFormat: value.pageImageFormat }),
     ...(value.stitch == null ? {} : { stitch: value.stitch }),
     ...(value.paginate == null ? {} : { paginate: value.paginate }),
+    ...(value.width == null ? {} : { width: normalizeOptionalPositiveNumber(value.width, "desktop render slides width") }),
+    ...(value.height == null ? {} : { height: normalizeOptionalPositiveNumber(value.height, "desktop render slides height") }),
   };
 }
 

@@ -11,6 +11,7 @@ import {
   measureAuthoredSlideBox,
   paginateViewportBand,
   readDomToPptxBundleFile,
+  requestedRenderSize,
   runDomToPptx,
   scrollStitchGeometry,
   scrollStitchRowOffset,
@@ -83,6 +84,14 @@ describe('shouldCapturePageAsJpeg', () => {
   test('non-paginated captures stay PNG unless explicitly requested', () => {
     expect(shouldCapturePageAsJpeg(undefined, false)).toBe(false);
     expect(shouldCapturePageAsJpeg('jpeg', false)).toBe(true);
+  });
+});
+
+describe('requestedRenderSize', () => {
+  test('uses requested dimensions with defaults for omitted axes', () => {
+    expect(requestedRenderSize(1280, 720, 1440, 1000)).toEqual({ w: 1280, h: 720 });
+    expect(requestedRenderSize(1280, undefined, 1440, 1000)).toEqual({ w: 1280, h: 1000 });
+    expect(requestedRenderSize(undefined, 720, 1440, 1000)).toEqual({ w: 1440, h: 720 });
   });
 });
 
@@ -193,6 +202,10 @@ describe('paginateViewportBand', () => {
 
   test('a page shorter than one viewport is a single partial page', () => {
     expect(paginateViewportBand(0, 0, 600)).toEqual({ top: 0, height: 600 });
+  });
+
+  test('supports custom viewport height', () => {
+    expect(paginateViewportBand(2, 1500, 1900, 800)).toEqual({ top: 100, height: 300 });
   });
 
   test('bands tile the document exactly (no overlap, no gap)', () => {

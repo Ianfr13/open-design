@@ -448,12 +448,18 @@ export function registerProjectExportRoutes(app: Express, ctx: RegisterProjectEx
     // the finally below. Derived from RUNTIME_DATA_DIR per the data-dir contract.
     const renderOutputDir = path.join(RUNTIME_DATA_DIR_CANONICAL, 'export-render', randomId());
     try {
-      const { fileName, title, index, imageFormat } = body || {};
+      const { fileName, title, index, imageFormat, width, height } = body || {};
       if (typeof fileName !== 'string' || fileName.length === 0) {
         return sendApiError(res, 400, 'BAD_REQUEST', 'fileName required');
       }
       if (format === 'image' && imageFormat != null && imageFormat !== 'png' && imageFormat !== 'jpeg') {
         return sendApiError(res, 400, 'BAD_REQUEST', 'imageFormat must be png or jpeg');
+      }
+      if (width != null && (typeof width !== 'number' || !Number.isFinite(width) || width <= 0)) {
+        return sendApiError(res, 400, 'BAD_REQUEST', 'width must be a positive number');
+      }
+      if (height != null && (typeof height !== 'number' || !Number.isFinite(height) || height <= 0)) {
+        return sendApiError(res, 400, 'BAD_REQUEST', 'height must be a positive number');
       }
       const renderOptions: BuildDeckRenderInputOptions = {
         daemonUrl: daemonUrlRef.current,
@@ -467,6 +473,8 @@ export function registerProjectExportRoutes(app: Express, ctx: RegisterProjectEx
         projectsRoot: PROJECTS_DIR,
       };
       if (typeof title === 'string') renderOptions.title = title;
+      if (typeof width === 'number') renderOptions.width = width;
+      if (typeof height === 'number') renderOptions.height = height;
       // Page-vs-deck is the caller's call, not a `.slide`-count guess: PPTX is
       // deck-only; image/PDF take the web's `effectiveDeck` signal so an ordinary
       // page that happens to contain `.slide` markup is still captured full-page.
@@ -868,7 +876,7 @@ export function registerProjectExportRoutes(app: Express, ctx: RegisterProjectEx
   // handleScreenshotExport owns validation, the 404/400/422 error mapping, and
   // scratch-dir cleanup.
   app.post('/api/projects/:id/export', async (req, res) => {
-    const { fileName, title, deck, format, imageFormat } = req.body || {};
+    const { fileName, title, deck, format, imageFormat, width, height } = req.body || {};
     if (typeof fileName !== 'string' || fileName.length === 0) {
       return sendApiError(res, 400, 'BAD_REQUEST', 'fileName required');
     }
@@ -882,6 +890,8 @@ export function registerProjectExportRoutes(app: Express, ctx: RegisterProjectEx
       // renderer can auto-detect deck artifacts.
       ...(typeof deck === 'boolean' ? { deck } : {}),
       ...(typeof imageFormat === 'string' ? { imageFormat } : {}),
+      ...(width != null ? { width } : {}),
+      ...(height != null ? { height } : {}),
       ...(typeof title === 'string' ? { title } : {}),
     });
   });

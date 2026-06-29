@@ -33,6 +33,8 @@ export interface BuildDeckRenderInputOptions {
   projectId: string;
   projectsRoot: string;
   stitch?: boolean;
+  width?: number;
+  height?: number;
   // Page mode only: split a long non-deck page into one image per viewport
   // (multi-page PDF). Ignored when the artifact renders as a deck.
   paginate?: boolean;
@@ -74,6 +76,8 @@ export async function buildDeckRenderInput(
       ...(options.pageImageFormat == null ? {} : { pageImageFormat: options.pageImageFormat }),
       ...(options.stitch == null ? {} : { stitch: options.stitch }),
       ...(options.paginate == null ? {} : { paginate: options.paginate }),
+      ...(options.width == null ? {} : { width: options.width }),
+      ...(options.height == null ? {} : { height: options.height }),
     },
   };
 }
