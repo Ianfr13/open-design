@@ -1,5 +1,6 @@
 import { expect, test } from '@/playwright/suite';
 import { ensureRailOpen } from '@/playwright/rail';
+import { fulfillAgentsRoute } from '@/playwright/mock-factory';
 import type { Page } from '@playwright/test';
 import { T } from '@/timeouts';
 
@@ -46,6 +47,18 @@ test.beforeEach(async ({ page }) => {
         },
       },
     });
+  });
+  await page.route('**/api/agents**', async (route) => {
+    await fulfillAgentsRoute(route, [
+      {
+        id: 'byok-opencode',
+        name: 'BYOK OpenCode',
+        bin: 'opencode',
+        available: true,
+        version: 'test',
+        models: [{ id: 'default', label: 'Default' }],
+      },
+    ]);
   });
 });
 
