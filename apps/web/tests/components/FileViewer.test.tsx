@@ -33,6 +33,7 @@ import {
   applyInspectOverridesToSource,
   commentPreviewCanvasSize,
   effectivePreviewScale,
+  fileVersionPreviewOptions,
   parseInspectOverridesFromSource,
   previewOverlayTransform,
   serializeInspectOverrides,
@@ -2805,6 +2806,16 @@ describe('FileViewer SVG artifacts', () => {
         Reflect.deleteProperty(URL, 'revokeObjectURL');
       }
     }
+  });
+
+  it('uses the shared exportable-deck detector for version history preview options', () => {
+    const deckSource =
+      '<deck-stage><section data-screen-label="01 Cover">A</section>' +
+      '<section data-screen-label="02 Next">B</section></deck-stage>';
+    const options = fileVersionPreviewOptions('project-1', 'slides.html', deckSource);
+
+    expect(options.deck).toBe(true);
+    expect(options.baseHref).toBe('/api/projects/project-1/raw/');
   });
 
   it('does not show an export-started toast when desktop PDF export is canceled', async () => {

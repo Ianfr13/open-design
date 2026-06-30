@@ -2361,9 +2361,15 @@ function fileVersionSourceClassName(version: ProjectFileVersion): string {
   return 'ai';
 }
 
-function htmlLooksLikeDeck(value: string | null): boolean {
-  if (!value) return false;
-  return /class\s*=\s*['"](?:[^'"]*\s)?slide(?:\s|['"])/i.test(value);
+export function fileVersionPreviewOptions(
+  projectId: string,
+  fileName: string,
+  source: string | null | undefined,
+) {
+  return {
+    deck: sourceLooksLikeExportableDeck(source),
+    baseHref: projectRawUrl(projectId, baseDirFor(fileName)),
+  };
 }
 
 function FileVersionManagerModal({
@@ -2406,9 +2412,9 @@ function FileVersionManagerModal({
   const restoreDisabled = !selectedVersion || selectedVersion.current || restoring || loadingContent || !selectedContent;
   const srcDoc = useMemo(() => {
     if (!selectedContent) return '';
+    const previewOptions = fileVersionPreviewOptions(projectId, file.name, selectedContent);
     return buildSrcdoc(selectedContent, {
-      deck: htmlLooksLikeDeck(selectedContent),
-      baseHref: projectRawUrl(projectId, baseDirFor(file.name)),
+      ...previewOptions,
       previewFocusGuard: true,
     });
   }, [file.name, projectId, selectedContent]);
@@ -2483,10 +2489,11 @@ function FileVersionManagerModal({
 
   function openVersionInNewTab() {
     if (loadingContent || !selectedContent || !selectedVersion) return;
-    openSandboxedPreviewInNewTab(selectedContent, `${file.name} · v${selectedVersion.version}`, {
-      deck: htmlLooksLikeDeck(selectedContent),
-      baseHref: projectRawUrl(projectId, baseDirFor(file.name)),
-    });
+    openSandboxedPreviewInNewTab(
+      selectedContent,
+      `${file.name} · v${selectedVersion.version}`,
+      fileVersionPreviewOptions(projectId, file.name, selectedContent),
+    );
   }
 
   async function restoreVersion() {
