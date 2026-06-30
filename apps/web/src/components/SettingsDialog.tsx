@@ -796,6 +796,23 @@ function currentApiProtocolConfig(config: AppConfig): ApiProtocolConfig {
   };
 }
 
+function persistByokProviderConfigDraft(
+  config: AppConfig,
+  draftKey: string,
+  apiConfig: ApiProtocolConfig,
+): AppConfig {
+  return {
+    ...config,
+    byokProviderConfigDrafts: {
+      ...(config.byokProviderConfigDrafts ?? {}),
+      [draftKey]: {
+        apiConfig,
+        maxTokens: config.maxTokens,
+      },
+    },
+  };
+}
+
 function byokProviderDraftKey(
   protocol: ApiProtocol,
   apiProviderBaseUrl: string | null | undefined,
@@ -1116,6 +1133,7 @@ export function sanitizeSettingsSavePayload(
     apiProtocol: initial.apiProtocol,
     apiVersion: initial.apiVersion,
     apiProtocolConfigs: initial.apiProtocolConfigs,
+    byokProviderConfigDrafts: initial.byokProviderConfigDrafts,
     apiProviderBaseUrl: initial.apiProviderBaseUrl,
     baseUrl: initial.baseUrl,
     model: initial.model,
@@ -1707,12 +1725,13 @@ export function SettingsDialog({
   };
   const setByokProvider = (provider: ByokProviderPreset) => {
     const currentDraftKey = byokProviderKeyForConfig(cfg);
+    const currentApiConfig = currentApiProtocolConfig(cfg);
     if ((cfg.apiProviderBaseUrl ?? null) === null) {
       lastCustomByokProviderDraftKeysRef.current[cfg.apiProtocol ?? 'anthropic'] =
         currentDraftKey;
     }
     byokProviderFormDraftsRef.current[currentDraftKey] = {
-      apiConfig: currentApiProtocolConfig(cfg),
+      apiConfig: currentApiConfig,
       maxTokens: cfg.maxTokens,
       maxTokensInput,
       providerModelsCommittedKey,
@@ -1748,6 +1767,9 @@ export function SettingsDialog({
       const savedDraft = nextProviderDraftKey
         ? byokProviderFormDraftsRef.current[nextProviderDraftKey]
         : undefined;
+      const persistedDraft = nextProviderDraftKey
+        ? current.byokProviderConfigDrafts?.[nextProviderDraftKey]
+        : undefined;
       const applyDraftUiState = (draft: ByokProviderFormDraft | undefined) => {
         setShowApiKey(draft?.showApiKey ?? false);
         setApiModelCustomEditing(draft?.apiModelCustomEditing ?? false);
@@ -1763,22 +1785,47 @@ export function SettingsDialog({
       if (savedDraft) {
         applyDraftUiState(savedDraft);
         return applyApiProtocolConfig(
-          {
-            ...switched,
-            maxTokens: savedDraft.maxTokens,
-          },
+          persistByokProviderConfigDraft(
+            {
+              ...switched,
+              maxTokens: savedDraft.maxTokens,
+            },
+            currentDraftKey,
+            currentApiProtocolConfig(current),
+          ),
           provider.protocol,
           savedDraft.apiConfig,
         );
       }
-      applyDraftUiState(undefined);
+      if (persistedDraft) {
+        applyDraftUiState(undefined);
+        return applyApiProtocolConfig(
+          persistByokProviderConfigDraft(
+            {
+              ...switched,
+              maxTokens: persistedDraft.maxTokens,
+            },
+            currentDraftKey,
+            currentApiProtocolConfig(current),
+          ),
+          provider.protocol,
+          persistedDraft.apiConfig,
+        );
+      }
+      const switchedWithCurrentDraft = persistByokProviderConfigDraft(
+        switched,
+        currentDraftKey,
+        currentApiProtocolConfig(current),
+      );
       if (provider.custom) {
-        return updateCurrentApiProtocolConfig(switched, {
+        applyDraftUiState(undefined);
+        return updateCurrentApiProtocolConfig(switchedWithCurrentDraft, {
           apiProviderBaseUrl: null,
           ...(providerChanged ? { model: '' } : {}),
         });
       }
-      return updateCurrentApiProtocolConfig(switched, {
+      applyDraftUiState(undefined);
+      return updateCurrentApiProtocolConfig(switchedWithCurrentDraft, {
         ...(providerChanged ? { apiKey: '' } : {}),
         baseUrl: provider.baseUrl,
         model: provider.model,

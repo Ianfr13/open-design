@@ -502,6 +502,55 @@ describe('SettingsDialog execution settings BYOK interactions', () => {
     expect(apiKeyInput.type).toBe('password');
   });
 
+  it('persists provider-scoped BYOK drafts across Settings reopen', async () => {
+    const first = renderSettingsDialog({
+      apiProtocol: 'openai',
+      baseUrl: 'https://api.openai.com/v1',
+      model: 'gpt-4o',
+      apiProviderBaseUrl: 'https://api.openai.com/v1',
+    });
+
+    const apiKeyInput = screen.getByLabelText('API key') as HTMLInputElement;
+    fireEvent.change(apiKeyInput, { target: { value: 'sk-openai-provider' } });
+    fireEvent.click(screen.getByRole('tab', { name: 'DeepSeek' }));
+
+    await waitForPersist(
+      first.onPersist,
+      expect.objectContaining({
+        apiProviderBaseUrl: 'https://api.deepseek.com',
+        baseUrl: 'https://api.deepseek.com',
+        byokProviderConfigDrafts: expect.objectContaining({
+          'openai:https://api.openai.com/v1': expect.objectContaining({
+            apiConfig: expect.objectContaining({
+              apiKey: 'sk-openai-provider',
+              baseUrl: 'https://api.openai.com/v1',
+              model: 'gpt-4o',
+            }),
+          }),
+        }),
+      }),
+      {},
+    );
+
+    const persistedConfig = first.onPersist.mock.calls.at(-1)?.[0] as AppConfig;
+    first.unmount();
+
+    renderSettingsDialog(persistedConfig);
+    expect((screen.getByLabelText('Base URL') as HTMLInputElement).value).toBe(
+      'https://api.deepseek.com',
+    );
+
+    fireEvent.click(screen.getByRole('tab', { name: 'OpenAI' }));
+
+    expect((screen.getByLabelText('API key') as HTMLInputElement).value).toBe(
+      'sk-openai-provider',
+    );
+    expect((screen.getByLabelText('Base URL') as HTMLInputElement).value).toBe(
+      'https://api.openai.com/v1',
+    );
+    expect(screen.getByRole('combobox', { name: 'Model' }).textContent).toContain('gpt-4o');
+  });
+
   it('keeps BYOK file-editing limits discoverable from the provider heading (issue #1106)', () => {
     // Regression cover: switching from Local CLI to BYOK previously gave no
     // signal that file-editing tools (`Read`/`Write`/`Edit`) are absent on the

@@ -247,15 +247,6 @@ export async function listProviderModels(
   input: ProviderModelsInput,
 ): Promise<ProviderModelsResponse> {
   const start = Date.now();
-  if (input.protocol === 'bedrock') {
-    return {
-      ok: true,
-      kind: 'success',
-      latencyMs: Date.now() - start,
-      models: BEDROCK_MODEL_OPTIONS,
-      detail: 'AWS Bedrock uses a static seed until AWS credential-backed discovery is available.',
-    };
-  }
   if (input.protocol === 'azure') {
     return {
       ok: false,
@@ -272,6 +263,15 @@ export async function listProviderModels(
       kind: validated.forbidden ? 'forbidden' : 'invalid_base_url',
       latencyMs: Date.now() - start,
       detail: validated.error ?? '',
+    };
+  }
+  if (input.protocol === 'bedrock') {
+    return {
+      ok: true,
+      kind: 'success',
+      latencyMs: Date.now() - start,
+      models: BEDROCK_MODEL_OPTIONS,
+      detail: 'AWS Bedrock uses a static seed until AWS credential-backed discovery is available.',
     };
   }
 
