@@ -3,10 +3,10 @@
  *
  * Mirrors the vela subscription modal (`apps/web/src/components/commerce/
  * plans/pricing-plans.tsx`: `PLANS_BY_LOCALE` + `PRICING_LABELS`). Only the
- * NUMBERS sync live from plans.json (see app/_lib/pricing.ts); this file holds
- * the localized TEXT (taglines, feature bullets, section/metric labels, and
- * the number-formatting templates). When vela revises that copy, mirror it
- * here.
+ * NUMBERS sync from the public pricing contract (see app/_lib/pricing.ts);
+ * this file holds the localized TEXT (taglines, feature bullets,
+ * section/metric labels, and the number-formatting templates). When vela
+ * revises that copy, mirror it here.
  *
  * vela ships 10 plan locales; this module ports the three the marketing site
  * needs first — en-US, zh-CN, zh-TW — and falls back to English for every
@@ -21,6 +21,7 @@ export type PlanTierId = 'plus' | 'pro' | 'max';
 export interface PlanFeature {
   /** Section/intro heading ("Includes all … plan benefits, plus:"). */
   heading?: boolean;
+  /** May include `{skillsCount}` and `{systemsCount}` catalog placeholders. */
   label: string;
 }
 
@@ -107,8 +108,8 @@ const EN: PricingContent = {
       features: [
         { heading: true, label: 'Includes all Free plan benefits, plus:' },
         { label: 'Zero-config professional design agent' },
-        { label: '259+ Skills workflows' },
-        { label: '142+ Design Systems' },
+        { label: '{skillsCount}+ Skills workflows' },
+        { label: '{systemsCount}+ Design Systems' },
         { label: '20+ flagship model credits' },
         { label: 'Email support' },
       ],
@@ -167,8 +168,8 @@ const ZH_CN: PricingContent = {
       features: [
         { heading: true, label: '含 Free 套餐全部权益，以及：' },
         { label: '零配置专业设计 Agent' },
-        { label: '259+ Skills 工作流' },
-        { label: '142+ Design Systems' },
+        { label: '{skillsCount}+ Skills 工作流' },
+        { label: '{systemsCount}+ Design Systems' },
         { label: '20+ 旗舰模型额度' },
         { label: '邮件支持' },
       ],
@@ -227,8 +228,8 @@ const ZH_TW: PricingContent = {
       features: [
         { heading: true, label: '含 Free 套餐全部權益，以及：' },
         { label: '零配置專業設計 Agent' },
-        { label: '259+ Skills 工作流' },
-        { label: '142+ Design Systems' },
+        { label: '{skillsCount}+ Skills 工作流' },
+        { label: '{systemsCount}+ Design Systems' },
         { label: '20+ 旗艦模型額度' },
         { label: '郵件支援' },
       ],
@@ -287,8 +288,8 @@ const ES: PricingContent = {
       features: [
         { heading: true, label: 'Incluye todos los beneficios del plan Free, más:' },
         { label: 'Agent de diseño profesional sin configuración' },
-        { label: '259+ flujos de Skills' },
-        { label: '142+ Design Systems' },
+        { label: '{skillsCount}+ flujos de Skills' },
+        { label: '{systemsCount}+ Design Systems' },
         { label: 'Créditos para más de 20 modelos punteros' },
         { label: 'Soporte por email' },
       ],
@@ -347,8 +348,8 @@ const PT_BR: PricingContent = {
       features: [
         { heading: true, label: 'Inclui todos os benefícios do plano Free, mais:' },
         { label: 'Agent de design profissional sem configuração' },
-        { label: '259+ fluxos de Skills' },
-        { label: '142+ Design Systems' },
+        { label: '{skillsCount}+ fluxos de Skills' },
+        { label: '{systemsCount}+ Design Systems' },
         { label: 'Créditos para 20+ modelos de ponta' },
         { label: 'Suporte por email' },
       ],
@@ -407,8 +408,8 @@ const RU: PricingContent = {
       features: [
         { heading: true, label: 'Включает все преимущества плана Free, а также:' },
         { label: 'Профессиональный design agent без настройки' },
-        { label: '259+ рабочих процессов Skills' },
-        { label: '142+ Design Systems' },
+        { label: '{skillsCount}+ рабочих процессов Skills' },
+        { label: '{systemsCount}+ Design Systems' },
         { label: 'Кредиты для 20+ флагманских моделей' },
         { label: 'Поддержка по email' },
       ],
@@ -467,8 +468,8 @@ const FR: PricingContent = {
       features: [
         { heading: true, label: 'Inclut tous les avantages du plan Free, plus :' },
         { label: 'Agent de design professionnel sans configuration' },
-        { label: '259+ workflows Skills' },
-        { label: '142+ Design Systems' },
+        { label: '{skillsCount}+ workflows Skills' },
+        { label: '{systemsCount}+ Design Systems' },
         { label: 'Crédits pour 20+ modèles phares' },
         { label: 'Support par email' },
       ],
@@ -527,8 +528,8 @@ const KO: PricingContent = {
       features: [
         { heading: true, label: 'Free 플랜의 모든 혜택 포함, 추가로:' },
         { label: '무설정 전문 디자인 Agent' },
-        { label: '259+ Skills 워크플로' },
-        { label: '142+ Design Systems' },
+        { label: '{skillsCount}+ Skills 워크플로' },
+        { label: '{systemsCount}+ Design Systems' },
         { label: '20+ 플래그십 모델 크레딧' },
         { label: '이메일 지원' },
       ],
@@ -587,8 +588,8 @@ const DE: PricingContent = {
       features: [
         { heading: true, label: 'Enthält alle Vorteile des Free-Plans, plus:' },
         { label: 'Professioneller Design-Agent ohne Einrichtung' },
-        { label: '259+ Skills-Workflows' },
-        { label: '142+ Design Systems' },
+        { label: '{skillsCount}+ Skills-Workflows' },
+        { label: '{systemsCount}+ Design Systems' },
         { label: 'Credits für 20+ Flagship-Modelle' },
         { label: 'E-Mail-Support' },
       ],
@@ -647,8 +648,8 @@ const JA: PricingContent = {
       features: [
         { heading: true, label: 'Free プランのすべての特典に加えて：' },
         { label: '設定不要のプロ向けデザイン Agent' },
-        { label: '259+ Skills ワークフロー' },
-        { label: '142+ Design Systems' },
+        { label: '{skillsCount}+ Skills ワークフロー' },
+        { label: '{systemsCount}+ Design Systems' },
         { label: '20+ フラッグシップモデル用クレジット' },
         { label: 'メールサポート' },
       ],

@@ -1,19 +1,13 @@
 /*
- * Pricing contract + baked fallback snapshot for the /pricing/ page.
+ * Pricing contract + static contract mirror for the /pricing/ page.
  *
- * Single source of truth lives in the **vela** repo at
- * `apps/web/src/data/commerce/plans.ts` (`PLAN_CONFIGS`). vela publishes that
- * config, serialized to the shape below, as a public JSON at
- * `PLANS_JSON_URL`. The /pricing/ page renders `PRICING_SNAPSHOT` at build
- * time (SEO + first paint + offline fallback) and a small inline script
- * refetches `PLANS_JSON_URL` on load to reconcile the displayed numbers — so a
- * vela price change goes live on the marketing site WITHOUT a landing-page
- * rebuild.
+ * The /pricing/ page renders `PRICING_SNAPSHOT` at build time for SEO and
+ * first paint. A public JSON contract at `PLANS_JSON_URL` mirrors the same
+ * shape for client-side reconciliation and smoke checks.
  *
- * This file must never become a second source of truth. `PRICING_SNAPSHOT` is
- * a fallback mirror only; when it drifts from production the live fetch wins.
- * Keep it shaped exactly like the published JSON so the same renderer formats
- * both.
+ * Keep `PRICING_SNAPSHOT` and `public/pricing/plans.json` in lockstep until
+ * Open Design Cloud exposes an external JSON contract that can replace this
+ * static landing-page contract.
  */
 
 export type PlanTier = 'plus' | 'pro' | 'max';
@@ -56,15 +50,11 @@ export interface PricingContract {
   tiers: PlanTierConfig[];
 }
 
-/**
- * Production public host for the vela commerce app (mounted under /cloud on
- * the same origin as the marketing site). Change here if the deployment base
- * path moves; everything else derives from these two constants.
- */
+/** Production public host for the Open Design Cloud commerce app. */
 export const CLOUD_BASE_URL = 'https://open-design.ai/cloud';
 
-/** Canonical published pricing contract. Public, non-secret, CORS-open. */
-export const PLANS_JSON_URL = `${CLOUD_BASE_URL}/plans.json`;
+/** Public pricing contract served by the landing page. */
+export const PLANS_JSON_URL = '/pricing/plans.json';
 
 /**
  * Cloud billing console (the vela "wallet"). This is where subscriptions are
@@ -97,9 +87,9 @@ export function cloudSubscribeUrl(
 }
 
 /**
- * Baked fallback snapshot. Mirrors vela `PLAN_CONFIGS` at authoring time. The
- * live fetch overrides these numbers on load; this only governs first paint,
- * SEO, and the no-JS / upstream-down path.
+ * Baked fallback snapshot. Mirrors `public/pricing/plans.json`; the client
+ * fetch path uses the same contract shape to guard against stale or invalid
+ * published JSON.
  */
 export const PRICING_SNAPSHOT: PricingContract = {
   version: 1,

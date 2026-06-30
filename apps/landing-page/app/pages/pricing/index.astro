@@ -4,10 +4,10 @@
  *
  * Card LAYOUT + COPY mirror the vela subscription modal (`pricing-plans.tsx`).
  * The NUMBERS come from `PRICING_SNAPSHOT` at build time and are reconciled
- * live from `PLANS_JSON_URL` by the inline script (so a vela price change
- * reflects here without a landing-page rebuild). The localized TEXT comes from
- * app/_lib/pricing-content.ts. Numbers and text are kept separate on purpose:
- * only numbers are part of the live plans.json contract.
+ * from `PLANS_JSON_URL` by the inline script after validating the public JSON
+ * contract. The localized TEXT comes from app/_lib/pricing-content.ts.
+ * Numbers and text are kept separate on purpose: only numbers are part of the
+ * plans.json contract.
  */
 import Layout from '../../_components/sub-page-layout.astro';
 import {
@@ -31,12 +31,18 @@ import {
   getEnterprise,
   ENTERPRISE_EMAIL,
 } from '../../_lib/pricing-extras-content';
+import { getCatalogCounts } from '../../_lib/catalog';
 import { localeFromPath, localizedHref } from '../../i18n';
 
 const locale = localeFromPath(Astro.url.pathname);
 const href = (path: string) => localizedHref(path, locale);
 const content = getPricingContent(locale);
 const L = content.labels;
+const catalogCounts = await getCatalogCounts(locale);
+const catalogLabelVars = {
+  skillsCount: catalogCounts.skills.toLocaleString('en-US'),
+  systemsCount: catalogCounts.systems.toLocaleString('en-US'),
+};
 
 // Footer line with the cloud-console link injected into the localized
 // template. Brand/URL only — safe to render as HTML.
@@ -59,9 +65,10 @@ const description =
 
 const tiers: PlanTierConfig[] = PRICING_SNAPSHOT.tiers;
 const usd = (n: number) => `$${Math.round(n).toLocaleString('en-US')}`;
+const renderCatalogLabel = (label: string) => fillTemplate(label, catalogLabelVars);
 
 // Build-time display values per tier (the inline script recomputes these from
-// the live plans.json using the same formulas + the same label templates).
+// the public plans.json using the same formulas + the same label templates).
 function view(t: PlanTierConfig) {
   const introPct = Math.round((1 - t.monthly.introPriceUsd / t.monthly.priceUsd) * 100);
   const yearlyEquiv = Math.round(t.yearly.priceUsd / 12);
@@ -197,9 +204,9 @@ const jsonLd = [
             <ul class="pr-feats">
               {plan.features.map((f) =>
                 f.heading ? (
-                  <li class="pr-feat-head">{f.label}</li>
+                  <li class="pr-feat-head">{renderCatalogLabel(f.label)}</li>
                 ) : (
-                  <li class="pr-feat">{f.label}</li>
+                  <li class="pr-feat">{renderCatalogLabel(f.label)}</li>
                 ),
               )}
             </ul>
@@ -340,9 +347,9 @@ const jsonLd = [
         });
       }
 
-      // ── Live price reconciliation ────────────────────────────────────────
+      // ── Pricing contract reconciliation ──────────────────────────────────
       // Same formulas + same label templates as the build-time render, applied
-      // to the freshly fetched numbers. Falls back to the baked snapshot.
+      // to the published JSON contract. Falls back to the baked snapshot.
       const usd = (n) => '$' + Math.round(n).toLocaleString('en-US');
       const fill = (tpl, vals) => tpl.replace(/\{(\w+)\}/g, (_, k) => (k in vals ? vals[k] : '{' + k + '}'));
       const set = (scope, sel, text) => {
@@ -351,7 +358,10 @@ const jsonLd = [
       };
 
       fetch(plansUrl, { headers: { Accept: 'application/json' } })
-        .then((r) => (r.ok ? r.json() : null))
+        .then((r) => {
+          const contentType = r.headers.get('content-type') || '';
+          return r.ok && contentType.includes('application/json') ? r.json() : null;
+        })
         .then((data) => {
           if (!data || !Array.isArray(data.tiers)) return;
           for (const t of data.tiers) {
