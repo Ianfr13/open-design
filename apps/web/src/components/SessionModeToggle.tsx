@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { ChatSessionMode } from '@open-design/contracts';
 import { useT } from '../i18n';
 import { Icon } from './Icon';
@@ -145,6 +145,7 @@ function ModeDescriptionCard({
   className,
   id,
   role,
+  maxHeight,
 }: {
   item: ModeView;
   bestForLabel: string;
@@ -153,9 +154,15 @@ function ModeDescriptionCard({
   className: string;
   id?: string;
   role?: 'tooltip';
+  maxHeight?: number | null;
 }) {
   return (
-    <div className={`session-mode-card ${className}`} id={id} role={role}>
+    <div
+      className={`session-mode-card ${className}`}
+      id={id}
+      role={role}
+      style={maxHeight ? { maxHeight: `${maxHeight}px` } : undefined}
+    >
       <div className="session-mode-card__head">
         <span className="session-mode-card__icon" aria-hidden>
           <Icon name={item.icon} size={14} />
@@ -198,6 +205,7 @@ export function SessionModeToggle({ mode, onChange, disabled = false }: Props) {
   const t = useT();
   const [open, setOpen] = useState(false);
   const [previewMode, setPreviewMode] = useState<ChatSessionMode | null>(null);
+  const [cardMaxHeight, setCardMaxHeight] = useState<number | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const cardId = useId();
   const modes = MODE_META.map<ModeView>((item) => ({
@@ -240,6 +248,28 @@ export function SessionModeToggle({ mode, onChange, disabled = false }: Props) {
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [closeMenu, open]);
+
+  // The popover opens upward (CSS bottom: 100% + 6px). A tall description card
+  // would otherwise run up under the project tab bar / off the top of the
+  // screen, so cap its height to the space above the trigger while reserving a
+  // clearance band at the top of the viewport (tab bar + breathing room).
+  useLayoutEffect(() => {
+    if (!showCard) {
+      setCardMaxHeight(null);
+      return;
+    }
+    const POPOVER_GAP = 6; // matches CSS bottom: calc(100% + 6px)
+    const TOP_CLEARANCE = 80; // keep the card below the top tab bar
+    const measure = () => {
+      const root = rootRef.current;
+      if (!root) return;
+      const topSpace = Math.floor(root.getBoundingClientRect().top - POPOVER_GAP - TOP_CLEARANCE);
+      setCardMaxHeight(Math.max(200, Math.min(360, topSpace)));
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [showCard]);
 
   return (
     <div
@@ -321,6 +351,7 @@ export function SessionModeToggle({ mode, onChange, disabled = false }: Props) {
               className="session-mode-toggle__popover-card"
               id={cardId}
               role="tooltip"
+              maxHeight={cardMaxHeight}
             />
           ) : null}
         </div>
