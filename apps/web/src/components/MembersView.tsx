@@ -77,7 +77,8 @@ export function MembersView({ solo = false }: { solo?: boolean }) {
   const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([]);
   const seatsUsed = members.length + pendingInvites.length;
   const seatsTotal = isSolo ? 1 : teamSeats;
-  const teamTokenTotal = teamTier.tokens * teamSeats;
+  // tier.tokens is the per-seat monthly price (USD); team total = price × seats.
+  const teamMonthlyTotal = teamTier.tokens * teamSeats;
 
   function setRole(id: string, role: Role) {
     setRoles((prev) => ({ ...prev, [id]: role }));
@@ -179,7 +180,7 @@ export function MembersView({ solo = false }: { solo?: boolean }) {
           <div className="members__seats-copy">
             <span>
               席位 <strong>{seatsUsed}/{seatsTotal}</strong> 已用 ·{' '}
-              {isSolo ? '免费版仅含 1 个席位，升级团队版可邀请协作' : `${teamTier.name} · ${teamTokenTotal} Token / 团队`}
+              {isSolo ? '免费版仅含 1 个席位，升级团队版可邀请协作' : `${teamTier.name} · $${teamMonthlyTotal} / 团队·月`}
             </span>
             <small>{isSolo ? '团队版最少 3 个席位，按席位计费。' : '最少 3 个席位，可按团队增长继续增加。'}</small>
           </div>

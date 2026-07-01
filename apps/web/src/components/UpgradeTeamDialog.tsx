@@ -83,8 +83,8 @@ export function UpgradeTeamDialog({
           <h2 className="upgrade-team__title">{purchaseSeatsMode ? '购买更多席位' : '选择团队版档位'}</h2>
           <p className="upgrade-team__subtitle">
             {purchaseSeatsMode
-              ? `新增席位会按当前团队档位计费，至少购买到 ${minSeatCount} 个席位。总用量随席位数同步增加。`
-              : `团队版按席位计费，最少 ${minSeatCount} 个席位。不同档位的核心区别是每个席位包含的 Token 用量。`}
+              ? `新增席位会按当前团队档位计费，至少购买到 ${minSeatCount} 个席位。月费随席位数同步增加。`
+              : `团队版按席位计费，最少 ${minSeatCount} 个席位。不同档位对应不同的每席位月费。`}
           </p>
         </div>
 
@@ -104,7 +104,7 @@ export function UpgradeTeamDialog({
               +
             </button>
           </span>
-          <em>总用量 = 单席 Token × {seatCount}</em>
+          <em>每月总价 = 单席月费 × {seatCount}</em>
         </div>
 
         <div className="upgrade-team__plans" role="radiogroup" aria-label="团队版档位">
@@ -125,11 +125,12 @@ export function UpgradeTeamDialog({
                   {tier.recommended ? <small>推荐</small> : null}
                 </span>
                 <span className="upgrade-team__plan-token">
+                  <small className="upgrade-team__plan-currency">$</small>
                   {tier.tokens}
-                  <small> Token / 席位</small>
+                  <small> / 席位·月</small>
                 </span>
                 <span className="upgrade-team__plan-total">
-                  {tier.tokens * seatCount} Token / 团队
+                  ${tier.tokens * seatCount} / 团队·月
                 </span>
                 <span className="upgrade-team__plan-hint">{tier.hint}</span>
               </button>
@@ -137,14 +138,18 @@ export function UpgradeTeamDialog({
           })}
         </div>
 
-        <ul className="upgrade-team__benefits" aria-label="团队版能力">
-          {TEAM_BENEFITS.map((benefit) => (
-            <li key={benefit}>
-              <Icon name="check" size={13} />
-              <span>{benefit}</span>
-            </li>
-          ))}
-        </ul>
+        {/* The benefits are a first-time value-prop; skip them when an
+            existing team is just buying more seats — they already know. */}
+        {purchaseSeatsMode ? null : (
+          <ul className="upgrade-team__benefits" aria-label="团队版能力">
+            {TEAM_BENEFITS.map((benefit) => (
+              <li key={benefit}>
+                <Icon name="check" size={13} />
+                <span>{benefit}</span>
+              </li>
+            ))}
+          </ul>
+        )}
 
         <div className="upgrade-team__foot">
           <button type="button" className="entry-invite__btn" onClick={onClose}>
