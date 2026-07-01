@@ -18,9 +18,9 @@ interface Props {
 
 const DEFAULT_SEAT_COUNT = 3;
 const TEAM_TIERS = [
-  { id: 'starter', name: 'Team 40', tokens: 40, hint: '小团队协作入门' },
-  { id: 'growth', name: 'Team 80', tokens: 80, hint: '常规项目协作', recommended: true },
-  { id: 'scale', name: 'Team 220', tokens: 220, hint: '高频生成与评审' },
+  { id: 'starter', name: '入门版', tokens: 40, hint: '小团队协作入门' },
+  { id: 'growth', name: '标准版', tokens: 80, hint: '常规项目协作', recommended: true },
+  { id: 'scale', name: '旗舰版', tokens: 220, hint: '高频生成与评审' },
 ];
 const TEAM_BENEFITS = [
   '资产共享与管理：项目 / 设计系统 / 插件',
@@ -48,7 +48,7 @@ export function UpgradeTeamDialog({
   if (!open) return null;
 
   const selectedTier = TEAM_TIERS.find((tier) => tier.id === selectedTierId) ?? TEAM_TIERS[1];
-  const selectedTierName = selectedTier?.name ?? 'Team 80';
+  const selectedTierName = selectedTier?.name ?? '标准版';
   const selectedTokens = selectedTier?.tokens ?? 80;
   const purchaseSeatsMode = mode === 'seats';
 
@@ -80,17 +80,12 @@ export function UpgradeTeamDialog({
         </button>
 
         <div className="upgrade-team__head">
-          <div className="upgrade-team__badge" aria-hidden>
-            <Icon name="share" size={20} />
-          </div>
-          <div>
-            <h2 className="upgrade-team__title">{purchaseSeatsMode ? '购买更多席位' : '选择团队版档位'}</h2>
-            <p className="upgrade-team__subtitle">
-              {purchaseSeatsMode
-                ? `新增席位会按当前团队档位计费，至少购买到 ${minSeatCount} 个席位。总用量随席位数同步增加。`
-                : `团队版按席位计费，最少 ${minSeatCount} 个席位。不同档位的核心区别是每个席位包含的 Token 用量。`}
-            </p>
-          </div>
+          <h2 className="upgrade-team__title">{purchaseSeatsMode ? '购买更多席位' : '选择团队版档位'}</h2>
+          <p className="upgrade-team__subtitle">
+            {purchaseSeatsMode
+              ? `新增席位会按当前团队档位计费，至少购买到 ${minSeatCount} 个席位。总用量随席位数同步增加。`
+              : `团队版按席位计费，最少 ${minSeatCount} 个席位。不同档位的核心区别是每个席位包含的 Token 用量。`}
+          </p>
         </div>
 
         <div className="upgrade-team__seat-summary">
