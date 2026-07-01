@@ -3514,15 +3514,6 @@ function DesignSystemWorkspaceCollaboration({
     },
   ];
   const active = collaborators.find((collaborator) => collaborator.id === activeFrame.actor) ?? collaborators[0]!;
-  const activeTarget = targetRects[activeFrame.target] ?? targetRects.logo;
-  const activeSelection = activeTarget
-    ? {
-        left: activeTarget.left - 3,
-        top: activeTarget.top - 3,
-        width: activeTarget.width + 6,
-        height: activeTarget.height + 6,
-      }
-    : null;
 
   function cursorPositionFor(
     collaborator: (typeof collaborators)[number],
@@ -3632,20 +3623,6 @@ function DesignSystemWorkspaceCollaboration({
             </span>
           );
         })}
-        {activeSelection ? (
-          <span
-            className="ds-workspace-selection"
-            style={{
-              left: `${activeSelection.left}px`,
-              top: `${activeSelection.top}px`,
-              width: `${activeSelection.width}px`,
-              height: `${activeSelection.height}px`,
-              '--collab-color': active.color,
-            } as CSSProperties}
-          >
-            <span>{activeFrame.activity}</span>
-          </span>
-        ) : null}
       </div>
     </section>
   );
@@ -3764,18 +3741,6 @@ function ProjectFileCollabDemoOverlay({
       aria-label="Project collaboration edit demo"
       aria-hidden="true"
     >
-      <span
-        className="project-collab-demo-selection"
-        style={{
-          left: frame.selection.left,
-          top: frame.selection.top,
-          width: frame.selection.width,
-          height: frame.selection.height,
-          '--collab-color': frame.color,
-        } as CSSProperties}
-      >
-        <span>{frame.label}</span>
-      </span>
       <span
         className="project-collab-demo-cursor"
         style={{

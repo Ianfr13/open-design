@@ -368,7 +368,7 @@ export function EntryNavRail({ view, onViewChange, onNewProject, open, onClose, 
               onClick={() => selectView('members')}
               testId="entry-nav-members"
             >
-              <Icon name="share" size={18} />
+              <Icon name="users" size={18} />
             </NavButton>
             <NavButton
               active={view === 'dashboard'}

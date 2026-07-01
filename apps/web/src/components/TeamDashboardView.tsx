@@ -7,9 +7,9 @@ import type { CSSProperties } from 'react';
 import { Icon } from './Icon';
 
 const DASHBOARD_STATS = [
-  { label: '创建的设计数', value: '128', delta: '+18 本周', icon: 'grid' },
-  { label: '创建的 Design System 数', value: '12', delta: '+3 本月', icon: 'palette' },
-  { label: '活跃成员', value: '5', delta: '过去 7 天', icon: 'share' },
+  { label: '创建的设计数', value: '128', delta: '+18 本周', deltaKind: 'change', icon: 'grid' },
+  { label: '创建的 Design System 数', value: '12', delta: '+3 本月', deltaKind: 'change', icon: 'palette' },
+  { label: '活跃成员', value: '5', delta: '过去 7 天', deltaKind: 'period', icon: 'users' },
 ] as const;
 
 const TOKEN_RANKING = [
@@ -46,7 +46,6 @@ export function TeamDashboardView({ isAdmin = true, isTeamPlan = false, onAutoRe
             {isAdmin ? 'Owner / Manager 可见 · Nexu 团队最近 30 天' : 'Member 视角 · 仅查看自己的额度状态'}
           </p>
         </div>
-        <span className="team-dashboard__access">UC-10</span>
       </header>
 
       {isTeamPlan && isAdmin ? (
@@ -62,7 +61,7 @@ export function TeamDashboardView({ isAdmin = true, isTeamPlan = false, onAutoRe
         </section>
       ) : null}
 
-      <section className="team-dashboard__hero" aria-label="UC-10 数据大盘">
+      <section className="team-dashboard__hero" aria-label="数据大盘">
         <div className="team-dashboard__hero-copy">
           <h2>Nexu 团队</h2>
           <p>汇总团队产出、Design System 沉淀、活跃协作和 token 消耗结构。</p>
@@ -80,7 +79,7 @@ export function TeamDashboardView({ isAdmin = true, isTeamPlan = false, onAutoRe
             <h2>{isAdmin ? '团队成员额度' : '我的额度'}</h2>
             <p>
               {isAdmin
-                ? '查看每位成员的剩余额度，并为额度不足的成员续额。'
+                ? '额度用尽会中断成员的协作与 Agent 任务，请及时为额度偏低的成员续额。'
                 : '当前额度不足时，请联系 Owner 或 Manager 帮你提升额度。'}
             </p>
           </div>
@@ -105,6 +104,7 @@ export function TeamDashboardView({ isAdmin = true, isTeamPlan = false, onAutoRe
                 <em className={member.status === '需续额' ? 'is-low' : undefined}>{member.status}</em>
                 <button
                   type="button"
+                  className={member.status === '需续额' ? 'is-urgent' : undefined}
                   onClick={() => onAutoRecharge?.({ kind: 'member', name: member.name, role: member.role })}
                 >
                   续额度
@@ -129,7 +129,7 @@ export function TeamDashboardView({ isAdmin = true, isTeamPlan = false, onAutoRe
             </span>
             <span className="team-dashboard__metric-label">{stat.label}</span>
             <strong className="team-dashboard__metric-value">{stat.value}</strong>
-            <span className="team-dashboard__metric-delta">{stat.delta}</span>
+            <span className={`team-dashboard__metric-delta${stat.deltaKind === 'period' ? ' is-period' : ''}`}>{stat.delta}</span>
           </article>
         ))}
       </div>
@@ -148,7 +148,7 @@ export function TeamDashboardView({ isAdmin = true, isTeamPlan = false, onAutoRe
             <div
               className="team-dashboard__token-row"
               key={person.name}
-              style={{ '--member-rank-color': person.color } as CSSProperties}
+              style={{ '--member-rank-color': index === 0 ? person.color : 'var(--text-secondary)' } as CSSProperties}
             >
               <span className="team-dashboard__token-rank">{index + 1}</span>
               <div className="team-dashboard__token-person">

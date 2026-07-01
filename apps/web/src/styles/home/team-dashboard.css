@@ -119,7 +119,6 @@
 }
 
 .team-dashboard__recharge-callout button,
-.team-dashboard__credit-row button,
 .team-dashboard__member-credit button {
   height: 34px;
   padding: 0 14px;
@@ -131,6 +130,32 @@
   font-size: 12.5px;
   font-weight: 750;
   white-space: nowrap;
+}
+/* Recharge buttons read quiet by default so each row's status and numbers
+   land first; only a row that genuinely needs topping up (需续额) gets the
+   accent treatment, instead of every row shouting in red. */
+.team-dashboard__credit-row button {
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 650;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.team-dashboard__credit-row button:hover {
+  border-color: var(--border-strong);
+  color: var(--text-strong);
+}
+.team-dashboard__credit-row button.is-urgent {
+  border-color: color-mix(in srgb, var(--accent) 26%, var(--border));
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-weight: 750;
 }
 
 .team-dashboard__credit-card {
@@ -291,6 +316,16 @@
   color: #047857;
   font-size: 11px;
   font-weight: 750;
+}
+/* A time-range hint (e.g. 过去 7 天) is not a positive delta — render it as a
+   plain muted caption, not a green pill, so it doesn't compete with real
+   change badges like "+18 本周". */
+.team-dashboard__metric-delta.is-period {
+  padding: 0;
+  background: none;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 500;
 }
 
 .team-dashboard__token-card {

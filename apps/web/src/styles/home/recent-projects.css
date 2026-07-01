@@ -3,12 +3,16 @@
    on the Home view, with a "View all" anchor that switches to the
    Projects view.
    ============================================================ */
-.recent-projects__move-remind {
+/* Scoped under .modal to out-specify `.modal label { flex-direction: column }`,
+   which would otherwise stack the checkbox above the "不再提示" text. */
+.modal .recent-projects__move-remind {
   display: inline-flex;
+  flex-direction: row;
   align-items: center;
+  flex: 0 0 auto;
   gap: 8px;
-  align-self: flex-start;
   font-size: 13px;
+  white-space: nowrap;
   color: var(--text-muted);
   cursor: pointer;
 }

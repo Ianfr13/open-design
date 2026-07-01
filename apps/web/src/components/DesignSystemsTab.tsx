@@ -1402,7 +1402,7 @@ function DesignSystemDetail({
           disabled={busy}
           title="转为团队设计系统"
         >
-          <Icon name="share" />
+          <Icon name="users" />
           转为团队
         </Button>
       ) : null}

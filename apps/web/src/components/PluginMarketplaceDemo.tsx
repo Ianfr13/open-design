@@ -674,7 +674,15 @@ export function PluginMarketplaceDemo({ onTryPlugin }: PluginMarketplaceDemoProp
                       <div className="plugin-marketplace__row">
                         <PluginLogo plugin={plugin} />
                         <span className="plugin-marketplace__row-main">
-                          <strong>{plugin.name}</strong>
+                          <span className="plugin-marketplace__name-row">
+                            <strong>{plugin.name}</strong>
+                            {plugin.source === 'Workspace' ? (
+                              <span className="plugin-marketplace__team-badge">
+                                <Icon name="users" size={11} />
+                                团队共享
+                              </span>
+                            ) : null}
+                          </span>
                           <small>{plugin.description}</small>
                           <span className="plugin-marketplace__row-stats">
                             <span>{skillCount} skills</span>
@@ -718,7 +726,7 @@ export function PluginMarketplaceDemo({ onTryPlugin }: PluginMarketplaceDemoProp
                                       setMenuId(null);
                                     }}
                                   >
-                                    <Icon name="share" size={14} />
+                                    <Icon name="users" size={14} />
                                     转为团队共享
                                   </button>
                                 ) : null}
@@ -768,7 +776,15 @@ export function PluginMarketplaceDemo({ onTryPlugin }: PluginMarketplaceDemoProp
                 <div className="plugin-marketplace__row">
                   <PluginLogo plugin={skill} />
                   <span className="plugin-marketplace__row-main">
-                    <strong>{skill.name}</strong>
+                    <span className="plugin-marketplace__name-row">
+                      <strong>{skill.name}</strong>
+                      {skill.source === 'Workspace' ? (
+                        <span className="plugin-marketplace__team-badge">
+                          <Icon name="users" size={11} />
+                          团队共享
+                        </span>
+                      ) : null}
+                    </span>
                     <small>{skill.description}</small>
                   </span>
                   <button
@@ -808,7 +824,7 @@ export function PluginMarketplaceDemo({ onTryPlugin }: PluginMarketplaceDemoProp
                                 setMenuId(null);
                               }}
                             >
-                              <Icon name="share" size={14} />
+                              <Icon name="users" size={14} />
                               转为团队共享
                             </button>
                           ) : null}

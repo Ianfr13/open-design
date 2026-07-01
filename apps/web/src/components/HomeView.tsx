@@ -70,7 +70,7 @@ import { smoothScrollToTop } from '../utils/smoothScrollToTop';
 import { missingRequiredInputs, pluginInputsAreValid } from '../utils/pluginRequiredInputs';
 import { HomeHero, type ExamplePromptInfo, type HomeHeroHandle } from './HomeHero';
 import { findChip, HOME_HERO_CHIPS, type HomeHeroChip } from './home-hero/chips';
-import { type DemoScenario, type DemoUseMode } from './DemoControlBar';
+import { canManageWorkspaceScenario, type DemoScenario, type DemoUseMode } from './DemoControlBar';
 import { homeHeroChipLabel } from './home-hero/chip-labels';
 import type { PlaceholderScenario } from './home-hero/placeholderScenarios';
 import { consumePendingHomeChip, HOME_CHIP_INTENT_EVENT } from '../runtime/home-intent';
@@ -2088,6 +2088,11 @@ export function HomeView({
         heading="最近项目"
         space="recent"
         collaborationEnabled={demoUseMode === 'cloud'}
+        // Gate team-management affordances by role, same as the "全部项目" strip
+        // in EntryShell: a Viewer must not get 多选 / 移出团队空间 / 删除 on
+        // other members' shared projects (per the role permission matrix).
+        canManageProjectCollection={demoUseMode === 'cloud' && demoScenario !== 'viewer' && demoScenario !== 'invite-viewer'}
+        canAssignInviteRoles={demoUseMode === 'cloud' && (demoScenario ? canManageWorkspaceScenario(demoScenario) : true)}
         {...(projectsLoading !== undefined ? { loading: projectsLoading } : {})}
         onOpen={(id) => {
           // P0 ui_click area=recent_projects element=project_card — emit

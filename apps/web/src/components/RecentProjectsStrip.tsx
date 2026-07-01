@@ -806,15 +806,13 @@ export function RecentProjectsStrip({
           }}
         >
           <DialogTitle id={renameTitleId}>{t('designs.renameTitle')}</DialogTitle>
-          <label>
-            {t('designs.renamePrompt', { name: renameTarget.original })}
-            <input
-              type="text"
-              value={renameInput}
-              autoFocus
-              onChange={(event) => setRenameInput(event.target.value)}
-            />
-          </label>
+          <input
+            type="text"
+            aria-label={t('designs.renameTitle')}
+            value={renameInput}
+            autoFocus
+            onChange={(event) => setRenameInput(event.target.value)}
+          />
           <DialogFooter className="row">
             <button type="button" onClick={cancelRename}>
               {t('designs.renameCancel')}
@@ -834,11 +832,12 @@ export function RecentProjectsStrip({
           className="modal-confirm"
           role="alertdialog"
           onClose={() => setConfirmTarget(null)}
+          closeOnEscape
           ariaLabelledBy={confirmTitleId}
         >
           <DialogTitle id={confirmTitleId}>{t('designs.deleteTitle')}</DialogTitle>
           <DialogDescription>
-            {t('designs.deleteConfirm', { name: confirmTarget.name })}
+            确定要删除「{confirmTarget.name}」吗？
           </DialogDescription>
           <DialogFooter className="row">
             <button type="button" onClick={() => setConfirmTarget(null)}>
@@ -855,6 +854,7 @@ export function RecentProjectsStrip({
           className="modal-confirm"
           role="alertdialog"
           onClose={() => setMoveTarget(null)}
+          closeOnEscape
           ariaLabelledBy={moveTitleId}
         >
           <DialogTitle id={moveTitleId}>
@@ -863,23 +863,26 @@ export function RecentProjectsStrip({
           <DialogDescription>
             {moveTarget.action === 'to-team' ? (
               <>
-                「{moveTarget.project.name}」转入团队空间后，<strong>团队全体成员都可以查看和编辑</strong>。该操作可在「全部项目」中找到。
+                转入团队空间后，<strong>团队全体成员都可以查看和编辑</strong>。该操作可在「全部项目」中找到。
               </>
             ) : (
               <>
-                「{moveTarget.project.name}」移出团队空间后，将回到私人项目，<strong>只有你可以查看和编辑</strong>。
+                移出团队空间后，将回到私人项目，<strong>只有你可以查看和编辑</strong>。
               </>
             )}
           </DialogDescription>
-          <label className="recent-projects__move-remind">
-            <input
-              type="checkbox"
-              checked={moveDontRemind}
-              onChange={(event) => setMoveDontRemind(event.target.checked)}
-            />
-            不再提示
-          </label>
           <DialogFooter className="row">
+            <label
+              className="recent-projects__move-remind"
+              style={{ marginRight: 'auto', alignSelf: 'center' }}
+            >
+              <input
+                type="checkbox"
+                checked={moveDontRemind}
+                onChange={(event) => setMoveDontRemind(event.target.checked)}
+              />
+              不再提示
+            </label>
             <button type="button" onClick={() => setMoveTarget(null)}>
               {t('designs.renameCancel')}
             </button>

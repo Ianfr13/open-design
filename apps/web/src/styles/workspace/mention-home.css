@@ -496,6 +496,12 @@
   color: var(--text-strong);
 }
 .modal-confirm .row button:hover { border-color: var(--border-strong); }
+.modal-confirm .row button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.modal-confirm .row button.primary:hover { filter: brightness(0.95); }
 .modal-confirm .row button.primary.danger {
   background: var(--red);
   border-color: var(--red);
