@@ -6340,6 +6340,13 @@ async function attachTerminal(base, projectId, terminalId) {
   }
 }
 
+function parseProjectFileVersionSourceFlag(raw) {
+  if (raw == null) return null;
+  if (raw === 'ai' || raw === 'manual' || raw === 'restore') return raw;
+  console.error(`Invalid --source "${String(raw)}". Expected one of: ai, manual, restore.`);
+  process.exit(2);
+}
+
 async function runFiles(args) {
   if (args.length === 0 || args[0] === 'help' || args.includes('--help') || args.includes('-h')) {
     console.log(`Usage:
@@ -6540,11 +6547,12 @@ Common options:
         console.error('Usage: od files version-create <projectId> <relpath> [--prompt <text> | --prompt-file <path|->] [--label <text>] [--source <ai|manual|restore>]');
         process.exit(2);
       }
+      const source = parseProjectFileVersionSourceFlag(flags.source);
       const prompt = await readPromptFromFlags(flags);
       const body = {};
       if (prompt !== null) body.prompt = prompt;
       if (typeof flags.label === 'string' && flags.label.length > 0) body.label = flags.label;
-      if (flags.source === 'ai' || flags.source === 'manual' || flags.source === 'restore') body.source = flags.source;
+      if (source) body.source = source;
       const resp = await fetch(
         `${base}/api/projects/${encodeURIComponent(id)}/files/${encodeProjectRelpath(rel)}/versions`,
         {
