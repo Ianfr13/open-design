@@ -2,7 +2,7 @@
 title: "What Is Vibe Design? The 2026 Guide to Designing by Intent"
 date: 2026-06-17
 category: "Guides"
-readingTime: 6
+readingTime: 9
 summary: "Describe the feeling and direction of a UI and let AI generate it — but most tools stop at a pretty mockup. Here's what vibe design really is, vibe design vs vibe coding, and how to take it from prompt to shipped code."
 ctaKind: download-app
 author: mira-zhao
@@ -117,12 +117,14 @@ The term descends directly from [**vibe coding**](https://en.wikipedia.org/wiki/
 | **You steer by** | Behavior & logic | Tone, layout, taste |
 | **Popularized by** | Karpathy, 2025 | Google Stitch, early 2026 |
 
-They're two ends of the same shift, and in 2026 they're converging: the most useful agents design *and* build. Google pushed "vibe design" mainstream with its [**Stitch**](https://stitch.withgoogle.com/) launch in early 2026, giving the category a name and a wave of search demand.
+They're two ends of the same shift, and in 2026 they're converging: the most useful agents design *and* build. Google pushed "vibe design" mainstream with its [**Stitch**](https://stitch.withgoogle.com/) launch in early 2026, giving the category a name and a wave of search demand. For the full side-by-side — where the two overlap, where they split, and which one to reach for on a given task — see [**vibe design vs vibe coding**](/blog/vibe-design-vs-vibe-coding/).
 
 <figure>
   <img src="/blog/vibe-design-stitch.webp" alt="Editorial illustration: a prompt producing a single static UI screen" />
   <figcaption>Google Stitch took "vibe design" mainstream — but stops at a generated screen.</figcaption>
 </figure>
+
+Stitch is worth trying, and it's also the clearest example of the ceiling this article is about — it generates a great screen and then hands you a dead end. We pressure-tested it in [**vibe design with Google Stitch**](/blog/vibe-design-with-stitch/): what it genuinely nails, and where it quietly traps you.
 
 ## How vibe design actually works
 
@@ -141,6 +143,25 @@ In an [agent-native workspace](/blog/why-we-built-open-design-as-a-skill-layer/)
   <img src="/blog/vibe-design-od-loop.webp" alt="Editorial illustration of the describe, generate, and steer loop in Open Design" />
   <figcaption>The intent → generate → steer loop, in Open Design.</figcaption>
 </figure>
+
+## When vibe design is the right call — and when it isn't
+
+Vibe design is a speed-and-access tool, not a universal replacement for design judgment. It shines when you want to move from idea to a credible interface fast, and it struggles when the problem is really about deep research or pixel-exact brand control.
+
+**Reach for vibe design when you're:**
+
+- **Exploring** — you need ten directions by Friday, not one perfect frame.
+- **Prototyping a flow** — sign-up, onboarding, a dashboard — to feel it before you commit.
+- **A non-designer who needs a real UI** — a founder, PM, or engineer who can describe intent but doesn't want to learn a heavy tool.
+- **Racing to shipped code** — the design is a means to a running product, not the deliverable.
+
+**Be more careful when you're:**
+
+- **Doing foundational UX research** — vibe design generates interfaces; it doesn't interview users or validate a problem.
+- **Enforcing a mature design system pixel-for-pixel** — you'll still want a human owner on tokens and edge cases (a good agent respects a system, but you set the rules).
+- **Working on nuanced brand or motion craft** — taste-heavy work where "close enough" isn't close enough yet.
+
+A simple rule of thumb: **the earlier and rougher the stage, the more vibe design pays off.** Use it to get to a real, steerable artifact quickly — then bring human judgment where it matters most. Which tool you pick decides how far that artifact travels; we compare the current options, and the mockup-vs-shipped trap that separates them, in [**vibe design tools: an honest guide**](/blog/vibe-design-tools/).
 
 ## The gap nobody talks about: from mockup to shipped
 
@@ -179,6 +200,29 @@ This is the lane [Open Design](/blog/why-we-built-open-design-as-a-skill-layer/)
 3. **Steer in plain language** — iterate on density, palette, tone, and states.
 4. **Push to code early** — the sooner the design is real code, the sooner you learn what works.
 5. **Keep it open and yours** — open-source + BYOK avoids lock-in as the category moves fast. (If you're coming from a closed canvas, here's [the open-source path away from Figma](/blog/figma-alternative-open-design/) and [from Claude Design](/blog/open-source-alternative-to-claude-design/).)
+
+## Vibe design FAQ
+
+**Is vibe design the same as vibe coding?**
+No. Vibe coding uses intent to generate *working code*; vibe design uses intent to generate the *interface* — layout, tone, and taste. They're two ends of the same intent-first shift, and in 2026 they increasingly happen in one agent. See [vibe design vs vibe coding](/blog/vibe-design-vs-vibe-coding/) for the full split.
+
+**Does vibe design replace designers?**
+No — it moves them up the stack. The hand-work (placing components, nudging spacing) gets automated; the judgment (taste, direction, when the AI is wrong) matters more, not less. Designers become creative directors of an AI, not typists in a canvas.
+
+**Do you need to be technical to vibe design?**
+No. That's the point — intent is the interface. A founder or PM who can describe what they want can reach a credible UI without learning a heavy design tool. The technical depth only matters if you want the result to become production code, and even then the agent handles most of it.
+
+**Can vibe design produce real, shippable code — or just mockups?**
+It depends entirely on the tool. Most stop at a static mockup you then hand-translate. Agentic tools like [Open Design](/blog/why-we-built-open-design-as-a-skill-layer/) carry the same artifact to production code and keep design and code in sync. If shipping matters, choose a tool that doesn't dead-end at a picture.
+
+**What tools do you use for vibe design?**
+Google Stitch popularized the category; other options range from closed canvases to open, agent-native workspaces. The dividing line that matters is whether the tool ships to real code. We break down the current landscape in [vibe design tools](/blog/vibe-design-tools/).
+
+**Where did the term "vibe design" come from?**
+It descends from *vibe coding*, coined by Andrej Karpathy in 2025, and went mainstream when Google launched [Stitch](https://stitch.withgoogle.com/) in early 2026 — which gave the category both a name and a wave of search demand.
+
+**Is there a free, open-source way to vibe design?**
+Yes. Open Design is open-source and BYOK (bring your own model keys), and it runs alongside the coding agent you already use instead of locking you into a hosted canvas — so you can vibe design, ship code, and own the output.
 
 ## The takeaway
 
