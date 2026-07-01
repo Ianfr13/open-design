@@ -100,9 +100,18 @@ export type SolutionPageCopy = {
   // ---- cta ----
   ctaTitle: string;
   ctaBody: string;
+  // ---- related tools (optional; tool/generator pages only) ----
+  relatedTitle?: string;
+  related?: { href: string; label: string }[];
 };
 
 export type SolutionPageKey =
+  // Solution → Tools (`/solutions/ai-<x>-generator/`)
+  | 'aiWireframeGenerator'
+  | 'aiUiGenerator'
+  | 'designToCode'
+  | 'aiLandingPageGenerator'
+  | 'figmaToCode'
   | 'prototype'
   | 'dashboard'
   | 'slides'

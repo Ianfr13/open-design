@@ -57,6 +57,7 @@ import { ComposerPlusMenu } from './ComposerPlusMenu';
 import { LibraryPicker } from './LibraryPicker';
 import { FigmaImportModal } from './FigmaImportModal';
 import { assetTitle, elementMetaOf } from './LibraryAssetMeta';
+import { SessionModeToggle } from './SessionModeToggle';
 import type { LibraryAsset, LibraryElementMeta } from '@open-design/contracts';
 import {
   DESIGN_TOOLBOX_ACTIONS,
@@ -73,6 +74,7 @@ import {
 import { ComposerPluginPreview } from './ComposerPluginPreview';
 import { computeToolboxDetailPosition } from './composer-detail-position';
 import { PluginDetailsModal } from "./PluginDetailsModal";
+import { SkillDetailsModal } from './SkillDetailsModal';
 import { PluginsSection, type PluginsSectionHandle } from "./PluginsSection";
 import { BUILT_IN_PETS, CUSTOM_PET_ID } from "./pet/pets";
 import {
@@ -267,8 +269,13 @@ interface Props {
 
 // Imperative handle so ancestors (e.g. example chips in ChatPane) can
 // push text into the composer without owning its draft state.
+export interface ChatComposerDraftOptions {
+  entryFrom?: ChatAnalyticsEntryFrom;
+  sessionMode?: ChatSessionMode;
+}
+
 export interface ChatComposerHandle {
-  setDraft: (text: string) => void;
+  setDraft: (text: string, options?: ChatComposerDraftOptions) => void;
   restoreDraft: (draft: {
     text: string;
     attachments?: ChatAttachment[];
@@ -319,6 +326,8 @@ export interface ChatSendMeta {
    *  this send (e.g. 'mark' when the turn is sent from the Mark draw overlay).
    *  Behavior never depends on it; it only shapes PostHog props. */
   entryFrom?: ChatAnalyticsEntryFrom;
+  /** One-shot run mode override for seeded follow-ups before parent state catches up. */
+  sessionMode?: ChatSessionMode;
 }
 
 /**
@@ -393,6 +402,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
     const [draft, setDraft] = useState(() => initialDraft ?? loadComposerDraft(draftStorageKey) ?? "");
     const [placeholderScenario, setPlaceholderScenario] = useState<PlaceholderScenario | null>(null);
     const composerRootRef = useRef<HTMLDivElement | null>(null);
+    const pendingSessionModeRef = useRef<ChatSessionMode | null>(null);
     // Synchronous mirror of `draft`. Event handlers that mutate the draft off
     // a captured render closure (notably the annotation listener, where two
     // uploads can resolve concurrently) read/write this ref so their edits
@@ -400,6 +410,15 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
     // by handleEditorChange (the editor is the single source for typing) and by
     // the programmatic-set paths below.
     const draftRef = useRef(draft);
+    const previousSessionModeRef = useRef(sessionMode);
+
+    useEffect(() => {
+      if (previousSessionModeRef.current === sessionMode) return;
+      if (pendingSessionModeRef.current && pendingSessionModeRef.current !== sessionMode) {
+        pendingSessionModeRef.current = null;
+      }
+      previousSessionModeRef.current = sessionMode;
+    }, [sessionMode]);
 
     // chat_panel page_view fires from ProjectView (which outlives
     // conversation switches) so the event measures real chat-panel
@@ -463,6 +482,10 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
     // Detail modal — opened from a context chip click (kind === 'plugin')
     // or from the tools-menu "Details" affordance.
     const [detailsRecord, setDetailsRecord] = useState<InstalledPluginRecord | null>(null);
+    const [detailsSkill, setDetailsSkill] = useState<{
+      id: string;
+      summary?: SkillSummary | null;
+    } | null>(null);
     const [activeAppliedPlugin, setActiveAppliedPlugin] =
       useState<AppliedPluginSnapshot | null>(null);
     const pluginsSectionRef = useRef<PluginsSectionHandle | null>(null);
@@ -916,7 +939,9 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
     useImperativeHandle(
       ref,
       () => ({
-        setDraft: (text: string) => {
+        setDraft: (text: string, options?: ChatComposerDraftOptions) => {
+          pendingEntryFromRef.current = options?.entryFrom ?? null;
+          pendingSessionModeRef.current = options?.sessionMode ?? null;
           setDraft(text);
           editorRef.current?.setText(text);
           editorRef.current?.focus();
@@ -993,6 +1018,8 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
     );
 
     function reset() {
+      pendingEntryFromRef.current = null;
+      pendingSessionModeRef.current = null;
       setDraft("");
       setStaged([]);
       nextAttachmentOrderRef.current = 0;
@@ -1073,14 +1100,19 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
               ...attachments,
             ]
           : attachments;
-      // Apply a pending Next-step tag if the caller didn't set its own
-      // entry_from, then clear it so it only colours the immediate next send.
+      // Apply pending Next-step metadata if the caller didn't set its own
+      // fields, then clear it so it only colors the immediate next send.
       const pendingEntryFrom = pendingEntryFromRef.current;
+      const pendingSessionMode = pendingSessionModeRef.current;
       pendingEntryFromRef.current = null;
-      const effectiveMeta: ChatSendMeta | undefined =
-        pendingEntryFrom && !meta?.entryFrom
-          ? { ...(meta ?? {}), entryFrom: pendingEntryFrom }
-          : meta;
+      pendingSessionModeRef.current = null;
+      const effectiveMetaShape: ChatSendMeta = {
+        ...(meta ?? {}),
+        ...(pendingEntryFrom && !meta?.entryFrom ? { entryFrom: pendingEntryFrom } : {}),
+        ...(pendingSessionMode && !meta?.sessionMode ? { sessionMode: pendingSessionMode } : {}),
+      };
+      const effectiveMeta =
+        Object.keys(effectiveMetaShape).length > 0 ? effectiveMetaShape : undefined;
       onSend(prompt, nextAttachments, nextCommentAttachments, effectiveMeta);
       reset();
       return true;
@@ -2075,7 +2107,14 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
           ? placeholderScenario.text.trim()
           : '';
         if (!placeholderPrompt) return;
-        sendComposedTurn(placeholderPrompt, [], [], contextMeta);
+        const placeholderMeta: ChatSendMeta | undefined = placeholderScenario?.sessionMode
+          ? {
+              ...(contextMeta ?? {}),
+              sessionMode: placeholderScenario.sessionMode,
+              entryFrom: contextMeta?.entryFrom ?? 'next_step',
+            }
+          : contextMeta;
+        sendComposedTurn(placeholderPrompt, [], [], placeholderMeta);
         return;
       }
       sendComposedTurn(prompt, staged, nextCommentAttachments, contextMeta);
@@ -2257,9 +2296,17 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
                 setActiveAppliedPlugin(null);
               }}
               onChipDetails={(item: ContextItem) => {
-                if (item.kind !== 'plugin') return;
-                const record = installedPlugins.find((p) => p.id === item.id);
-                if (record) setDetailsRecord(record);
+                if (item.kind === 'plugin') {
+                  const record = installedPlugins.find((p) => p.id === item.id);
+                  if (record) setDetailsRecord(record);
+                  return;
+                }
+                if (item.kind === 'skill') {
+                  setDetailsSkill({
+                    id: item.id,
+                    summary: skills.find((skill) => skill.id === item.id) ?? null,
+                  });
+                }
               }}
             />
           ) : null}
@@ -2293,6 +2340,14 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
               onPluginDetails={(id) => {
                 const record = installedPlugins.find((plugin) => plugin.id === id);
                 if (record) setDetailsRecord(record);
+              }}
+              onSkillDetails={(id) => {
+                setDetailsSkill({
+                  id,
+                  summary: stagedSkills.find((skill) => skill.id === id)
+                    ?? skills.find((skill) => skill.id === id)
+                    ?? null,
+                });
               }}
               t={t}
             />
@@ -2442,6 +2497,15 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
                 trackComposerBar({ element: 'plus_add', resource_kind: 'plugin' });
                 onBrowsePlugins?.();
               }}
+              skills={skills}
+              onPickSkill={(skill) => {
+                trackComposerBar({
+                  element: 'plus_pick',
+                  resource_kind: 'skill',
+                  resource_id: skill.id,
+                });
+                void insertSkillMention(skill);
+              }}
               mcpServers={enabledMcpServers}
               onPickMcp={(server) => {
                 trackComposerBar({
@@ -2584,6 +2648,10 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
             {leadingAccessory}
             <span className="composer-spacer" />
             {footerAccessory}
+            <SessionModeToggle
+              mode={sessionMode}
+              onChange={onSessionModeChange}
+            />
             {showStopButton ? (
               <button
                 type="button"
@@ -2593,7 +2661,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
                 data-tooltip={t('chat.stop')}
                 aria-label={t('chat.stop')}
               >
-                <Icon name="stop" size={13} />
+                <Icon name="stop" size={16} />
                 <span>{t('chat.stop')}</span>
               </button>
             ) : null}
@@ -2615,7 +2683,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
                 title={t('chat.send')}
                 data-tooltip={t('chat.send')}
               >
-                <Icon name="send" size={13} />
+                <Icon name="send" size={16} />
                 <span>{t('chat.send')}</span>
               </button>
             ) : null}
@@ -2659,6 +2727,13 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
             }}
             onDuplicate={(record) => void duplicateDetailsPlugin(record)}
             hideUseAction
+          />
+        ) : null}
+        {detailsSkill ? (
+          <SkillDetailsModal
+            skillId={detailsSkill.id}
+            summary={detailsSkill.summary}
+            onClose={() => setDetailsSkill(null)}
           />
         ) : null}
         {libraryPickerOpen ? (
@@ -2991,6 +3066,7 @@ function StagedRunContexts({
   onRemoveAttachment,
   onRemovePlugin,
   onPluginDetails,
+  onSkillDetails,
   t,
 }: {
   designSystemPicker?: ReactNode;
@@ -3009,6 +3085,7 @@ function StagedRunContexts({
   onRemoveAttachment: (path: string) => void;
   onRemovePlugin?: () => void;
   onPluginDetails?: (id: string) => void;
+  onSkillDetails?: (id: string) => void;
   t: TranslateFn;
 }) {
   // Attachment thumbnails preview in a portal modal; keep that state here so the
@@ -3101,12 +3178,18 @@ function StagedRunContexts({
           key={s.id}
           className={`staged-chip staged-context staged-context--skill staged-skill-${s.source ?? 'built-in'}`}
         >
-          <span className="staged-icon" aria-hidden>
-            <Icon name="sparkles" size={12} />
-          </span>
-          <span className="staged-name" title={s.description || s.name}>
-            @{s.name}
-          </span>
+          <button
+            type="button"
+            className="staged-context-open"
+            onClick={() => onSkillDetails?.(s.id)}
+            title={s.description || s.name}
+            aria-label={s.name}
+          >
+            <span className="staged-icon" aria-hidden>
+              <Icon name="sparkles" size={12} />
+            </span>
+            <span className="staged-name">@{s.name}</span>
+          </button>
           <button
             type="button"
             className="staged-remove od-tooltip"
@@ -4198,6 +4281,19 @@ function isDesignToolboxSkill(skill: SkillSummary): boolean {
     'anti slop',
     'anti ai',
     'image',
+    'asset',
+    'reference',
+    'icon',
+    'logo',
+    'chart',
+    'diagram',
+    'echarts',
+    'three',
+    'spline',
+    'rive',
+    'lottie',
+    'mapbox',
+    'deck.gl',
     'video',
     'frontend',
     'beautify',
@@ -4324,6 +4420,26 @@ function designToolboxActionPrompt({
         t('chat.designToolbox.prompt.autoMatchStep3'),
         t('chat.designToolbox.prompt.autoMatchStep4'),
       ].join('\n');
+    case 'asset-search':
+      return [
+        ...base,
+        t('chat.designToolbox.prompt.assetSearch'),
+      ].join('\n');
+    case 'icon-workflow':
+      return [
+        ...base,
+        t('chat.designToolbox.prompt.iconWorkflow'),
+      ].join('\n');
+    case 'image-replace':
+      return [
+        ...base,
+        t('chat.designToolbox.prompt.imageReplace'),
+      ].join('\n');
+    case 'reference-extract':
+      return [
+        ...base,
+        t('chat.designToolbox.prompt.referenceExtract'),
+      ].join('\n');
     case 'motion':
       return [
         ...base,
@@ -4333,6 +4449,21 @@ function designToolboxActionPrompt({
       return [
         ...base,
         t('chat.designToolbox.prompt.motionPolish'),
+      ].join('\n');
+    case 'transition-motion':
+      return [
+        ...base,
+        t('chat.designToolbox.prompt.transitionMotion'),
+      ].join('\n');
+    case 'plan-outline':
+      return [
+        ...base,
+        t('chat.designToolbox.prompt.planOutline'),
+      ].join('\n');
+    case 'threejs-scene':
+      return [
+        ...base,
+        t('chat.designToolbox.prompt.threejsScene'),
       ].join('\n');
     case 'anti-ai-polish':
       return [
@@ -4349,12 +4480,27 @@ function designToolboxActionPrompt({
         ...base,
         t('chat.designToolbox.prompt.imageGen'),
       ].join('\n');
+    case 'chart-gen':
+      return [
+        ...base,
+        t('chat.designToolbox.prompt.chartGen'),
+      ].join('\n');
+    case 'logo-gen':
+      return [
+        ...base,
+        t('chat.designToolbox.prompt.logoGen'),
+      ].join('\n');
     case 'video-gen':
       return [
         ...base,
         t('chat.designToolbox.prompt.videoGen'),
       ].join('\n');
   }
+
+  return [
+    ...base,
+    t('chat.designToolbox.prompt.autoMatchIntro'),
+  ].join('\n');
 }
 
 function designToolboxSkillPrompt({

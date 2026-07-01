@@ -1248,6 +1248,9 @@ export interface SettingsPopoverClickProps {
     | 'follow_x'
     | 'follow_threads'
     | 'open_youtube'
+    | 'follow_instagram'
+    | 'follow_linkedin'
+    | 'follow_xiaohongshu'
     | 'open_settings';
   // element=language_select → snake_cased locale (e.g. en, zh_cn, pt_br);
   // element=appearance → system | light | dark.
@@ -1312,13 +1315,13 @@ export interface HomeChatComposerClickProps {
     | 'example_open_project'
     // The "+" menu on the home composer (same control as the in-project
     // composer's `plus_*` events): opening it, inserting a
-    // connector/plugin/mcp mention (`resource_kind` + `resource_id`), or
+    // connector/plugin/skill/mcp mention (`resource_kind` + `resource_id`), or
     // jumping to the add-resource surface (`resource_kind`).
     | 'plus_menu_open'
     | 'plus_pick'
     | 'plus_add';
   // For `plus_pick` / `plus_add`: which kind of resource (and its id on pick).
-  resource_kind?: 'connector' | 'plugin' | 'mcp';
+  resource_kind?: 'connector' | 'plugin' | 'skill' | 'mcp';
   resource_id?: string;
   // For plugin / action / task chips, the specific id (e.g. `prototype`,
   // `from_figma`, `hyperframes`).
@@ -1440,7 +1443,7 @@ export interface ProjectsListClickProps {
 export interface ProjectsMorePopoverClickProps {
   page_name: 'projects';
   area: 'projects_more_popover';
-  element: 'rename' | 'delete';
+  element: 'rename' | 'duplicate' | 'delete';
   project_id?: string;
   project_kind?: TrackingProjectKind;
 }
@@ -1846,7 +1849,7 @@ export interface ChatPanelClickProps {
 // (the wire / DB value is `chat`; the UI labels it "Ask"); `design` is the
 // full design-agent run. Map the wire `chat` → `ask` at every emit site via
 // `sessionModeToTracking` so analytics speaks the product's language.
-export type TrackingSessionMode = 'ask' | 'design';
+export type TrackingSessionMode = 'ask' | 'design' | 'plan';
 
 // Toggling the ask/design switch in the chat composer.
 export interface ComposerSessionModeClickProps {
@@ -2056,6 +2059,8 @@ export interface FileManagerClickProps {
     | 'new_sketch'
     | 'new_browser'
     | 'create_design_system'
+    | 'create_design_system_from_project'
+    | 'duplicate_project'
     | 'paste'
     | 'upload'
     | 'library'
@@ -3400,14 +3405,16 @@ export type AnalyticsEventPayload =
 
 // ---- Enum mapping helpers (code ↔ CSV wire format) -----------------------
 
-// Map the wire `ChatSessionMode` ('design' | 'chat') to the analytics enum.
+// Map the wire `ChatSessionMode` ('design' | 'chat' | 'plan') to the analytics enum.
 // The composer's "Ask" mode is `chat` on the wire; analytics uses `ask` so
-// the dashboards read in the product's own language. Anything that isn't a
-// recognized design mode buckets into `ask` (the lighter default).
+// the dashboards read in the product's own language. Anything unrecognized
+// buckets into `ask` (the lighter default).
 export function sessionModeToTracking(
   mode: string | null | undefined,
 ): TrackingSessionMode {
-  return mode === 'design' ? 'design' : 'ask';
+  if (mode === 'design') return 'design';
+  if (mode === 'plan') return 'plan';
+  return 'ask';
 }
 
 // Code `ProjectKind` from packages/contracts/src/api/projects.ts:
@@ -3630,6 +3637,8 @@ export function byokProtocolToTracking(
       return 'ollama_cloud';
     case 'senseaudio':
       return 'senseaudio';
+    case 'bedrock':
+      return null;
     default:
       return null;
   }

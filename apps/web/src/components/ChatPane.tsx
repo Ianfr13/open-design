@@ -14,6 +14,7 @@ import {
   type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
+import { hasOdCard } from '@open-design/contracts';
 import { useAnalytics } from '../analytics/provider';
 import { getResolvedDeviceId } from '../analytics/client';
 import { trackChatPanelClick, trackMessageQueueClick, trackRunFailedToastSurfaceView } from '../analytics/events';
@@ -29,6 +30,8 @@ import type { Dict } from '../i18n/types';
 import { copyToClipboard } from '../lib/copy-to-clipboard';
 import { projectRawUrl } from '../providers/registry';
 import { takeComposerSeedFor } from '../state/libraryHandoff';
+import { splitOnQuestionForms } from '../artifacts/question-form';
+import { stripArtifact } from '../artifacts/strip';
 import type { TodoItem } from '../runtime/todos';
 import type { AppliedPluginSnapshot, ChatSessionMode, WorkspaceContextItem } from '@open-design/contracts';
 import type { TrackingProjectKind } from '@open-design/contracts/analytics';
@@ -506,8 +509,8 @@ interface Props {
   onOpenQuestions?: (request?: QuestionFormOpenRequest) => void;
   onContinueRemainingTasks?: (assistantMessage: ChatMessage, todos: TodoItem[]) => void;
   onAssistantFeedback?: (assistantMessage: ChatMessage, change: ChatMessageFeedbackChange) => void;
-  // Client-side confirm for a brand-browser-assist od-card: read the unblocked
-  // browser DOM and re-extract the brand. Routed through the stable callbacks ref.
+  // Client-side action for a brand-browser-assist od-card: open/focus the
+  // Browser tab. Routed through the stable callbacks ref.
   onBrandBrowserAssistConfirm?: BrandBrowserAssistConfirm;
   // "Next step" affordance handlers forwarded to the last assistant message.
   // The featured design-toolbox rows are driven directly off the composer ref
@@ -565,6 +568,10 @@ interface Props {
   // it does based on connector status (open Connectors, or prefill the composer
   // with the import instruction).
   onConnectRepo?: () => void;
+  // True once the deterministic brand extraction actually reached ready. Until
+  // then the next-step card must stay on continue/recover actions even if the
+  // latest assistant row is terminal.
+  brandExtractionComplete?: boolean;
   // True for a programmatically-extracted brand project whose AI enrichment
   // never ran. The next-step card uses this to offer AI Optimize after the
   // extraction completion message.
@@ -573,9 +580,21 @@ interface Props {
   // seeded enrichment prompt with the default per-turn skill bundle.
   onContinueBrandEnrichment?: () => void;
   brandEnrichmentBusy?: boolean;
+  // Runs or resumes the selected agent for an incomplete brand extraction
+  // scaffold. Distinct from AI Optimize, which assumes a ready system exists.
+  onContinueBrandAgentExtraction?: () => void;
+  continueBrandAgentExtractionBusy?: boolean;
+  // Restarts the deterministic programmatic pass for an incomplete brand
+  // extraction without creating a duplicate design-system item.
+  onContinueBrandExtraction?: () => void;
+  continueBrandExtractionBusy?: boolean;
   // Creates a fresh design project using the current extracted design system.
   onCreateDesignFromActiveDesignSystem?: () => void;
   createDesignFromActiveDesignSystemBusy?: boolean;
+  // Duplicates a regular project into a new design-system workspace and starts
+  // the design-system generation pass from that copied evidence.
+  onCreateDesignSystemFromProject?: () => void;
+  createDesignSystemFromProjectBusy?: boolean;
   // Bumped by the parent to push a draft into the composer (used by the
   // "Import repo" CTA). The nonce lets the same text fire more than once.
   composerDraftSignal?: { text: string; nonce: number };
@@ -673,6 +692,61 @@ interface QueuedSendUpdate {
 // Gap left above the anchored user message when it is pinned to the top.
 const ANCHOR_TOP_PADDING = 12;
 
+function shouldHideEmptyBrandAssistantMessage(message: ChatMessage, metadata?: ProjectMetadata): boolean {
+  if (metadata?.importedFrom !== 'brand-extraction' && metadata?.kind !== 'brand') return false;
+  if (message.role !== 'assistant') return false;
+  if (brandAssistantTextHasVisibleContent(message.content)) return false;
+  if ((message.events ?? []).some(hasVisibleBrandAssistantEvent)) return false;
+  if ((message.producedFiles?.length ?? 0) > 0) return false;
+  return Boolean(message.runStatus || message.endedAt);
+}
+
+function brandAssistantTextHasVisibleContent(content: string): boolean {
+  const trimmed = content.trim();
+  if (!trimmed) return false;
+  if (hasOdCard(trimmed)) return true;
+  const withoutArtifacts = stripArtifact(trimmed).trim();
+  if (!withoutArtifacts) return false;
+  return splitOnQuestionForms(withoutArtifacts).some((segment) => {
+    if (segment.kind === 'form') return true;
+    return segment.text.trim().length > 0;
+  });
+}
+
+const HIDDEN_BRAND_ASSISTANT_STATUS_LABELS = new Set([
+  'streaming',
+  'starting',
+  'running',
+  'requesting',
+  'thinking',
+  'empty_response',
+  'done',
+  'completed',
+]);
+
+function hasVisibleBrandAssistantEvent(event: NonNullable<ChatMessage['events']>[number]): boolean {
+  switch (event.kind) {
+    case 'text':
+      return brandAssistantTextHasVisibleContent(event.text);
+    case 'thinking':
+      return event.text.trim().length > 0;
+    case 'tool_use':
+    case 'live_artifact':
+    case 'live_artifact_refresh':
+    case 'plugin_candidate':
+      return true;
+    case 'tool_result':
+      return false;
+    case 'raw':
+      return false;
+    case 'status':
+      return !HIDDEN_BRAND_ASSISTANT_STATUS_LABELS.has(event.label);
+    case 'usage':
+    case 'conversation_title':
+      return false;
+  }
+}
+
 export function ChatPane({
   messages,
   streaming,
@@ -742,11 +816,18 @@ export function ChatPane({
   connectRepoNeeded,
   githubConnected,
   onConnectRepo,
+  brandExtractionComplete = false,
   brandEnrichmentEligible,
   onContinueBrandEnrichment,
   brandEnrichmentBusy,
+  onContinueBrandAgentExtraction,
+  continueBrandAgentExtractionBusy,
+  onContinueBrandExtraction,
+  continueBrandExtractionBusy,
   onCreateDesignFromActiveDesignSystem,
   createDesignFromActiveDesignSystemBusy,
+  onCreateDesignSystemFromProject,
+  createDesignSystemFromProjectBusy,
   composerDraftSignal,
   petConfig,
   onAdoptPet,
@@ -783,7 +864,10 @@ export function ChatPane({
 }: Props) {
   const t = useT();
   const analytics = useAnalytics();
-  const displayMessages = messages;
+  const displayMessages = useMemo(
+    () => messages.filter((message) => !shouldHideEmptyBrandAssistantMessage(message, projectMetadata)),
+    [messages, projectMetadata],
+  );
   const amrProfile = config?.agentCliEnv?.amr?.[AMR_PROFILE_ENV_KEY] ?? null;
   const [inlineAmrLoginStatus, setInlineAmrLoginStatus] =
     useState<VelaLoginStatus | null>(null);
@@ -858,6 +942,11 @@ export function ChatPane({
     onArtifactShare,
     onForkFromMessage,
     onShareToOpenDesign,
+    onNextStepAiOptimize: onContinueBrandEnrichment,
+    onNextStepContinueExtraction: onContinueBrandExtraction,
+    onNextStepContinueAiExtraction: onContinueBrandAgentExtraction,
+    onNextStepCreateDesign: onCreateDesignFromActiveDesignSystem,
+    onNextStepCreateDesignSystem: onCreateDesignSystemFromProject,
   });
   assistantCallbacksRef.current = {
     onContinueRemainingTasks,
@@ -866,6 +955,11 @@ export function ChatPane({
     onArtifactShare,
     onForkFromMessage,
     onShareToOpenDesign,
+    onNextStepAiOptimize: onContinueBrandEnrichment,
+    onNextStepContinueExtraction: onContinueBrandExtraction,
+    onNextStepContinueAiExtraction: onContinueBrandAgentExtraction,
+    onNextStepCreateDesign: onCreateDesignFromActiveDesignSystem,
+    onNextStepCreateDesignSystem: onCreateDesignSystemFromProject,
   };
   // Featured design-toolbox follow-up rows on the assistant "next step" card.
   // The toolbox left the "+" menu, so these route straight into the composer
@@ -874,17 +968,39 @@ export function ChatPane({
   const handleToolboxAction = useCallback((id: DesignToolboxActionId) => {
     composerRef.current?.applyDesignToolboxAction(id);
   }, []);
-  const handleNextStepPromptAction = useCallback((prompt: string) => {
-    composerRef.current?.setDraft(prompt);
-  }, []);
+  const handleNextStepPromptAction = useCallback((
+    prompt: string,
+    options?: { sessionMode?: ChatSessionMode },
+  ) => {
+    if (options?.sessionMode && options.sessionMode !== sessionMode) {
+      onSessionModeChange?.(options.sessionMode);
+    }
+    composerRef.current?.setDraft(prompt, {
+      entryFrom: 'next_step',
+      sessionMode: options?.sessionMode,
+    });
+  }, [onSessionModeChange, sessionMode]);
   const handlePickSkill = useCallback((skillId: string) => {
     composerRef.current?.applyDesignToolboxSkill(skillId);
   }, []);
-  const nextStepVariant: NextStepActionsVariant = isDesignSystemNextStepProject(projectMetadata)
-    ? isBrandExtractionNextStepProject(projectMetadata)
-      ? 'brand-extraction'
-      : 'design-system'
-    : 'default';
+  const latestAssistantForBrandState = useMemo(() => {
+    for (let i = displayMessages.length - 1; i >= 0; i -= 1) {
+      const message = displayMessages[i]!;
+      if (message.role === 'assistant') return message;
+    }
+    return null;
+  }, [displayMessages]);
+  const nextStepVariant: NextStepActionsVariant = sessionMode === 'plan'
+    ? 'plan'
+    : isDesignSystemNextStepProject(projectMetadata)
+      ? isBrandExtractionNextStepProject(projectMetadata)
+        ? brandExtractionComplete
+          ? 'brand-extraction'
+          : !latestAssistantForBrandState || isProgrammaticBrandAssistantMessage(latestAssistantForBrandState)
+            ? 'brand-programmatic-incomplete'
+            : 'brand-ai-incomplete'
+        : 'design-system'
+      : 'default';
   // The `@skill` shown in each featured row's hover detail — matched the same
   // way the composer matches it, using the raw skill name (what gets inlined
   // into the draft). Recomputed only when the skill list changes.
@@ -912,11 +1028,30 @@ export function ChatPane({
         chipId: 'design-system',
       }));
     }
+    if (nextStepVariant === 'plan') {
+      return [
+        {
+          id: 'plan-generate-from-doc',
+          text: t('nextStep.planGeneratePrompt'),
+          chipId: 'plan',
+          sessionMode: 'design',
+        },
+        {
+          id: 'plan-improve-doc',
+          text: t('nextStep.planImprovePrompt'),
+          chipId: 'plan',
+          sessionMode: 'plan',
+        },
+      ];
+    }
     const promptPairs: Array<[string, string]> = [
       ['auto-match', t('chat.designToolbox.prompt.autoMatchIntro')],
       ['visual-polish', t('chat.designToolbox.prompt.visualPolish')],
+      ['asset-search', t('chat.designToolbox.prompt.assetSearch')],
+      ['icon-workflow', t('chat.designToolbox.prompt.iconWorkflow')],
       ['anti-ai-polish', t('chat.designToolbox.prompt.antiAiPolish')],
       ['motion-polish', t('chat.designToolbox.prompt.motionPolish')],
+      ['chart-gen', t('chat.designToolbox.prompt.chartGen')],
     ];
     return promptPairs.map(([id, text]) => ({
       id: `follow-up-${id}`,
@@ -2134,6 +2269,7 @@ export function ChatPane({
                 activeConversationId={activeConversationId}
                 activeConversationKey={activeConversationId ?? 'no-conversation'}
                 projectFiles={projectFiles}
+                projectMetadata={projectMetadata}
                 projectFileNames={projectFileNames}
                 onRequestOpenFile={onRequestOpenFile}
                 onRequestPluginDetails={onRequestPluginDetails}
@@ -2159,8 +2295,14 @@ export function ChatPane({
                 onNextStepPromptAction={handleNextStepPromptAction}
                 onNextStepAiOptimize={onContinueBrandEnrichment}
                 nextStepAiOptimizeBusy={brandEnrichmentBusy}
+                onNextStepContinueExtraction={onContinueBrandExtraction}
+                nextStepContinueExtractionBusy={continueBrandExtractionBusy}
+                onNextStepContinueAiExtraction={onContinueBrandAgentExtraction}
+                nextStepContinueAiExtractionBusy={continueBrandAgentExtractionBusy}
                 onNextStepCreateDesign={onCreateDesignFromActiveDesignSystem}
                 nextStepCreateDesignBusy={createDesignFromActiveDesignSystemBusy}
+                onNextStepCreateDesignSystem={onCreateDesignSystemFromProject}
+                nextStepCreateDesignSystemBusy={createDesignSystemFromProjectBusy}
                 onPickSkill={handlePickSkill}
                 onArtifactDownload={onArtifactDownload}
                 nextStepSkills={skills}
@@ -2493,6 +2635,11 @@ interface AssistantCallbacks {
   onArtifactShare: ((fileName: string) => void) | undefined;
   onForkFromMessage: ((message: ChatMessage) => void) | undefined;
   onShareToOpenDesign: ((assistantMessageId: string) => void) | undefined;
+  onNextStepAiOptimize: (() => void) | undefined;
+  onNextStepContinueExtraction: (() => void) | undefined;
+  onNextStepContinueAiExtraction: (() => void) | undefined;
+  onNextStepCreateDesign: (() => void) | undefined;
+  onNextStepCreateDesignSystem: (() => void) | undefined;
 }
 
 type ChatRenderItem = {
@@ -2528,6 +2675,7 @@ function ChatRows({
   activeConversationId,
   activeConversationKey,
   projectFiles,
+  projectMetadata,
   projectFileNames,
   onRequestOpenFile,
   onRequestPluginDetails,
@@ -2553,8 +2701,14 @@ function ChatRows({
   onNextStepPromptAction,
   onNextStepAiOptimize,
   nextStepAiOptimizeBusy,
+  onNextStepContinueExtraction,
+  nextStepContinueExtractionBusy,
+  onNextStepContinueAiExtraction,
+  nextStepContinueAiExtractionBusy,
   onNextStepCreateDesign,
   nextStepCreateDesignBusy,
+  onNextStepCreateDesignSystem,
+  nextStepCreateDesignSystemBusy,
   onPickSkill,
   onArtifactDownload,
   nextStepSkills,
@@ -2575,6 +2729,7 @@ function ChatRows({
   activeConversationId: string | null;
   activeConversationKey: string;
   projectFiles: ProjectFile[];
+  projectMetadata?: ProjectMetadata;
   projectFileNames?: Set<string>;
   onRequestOpenFile?: (name: string) => void;
   onRequestPluginDetails?: (pluginId: string) => void;
@@ -2597,11 +2752,20 @@ function ChatRows({
   onBrandBrowserAssistConfirm?: BrandBrowserAssistConfirm;
   onArtifactShare?: (fileName: string) => void;
   onToolboxAction?: (id: DesignToolboxActionId) => void;
-  onNextStepPromptAction?: (prompt: string) => void;
+  onNextStepPromptAction?: (
+    prompt: string,
+    options?: { sessionMode?: ChatSessionMode },
+  ) => void;
   onNextStepAiOptimize?: () => void;
   nextStepAiOptimizeBusy?: boolean;
+  onNextStepContinueExtraction?: () => void;
+  nextStepContinueExtractionBusy?: boolean;
+  onNextStepContinueAiExtraction?: () => void;
+  nextStepContinueAiExtractionBusy?: boolean;
   onNextStepCreateDesign?: () => void;
   nextStepCreateDesignBusy?: boolean;
+  onNextStepCreateDesignSystem?: () => void;
+  nextStepCreateDesignSystemBusy?: boolean;
   onPickSkill?: (skillId: string) => void;
   onArtifactDownload?: (fileName: string) => void;
   nextStepSkills?: SkillSummary[];
@@ -2685,6 +2849,7 @@ function ChatRows({
         projectKind={projectKindForTracking}
         conversationId={activeConversationId}
         projectFiles={projectFiles}
+        projectMetadata={projectMetadata}
         projectFileNames={projectFileNames}
         onRequestOpenFile={onRequestOpenFile}
         onRequestPluginFolderAgentAction={onRequestPluginFolderAgentAction}
@@ -2730,10 +2895,36 @@ function ChatRows({
         }
         onToolboxAction={onToolboxAction}
         onNextStepPromptAction={onNextStepPromptAction}
-        onNextStepAiOptimize={onNextStepAiOptimize}
+        onNextStepAiOptimize={
+          onNextStepAiOptimize
+            ? () => assistantCallbacksRef.current.onNextStepAiOptimize?.()
+            : undefined
+        }
         nextStepAiOptimizeBusy={nextStepAiOptimizeBusy}
-        onNextStepCreateDesign={onNextStepCreateDesign}
+        onNextStepContinueExtraction={
+          onNextStepContinueExtraction
+            ? () => assistantCallbacksRef.current.onNextStepContinueExtraction?.()
+            : undefined
+        }
+        nextStepContinueExtractionBusy={nextStepContinueExtractionBusy}
+        onNextStepContinueAiExtraction={
+          onNextStepContinueAiExtraction
+            ? () => assistantCallbacksRef.current.onNextStepContinueAiExtraction?.()
+            : undefined
+        }
+        nextStepContinueAiExtractionBusy={nextStepContinueAiExtractionBusy}
+        onNextStepCreateDesign={
+          onNextStepCreateDesign
+            ? () => assistantCallbacksRef.current.onNextStepCreateDesign?.()
+            : undefined
+        }
         nextStepCreateDesignBusy={nextStepCreateDesignBusy}
+        onNextStepCreateDesignSystem={
+          onNextStepCreateDesignSystem
+            ? () => assistantCallbacksRef.current.onNextStepCreateDesignSystem?.()
+            : undefined
+        }
+        nextStepCreateDesignSystemBusy={nextStepCreateDesignSystemBusy}
         onPickSkill={onPickSkill}
         onArtifactDownload={onArtifactDownload}
         nextStepSkills={nextStepSkills}
@@ -3778,14 +3969,17 @@ function MessageSessionModeChip({
 }) {
   const label = mode === 'chat'
     ? t('chat.mode.chat.label')
-    : t('chat.mode.design.label');
+    : mode === 'plan'
+      ? t('chat.mode.plan.label')
+      : t('chat.mode.design.label');
+  const icon = mode === 'chat' ? 'comment' : mode === 'plan' ? 'file' : 'sparkles';
   return (
     <div
       className={`msg-mode-chip msg-mode-chip--${mode}`}
       data-testid="msg-session-mode-chip"
       title={label}
     >
-      <Icon name={mode === 'chat' ? 'comment' : 'sparkles'} size={12} />
+      <Icon name={icon} size={12} />
       <span>{label}</span>
     </div>
   );
@@ -3960,6 +4154,16 @@ function isBrandExtractionNextStepProject(metadata: ProjectMetadata | undefined)
     metadata.importedFrom === 'brand-extraction' ||
     Boolean(metadata.brandId) ||
     Boolean(metadata.brandDesignSystemId)
+  );
+}
+
+function isProgrammaticBrandAssistantMessage(message: ChatMessage | null | undefined): boolean {
+  if (!message || message.role !== 'assistant') return false;
+  const content = message.content || '';
+  return (
+    content.includes('<od-card type="brand-browser-assist"') ||
+    /programmatic (design-system )?extraction|automatic pass needs a hand|extraction stopped/i.test(content) ||
+    /程序化.*抽取|程式化.*抽取|抽取已停止/.test(content)
   );
 }
 

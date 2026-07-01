@@ -16,6 +16,8 @@ import {
   type HeaderCopy,
   type LandingLocaleCode,
 } from '../i18n';
+import { getSolutionPageCopy } from '../solution-pages-i18n';
+import type { SolutionPageKey } from '../solution-pages-i18n/types';
 
 const REPO = 'https://github.com/nexu-io/open-design';
 const REPO_DISCUSSIONS = `${REPO}/discussions`;
@@ -44,6 +46,17 @@ const ROLE_HREFS = [
   '/solutions/product-managers/',
   '/solutions/marketing/',
 ] as const;
+
+// Solution → Tools. AI generator pages. Labels come from the solution-page
+// copy (the page breadcrumb) so the dropdown and the hub cards share one
+// translation source and cannot drift apart.
+const TOOL_ENTRIES: ReadonlyArray<{ href: string; key: SolutionPageKey }> = [
+  { href: '/solutions/ai-wireframe-generator/', key: 'aiWireframeGenerator' },
+  { href: '/solutions/ai-ui-generator/', key: 'aiUiGenerator' },
+  { href: '/solutions/ai-landing-page-generator/', key: 'aiLandingPageGenerator' },
+  { href: '/solutions/design-to-code/', key: 'designToCode' },
+  { href: '/solutions/figma-to-code/', key: 'figmaToCode' },
+];
 
 // Agent column — AMR (the design Agent) heads the dropdown in the markup,
 // followed by the coding agents with a dedicated long-form design page
@@ -87,6 +100,7 @@ export interface HeaderProps {
     | 'solution'
     | 'agent'
     | 'plugins'
+    | 'pricing'
     | 'library'
     | 'skills'
     | 'systems'
@@ -244,6 +258,20 @@ export function Header({
               >
                 <li className='nav-dropdown-group'>
                   <span className='nav-dropdown-group-label'>
+                    {productMenuCopy.tools}
+                  </span>
+                </li>
+                {TOOL_ENTRIES.map(({ href: toolHref, key }) => (
+                  <li key={key}>
+                    <a href={href(toolHref)}>
+                      <span className='dropdown-name'>
+                        {getSolutionPageCopy(locale, key).breadcrumb}
+                      </span>
+                    </a>
+                  </li>
+                ))}
+                <li className='nav-dropdown-group'>
+                  <span className='nav-dropdown-group-label'>
                     {productMenuCopy.useCases}
                   </span>
                 </li>
@@ -343,6 +371,19 @@ export function Header({
                   </a>
                 </li>
               </ul>
+            </li>
+
+            {/* Pricing — localized page. The plan numbers it renders stay in
+                sync with the vela commerce app at runtime (see
+                app/_lib/pricing.ts); the card copy mirrors vela's subscription
+                modal (see app/_lib/pricing-content.ts). */}
+            <li>
+              <a
+                href={href('/pricing/')}
+                className={active === 'pricing' ? 'is-active' : undefined}
+              >
+                {productMenuCopy.pricing}
+              </a>
             </li>
 
             {/* Resources — a category label (Blog / Tutorials / Compare), not
