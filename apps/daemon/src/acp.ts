@@ -35,6 +35,7 @@ const ACP_ARTIFACT_ECHO_START_RE = new RegExp(
   'i',
 );
 const ACP_RAW_EVENT_SHAPE_DIAGNOSTIC_LIMIT = 8;
+const AMR_STDERR_RETRY_TAIL_LIMIT = 16_000;
 
 type JsonRpcId = string | number;
 type JsonObject = Record<string, unknown>;
@@ -1032,6 +1033,7 @@ export function attachAcpSession({
   let emittedTextBuffer = '';
   let rawAcpShapeDiagnosticCount = 0;
   let artifactSuppressionDiagnosticCount = 0;
+  let amrStderrRetryTail = '';
   let finished = false;
   let fatal = false;
   let aborted = false;
@@ -1670,8 +1672,11 @@ export function attachAcpSession({
   stdout.on('data', (chunk: string) => parser.feed(chunk));
   child.stderr?.setEncoding('utf8');
   child.stderr?.on('data', (chunk: string) => {
-    if (!modelUnavailableErrorCode) return;
-    const promotedPayload = promotedAmrStderrPayload(String(chunk));
+    if (!modelUnavailableErrorCode || finished) return;
+    amrStderrRetryTail = `${amrStderrRetryTail}${String(chunk)}`.slice(
+      -AMR_STDERR_RETRY_TAIL_LIMIT,
+    );
+    const promotedPayload = promotedAmrStderrPayload(amrStderrRetryTail);
     if (promotedPayload) failWithPayload(promotedPayload);
   });
   child.on('close', (code, signal) => {

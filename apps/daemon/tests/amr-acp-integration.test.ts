@@ -85,9 +85,11 @@ function spawnAcpUpdateFixture(updates: unknown[], usage: unknown = {}): ChildPr
   `);
 }
 
-function spawnAcpStderrRetryFixture(stderrLine: string): ChildProcess {
+function spawnAcpStderrRetryFixture(stderrChunks: string | string[]): ChildProcess {
   return spawnFixtureScript(`
-    const stderrLine = ${JSON.stringify(stderrLine)};
+    const stderrChunks = ${JSON.stringify(
+      typeof stderrChunks === 'string' ? [stderrChunks] : stderrChunks,
+    )};
     function write(obj) { process.stdout.write(JSON.stringify(obj) + '\\n'); }
     process.stdin.setEncoding('utf8');
     let buffer = '';
@@ -106,8 +108,15 @@ function spawnAcpStderrRetryFixture(stderrLine: string): ChildProcess {
         } else if (msg.method === 'session/set_model' || msg.method === 'session/set_config_option') {
           write({ jsonrpc: '2.0', id: msg.id, result: {} });
         } else if (msg.method === 'session/prompt') {
-          process.stderr.write(stderrLine + '\\n');
-          setTimeout(() => process.exit(0), 25);
+          stderrChunks.forEach((stderrChunk, index) => {
+            setTimeout(() => {
+              process.stderr.write(stderrChunk);
+              if (index === stderrChunks.length - 1) {
+                process.stderr.write('\\n');
+                setTimeout(() => process.exit(0), 25);
+              }
+            }, index * 5);
+          });
         } else if (msg.method === 'session/cancel') {
           write({ jsonrpc: '2.0', id: msg.id, result: {} });
         }
@@ -901,6 +910,45 @@ describe('AMR ACP transport — end-to-end against fake vela stub', () => {
       promoted_by: 'open_design_acp_stderr_retry_status',
     });
     expect(String(payload?.message ?? '')).toContain('AMR Cloud reported insufficient balance');
+  });
+
+  it('promotes OpenCode stderr retry status when the balance log is split across chunks', async () => {
+    const child = spawnAcpStderrRetryFixture([
+      'opencode_event_stream_failure: phase=event_stream session=ses_123 error="{\\"id\\":\\"evt_123\\",\\"properties\\":{\\"sessionID\\":\\"ses_123\\",\\"status\\":{\\"attempt\\":1,\\"message\\":\\"[code=',
+      'insufficient_balance] insufficient wallet balance\\",\\"next\\":1782915664490,\\"type\\":\\"retry\\"}},\\"type\\":\\"session.status\\"}"',
+    ]);
+    const errors: Array<{ event: string; payload: unknown }> = [];
+    try {
+      const session = attachAcpSession({
+        child: child as never,
+        prompt: 'Say hello',
+        cwd: process.cwd(),
+        model: 'claude-opus-4-6',
+        mcpServers: [],
+        modelUnavailableErrorCode: 'AMR_MODEL_UNAVAILABLE',
+        send: (event, payload) => {
+          if (event === 'error') errors.push({ event, payload });
+        },
+      });
+
+      await waitForExit(child);
+      expect(session.hasFatalError()).toBe(true);
+      expect(session.completedSuccessfully()).toBe(false);
+    } finally {
+      if (child.exitCode === null) child.kill('SIGTERM');
+    }
+
+    const payload = errors[0]?.payload as {
+      message?: unknown;
+      error?: { code?: unknown; retryable?: unknown; details?: Record<string, unknown> };
+    };
+    expect(payload?.error?.code).toBe('AMR_INSUFFICIENT_BALANCE');
+    expect(payload?.error?.retryable).toBe(false);
+    expect(payload?.error?.details).toMatchObject({
+      kind: 'amr_account',
+      action: 'recharge',
+      promoted_by: 'open_design_acp_stderr_retry_status',
+    });
   });
 
   it('allows non-AMR ACP completions that produce no assistant text', async () => {
