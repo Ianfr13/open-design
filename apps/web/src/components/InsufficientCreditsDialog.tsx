@@ -40,14 +40,14 @@ const UPGRADE_TARGETS: Record<DemoPlan, TierOption[]> = {
   team: [],
 };
 
-// Same currency as the upgrade tiers (¥) — the two halves of this dialog
-// must not quote money in different units.
+// Auto-recharge credit caps are dollar-denominated (credits are billed in $),
+// unlike the subscription tiers above which quote ¥.
 const AUTO_RECHARGE_LIMITS: Array<{ id: AutoRechargeLimit; label: string }> = [
-  { id: '30', label: '¥30' },
-  { id: '50', label: '¥50' },
-  { id: '100', label: '¥100' },
-  { id: '200', label: '¥200' },
-  { id: '1000', label: '¥1000' },
+  { id: '30', label: '$30' },
+  { id: '50', label: '$50' },
+  { id: '100', label: '$100' },
+  { id: '200', label: '$200' },
+  { id: '1000', label: '$1000' },
   { id: 'unlimited', label: '∞ 不限额（无月度上限）' },
 ];
 
