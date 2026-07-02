@@ -547,9 +547,14 @@ export async function gotoVisualHome(page: Page): Promise<void> {
 }
 
 export async function gotoVisualWorkspace(page: Page): Promise<void> {
+  // The workspace-team demo mounts one recent-projects-strip per entry space
+  // (home / drafts / all-projects); the inactive ones stay in the DOM but are
+  // display:none. Scope to the visible launchpad card so the strict-mode
+  // resolver picks the active home strip instead of failing on 3 matches.
   await page
     .getByTestId('recent-projects-strip')
-    .locator('[data-project-id="visual-project-launchpad"]')
+    .locator('[data-project-id="visual-project-launchpad"]:visible')
+    .first()
     .click();
   await expect(page).toHaveURL(/\/projects\//);
   await expect(page.getByTestId('chat-composer')).toBeVisible();
