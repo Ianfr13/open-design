@@ -80,7 +80,7 @@ COPY plugins/_official ./plugins/_official
 
 FROM ${RUNTIME_IMAGE}
 
-RUN apk add --no-cache tini poppler-utils bash git && \
+RUN apk add --no-cache tini su-exec poppler-utils bash git && \
     addgroup -S -g 1001 open-design && \
     adduser -S -D -H -u 1001 -G open-design open-design
 
@@ -103,6 +103,8 @@ COPY --from=build --chown=open-design:open-design /app/plugins/_official ./plugi
 RUN mkdir -p /app/.od && \
     chown -R open-design:open-design /app
 
+COPY --chmod=755 deploy/entrypoint.sh /entrypoint.sh
+
 ENV NODE_ENV=production
 ENV NODE_OPTIONS=--max-old-space-size=192
 ENV OD_BIND_HOST=0.0.0.0
@@ -110,6 +112,7 @@ ENV OD_PORT=7456
 
 EXPOSE 7456
 
-USER open-design
-ENTRYPOINT ["/sbin/tini", "--"]
+# Stays root so entrypoint.sh can chown a freshly-mounted volume, then
+# drops to open-design (uid 1001) via su-exec before running the app.
+ENTRYPOINT ["/sbin/tini", "--", "/entrypoint.sh"]
 CMD ["node", "apps/daemon/dist/cli.js", "--no-open"]
