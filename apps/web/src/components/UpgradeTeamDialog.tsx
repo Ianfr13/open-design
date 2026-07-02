@@ -156,13 +156,6 @@ export function UpgradeTeamDialog({
           </ul>
         )}
 
-        <div className="upgrade-team__confirm">
-          <span className="upgrade-team__confirm-summary">
-            {selectedTierName} · {seatCount} 席位 · 含{' '}
-            <strong>${monthlyTotal}</strong> 等值用量额度
-          </span>
-        </div>
-
         <div className="upgrade-team__foot">
           <button type="button" className="entry-invite__btn" onClick={onClose}>
             {purchaseSeatsMode ? '暂不购买' : '暂不升级'}
