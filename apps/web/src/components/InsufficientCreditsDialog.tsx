@@ -17,9 +17,9 @@ interface TierOption {
   plan: DemoPlan;
   label: string;
   desc: string;
-  /** Per-month price (¥), billed monthly. */
+  /** Per-month price ($), billed monthly. */
   monthly: number;
-  /** Per-month price (¥) when billed annually. */
+  /** Per-month price ($) when billed annually. */
   annual: number;
 }
 
@@ -40,8 +40,7 @@ const UPGRADE_TARGETS: Record<DemoPlan, TierOption[]> = {
   team: [],
 };
 
-// Auto-recharge credit caps are dollar-denominated (credits are billed in $),
-// unlike the subscription tiers above which quote ¥.
+// All money in this dialog is dollar-denominated — tiers and recharge caps alike.
 const AUTO_RECHARGE_LIMITS: Array<{ id: AutoRechargeLimit; label: string }> = [
   { id: '30', label: '$30' },
   { id: '50', label: '$50' },
@@ -190,7 +189,7 @@ export function InsufficientCreditsDialog({
                     <span className="credit-upgrade__option-desc">{tier.desc}</span>
                   </span>
                   <span className="credit-upgrade__option-price">
-                    ¥{price}
+                    ${price}
                     <span className="credit-upgrade__option-unit">/月{perSeat}</span>
                   </span>
                 </button>
@@ -207,8 +206,8 @@ export function InsufficientCreditsDialog({
                 {payableToday === null
                   ? '—'
                   : teamSelected
-                    ? `¥${payablePerSeat}/席 × ${TEAM_MIN_SEATS} 席 = ¥${payableToday}`
-                    : `¥${payableToday}`}
+                    ? `$${payablePerSeat}/席 × ${TEAM_MIN_SEATS} 席 = $${payableToday}`
+                    : `$${payableToday}`}
               </strong>
             </div>
           </div>
@@ -233,7 +232,7 @@ export function InsufficientCreditsDialog({
               onClick={() => onUpgrade(selectedTier)}
             >
               <Icon name="sparkles" size={14} />
-              {payableToday === null ? '确认支付并升级' : `确认支付 ¥${payableToday} 并升级`}
+              {payableToday === null ? '确认支付并升级' : `确认支付 $${payableToday} 并升级`}
             </button>
           )}
         </div>
